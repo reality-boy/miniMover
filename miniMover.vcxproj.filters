@@ -45,4 +45,7 @@
   <ItemGroup>
     <Text Include="v3 notes.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
 </Project>

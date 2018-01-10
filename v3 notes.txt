@@ -1,5 +1,3 @@
-FM1X - miniMaker
-
 //*********************
 // Serial: 115200 baud, 8 bit, 0 parity, 1 stop, 
 

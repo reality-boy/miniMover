@@ -127,9 +127,7 @@ struct XYZPrinterInfo
 };
 
 // master class
-// note this is written as a console app
 // most functions will block while serial IO happens
-// and some will query for input from the console
 class XYZV3
 {
 public:
