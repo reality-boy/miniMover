@@ -173,6 +173,7 @@ public:
 	bool restoreDefaults();
 	bool enableBuzzer(bool enable);
 	bool enableAutoLevel(bool enable);
+	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
 
 	// send a .3w file to printer
 	bool printFile(const char *path);

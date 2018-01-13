@@ -833,6 +833,38 @@ bool XYZV3::enableAutoLevel(bool enable)
 	return false;
 }
 
+bool XYZV3::setLanguage(const char *lang)
+{
+	if(m_serial.isOpen() && lang)
+	{
+		m_serial.writeSerialPrintf("XYZv3/config=lang:[%s]", lang);
+		if(waitForVal("ok", true))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+//****FixMe, implement these
+XYZv3/config=disconnectap
+XYZv3/config=engrave:placeobject
+XYZv3/config=energy:[E] 
+XYZv3/config=life:[XX] 
+XYZv3/config=name:[N] 
+XYZv3/config=print[complete]
+XYZv3/config=print[cancel]
+XYZv3/config=print[pause]
+XYZv3/config=print[resume]
+XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
+XYZv3/config=pda:[1591]
+XYZv3/config=pdb:[4387]
+XYZv3/config=pdc:[7264]
+XYZv3/config=pde:[8046]
+*/
+
 bool XYZV3::printFile(const char *path)
 {
 	bool status = false;
@@ -924,35 +956,35 @@ bool XYZV3::printString(const char *data, int len)
 			int lastBlockSize = len % blockSize;
 			int t;
 
-			char *bbuf = new char[blockSize + 12];
-			if(bbuf)
+			char *bBuf = new char[blockSize + 12];
+			if(bBuf)
 			{
 				for(int i=0; i<blockCount; i++)
 				{
 					int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-					char *tbuf = bbuf;
+					char *tBuf = bBuf;
 
 					// block count
 					t = swap32bit(i);
-					memcpy(tbuf, &t, 4);
-					tbuf += 4;
+					memcpy(tBuf, &t, 4);
+					tBuf += 4;
 
 					// data length
 					t = swap32bit(blockLen);
-					memcpy(tbuf, &t, 4);
-					tbuf += 4;
+					memcpy(tBuf, &t, 4);
+					tBuf += 4;
 
 					// data block
-					memcpy(tbuf, data + i*blockSize, blockLen);
-					tbuf += blockLen;
+					memcpy(tBuf, data + i*blockSize, blockLen);
+					tBuf += blockLen;
 
 					// end of data
 					t = swap32bit(0);
-					memcpy(tbuf, &t, 4);
-					tbuf += 4;
+					memcpy(tBuf, &t, 4);
+					tBuf += 4;
 
 					// write out in one shot
-					m_serial.writeSerialArray(bbuf, blockLen + 12);
+					m_serial.writeSerialArray(bBuf, blockLen + 12);
 
 					bool stat = waitForVal("ok", false);
 					if(stat)
@@ -968,6 +1000,7 @@ bool XYZV3::printString(const char *data, int len)
 					if(i % 4 == 0)
 						printf(".");
 				}
+				delete [] bBuf;
 			}
 		}
 
@@ -1121,7 +1154,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, const XYZPrinte
 					f = fopen(outPath, "wb");
 				else
 				{
-					char tPath[MAX_PATH];
+					char tPath[MAX_PATH] = "";
 					strcpy(tPath, inPath);
 					char *ptr = strrchr(tPath, '.');
 					if(!ptr)
@@ -1228,9 +1261,8 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, const XYZPrinte
 							success = true;
 
 							// cleanup
-//****FixMe, why does this lock up?
-//							delete [] headerBuf;
-//							headerBuf = NULL;
+							delete [] headerBuf;
+							headerBuf = NULL;
 
 							delete [] bodyBuf;
 							bodyBuf = NULL;
@@ -1639,7 +1671,7 @@ int XYZV3::pkcs7pad(char *buf, int len)
 		if(count > 0 && count < 16)
 		{
 			for(int i=0; i<count; i++)
-				buf[len+count] = count;
+				buf[len+i] = count;
 		}
 
 		return newLen;
@@ -1772,11 +1804,11 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 	if(gcode && gcodeLen > 1 && info && headerBuf && headerLen && bodyBuf && bodyLen)
 	{
 		// create working buffer with extra room
-		int bbufLen = gcodeLen + 500;
+		int bBufMaxLen = gcodeLen + 1000;
 		int bbufOffset = 0;
 		int headerEnd = 0;
-		char * bbuf = new char[bbufLen];
-		if(bbuf)
+		char * bBuf = new char[bBufMaxLen];
+		if(bBuf)
 		{
 			// for each line in gcode file
 			const char *tcode = gcode;
@@ -1791,9 +1823,9 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 			//****FixMe, find a way to patch this up properly so print time estimates
 			// show properly on printers with display
 			// note that xyzware will make its own print time estimate
-			bbufOffset += sprintf(bbuf + bbufOffset, "; filename = temp.3w\n");
-			bbufOffset += sprintf(bbuf + bbufOffset, "; print_time = %d\n", printTime);
-			bbufOffset += sprintf(bbuf + bbufOffset, "; machine = %s\n", info->fileNum);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
+			bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", info->fileNum);
 
 			bool isHeader = true;
 			bool wasHeader = true;
@@ -1835,7 +1867,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 					}
 					*/
 					else // just pass it on through
-						bbufOffset += sprintf(bbuf + bbufOffset, lineBuf);
+						bbufOffset += sprintf(bBuf + bbufOffset, lineBuf);
 				}
 				else
 				{
@@ -1844,10 +1876,10 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 						// append new header parameters
 						//****FixMe, had to move these to top to make it work
 						/*
-						bbufOffset += sprintf(bbuf + bbufOffset, "; filename = temp.3w\n");
-						bbufOffset += sprintf(bbuf + bbufOffset, "; print_time = %d\n", printTime);
-						bbufOffset += sprintf(bbuf + bbufOffset, "; machine = %s\n", info->fileNum);
-						bbufOffset += sprintf(bbuf + bbufOffset, "; total_filament = %0.2f\n", fillamentLen);
+						bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
+						bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
+						bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", info->fileNum);
+						bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", fillamentLen);
 						*/
 
 						// mark end of header in main buffer
@@ -1862,7 +1894,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 						s[1] = '1';
 
 					// copy to file
-					bbufOffset += sprintf(bbuf + bbufOffset, lineBuf);
+					bbufOffset += sprintf(bBuf + bbufOffset, lineBuf);
 				}
 
 				tcode = readLineFromBuf(tcode, lineBuf, lineLen);
@@ -1872,16 +1904,16 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 			// fix up header
 
 			// padded out to 16 byte boundary
-			*headerLen = roundUpTo16(headerEnd); 
-
 			// and copy so we can encrypt it seperately
-			*headerBuf = new char[*headerLen];
-			if(headerBuf)
+			int hLen = roundUpTo16(headerEnd); 
+			char *hBuf = new char[hLen+1];
+			if(hBuf)
 			{
-				memcpy(*headerBuf, bbuf, headerEnd);
+				memcpy(hBuf, bBuf, headerEnd);
 
 				// don't forget to tag the padding
-				pkcs7pad(*headerBuf, headerEnd);
+				pkcs7pad(hBuf, headerEnd);
+				hBuf[hLen] = '\0';
 
 				// encrypt the header in CBC mode
 				// it appears that v5 files don't always encrypt
@@ -1892,7 +1924,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 
 					char *hkey = "@xyzprinting.com";
 				    AES_init_ctx_iv(&ctx, hkey, iv);
-				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)*headerBuf, *headerLen);
+				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)hBuf, hLen);
 				}
 
 				//============
@@ -1902,6 +1934,8 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 				{
 					// not finished, can't count on this code
 					assert(false);
+
+					int bLen = bbufOffset;
 
 					// Im not really sure on the order here, need to find a file to look at
 
@@ -1914,33 +1948,35 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 					uint8_t iv[16] = {0}; // 16 zeros
 					char *key = "@xyzprinting.com";
 				    AES_init_ctx_iv(&ctx, key, iv);
-				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bbuf, bbufOffset);
+				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
 
 					//****FixMe, set body output
-					*bodyLen = bbufOffset;
-					*bodyBuf = bbuf;
+					*bodyLen = bLen;
 				}
 				else
 				{
-					int tOffset = pkcs7pad(bbuf, bbufOffset);
+					int bLen = pkcs7pad(bBuf, bbufOffset);
 
 					// encrypt body using ECB mode
 				    struct AES_ctx ctx;
 					uint8_t iv[16] = {0}; // 16 zeros
 					char *bkey = "@xyzprinting.com@xyzprinting.com";
 				    AES_init_ctx_iv(&ctx, bkey, iv);
-				    AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bbuf, tOffset);
+				    AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
 
-					// bbuf already padded out, no need to copy it over
+					// bBuf already padded out, no need to copy it over
 					// just mark the padding
-					*bodyLen = tOffset;
-					*bodyBuf = bbuf;
+					*bodyLen = bLen;
 				}
+
+				*headerLen = hLen;
+				*headerBuf = hBuf;
+				*bodyBuf = bBuf;
 
 				return true;
 			}
 
-			delete [] bbuf;
+			delete [] bBuf;
 		}
 
 		// make sure we return something

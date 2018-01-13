@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 				if(printFile(argv[i]))
 					printf("print file succeeded\n");
 				else
-					printf("print file failed to print %s\n", argv[i+1]);
+					printf("print file failed to print %s\n", argv[i]);
 			}
 			else if(is3wFile(argv[i]))
 			{
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 				if(convertFile(argv[i]))
 					printf("convert file succeeded\n");
 				else
-					printf("convert file failed to convert %s\n", argv[i+1]);
+					printf("convert file failed to convert %s\n", argv[i]);
 			}
 			else
 				printf("unknown file type %s\n", argv[i]);
@@ -239,14 +239,11 @@ int main(int argc, char **argv)
 				{
 					if(i+1 < argc && !isKey(argv[i+1])) 
 					{
-						if(checkCon())
-						{
-							printf("starting convert file\n");
-							if(convertFile(argv[i+1]))
-								printf("convert file succeeded\n");
-							else
-								printf("convert file failed to convert %s\n", argv[i+1]);
-						}
+						printf("starting convert file\n");
+						if(convertFile(argv[i+1]))
+							printf("convert file succeeded\n");
+						else
+							printf("convert file failed to convert %s\n", argv[i+1]);
 						i++;
 					}
 					else
@@ -399,6 +396,11 @@ int main(int argc, char **argv)
 	
 	// disconnect just in case
 	xyz.disconnect();
+
+#ifdef _DEBUG
+	printf("hit any key to continue.\n");
+	getch();
+#endif
 
 	return 0;
 }

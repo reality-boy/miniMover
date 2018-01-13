@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+*~
+
+# Folders
+backup/
+data_snoop/
+Debug/
+files/
+miniz/
+Release/
+tiny-AES/
+.gitignore~
+*.sdf
+*.suo

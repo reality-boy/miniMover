@@ -547,7 +547,7 @@ void AES_ECB_decrypt_buffer(struct AES_ctx* ctx,const uint8_t* buf, uint32_t len
 	}
 }
 
-void AES_CBC_encrypt_buffer(struct AES_ctx *ctx,uint8_t* buf, uint32_t length)
+void AES_CBC_encrypt_buffer(struct AES_ctx *ctx, uint8_t* buf, uint32_t length)
 {
 	uintptr_t i;
 	uint8_t *Iv = ctx->Iv;
