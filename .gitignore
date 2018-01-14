@@ -43,3 +43,5 @@ tiny-AES/
 .gitignore~
 *.sdf
 *.suo
+*.opensdf
+*.3w

@@ -175,9 +175,14 @@ public:
 	bool enableAutoLevel(bool enable);
 	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
 
+	bool cancelPrint();
+	bool pausePrint();
+	bool resumePrint();
+	bool readyPrint();
+
 	// send a .3w file to printer
-	bool printFile(const char *path);
-	bool printString(const char *data, int len);
+	bool printFile(const char *path, XYZCallback cbStatus);
+	bool printString(const char *data, int len, XYZCallback cbStatus);
 
 	// dump current status of print job to screen, returns false when job is finished
 	bool monitorPrintJob();

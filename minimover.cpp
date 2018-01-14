@@ -13,6 +13,44 @@
 XYZV3 xyz;
 int port = -1;
 
+void updateStatus()
+{
+	// notify the user that we are still uploading
+	static int printCount = 0;
+
+	if(printCount % 4 == 0)
+		printf(".");
+
+	if(printCount % (78*4) == 0)
+		printf("\n");
+
+	printCount++;
+}
+
+void calibPress()
+{
+	printf("lower detector and hit enter to continue...\n");
+	getch();
+}
+
+void calibRelease()
+{
+	printf("raise detector and hit enter to continue...\n");
+	getch();
+}
+
+void loadDone()
+{
+	printf("wait for fillament to come out of nozel then hit enter\n");
+	getch();
+}
+
+void cleanDone()
+{
+	printf("clean nozzle with a wire and press enter when finished\n");
+	getch();
+}
+
 void postHelp()
 {
 	printf("usage: miniMover <args>\n");
@@ -101,32 +139,75 @@ bool printFile(const char *path)
 	if( path &&
 		checkCon())
 	{
-		if(isGcodeFile(path))
+		//****FixMe, temp file should be placed in temp folder
+		const char *temp = "temp.3w";
+		const char *tPath = NULL;
+
+		// if gcode convert to 3w file
+		bool isGcode = isGcodeFile(path);
+		if(isGcode)
 		{
-			const char *temp = "temp.3w";
 			if(xyz.encryptFile(path, temp))
 			{
-				// send to printer
-				if(xyz.printFile(temp))
-				{
-					// loop till print finished
-					while(xyz.monitorPrintJob())
-						Sleep(5000);
-
-					remove(temp);
-
-					return true;
-				}
+				tPath = temp;
 			}
 		}
 		else if(is3wFile(path))
+			tPath = path;
+		// else tPath is null and we fail
+
+		if(tPath)
 		{
 			// send to printer
-			if(xyz.printFile(path))
+			if(xyz.printFile(tPath, updateStatus))
 			{
-				// loop till print finished
-				while(xyz.monitorPrintJob())
-					Sleep(5000);
+				// check status and wait for user to pause/cancel print
+				bool isPrintPaused = false;
+				int count = 0;
+				while(true)
+				{
+					count++;
+					// check if they want to cancel or pause
+					if(kbhit())
+					{
+						// get first key
+						char c = getch();
+
+						// eat any other keys
+						while(kbhit())
+							getch();
+
+						// hit space to toggle pause on and off
+						if(c == ' ')
+						{
+							if(isPrintPaused)
+								xyz.resumePrint();
+							else
+								xyz.pausePrint();
+							isPrintPaused = !isPrintPaused;
+						}
+						else // any other key cancels print job
+						{
+							xyz.cancelPrint();
+							break;
+						}
+					}
+
+					// update status and quit if done
+					if(count % 500 == 0)
+					{
+						if(!xyz.monitorPrintJob())
+						{
+							break;
+						}
+					}
+
+					Sleep(10); // don't spin too fast
+				}
+
+				// cleanup temp file
+				if(isGcode)
+					remove(temp);
 
 				return true;
 			}
@@ -139,30 +220,6 @@ bool printFile(const char *path)
 bool isKey(const char *str)
 {
 	return (str && str[0] == '-' && !isdigit(str[1]));
-}
-
-void calibPress()
-{
-	printf("lower detector and hit enter to continue...\n");
-	getch();
-}
-
-void calibRelease()
-{
-	printf("raise detector and hit enter to continue...\n");
-	getch();
-}
-
-void loadDone()
-{
-	printf("wait for fillament to come out of nozel then hit enter\n");
-	getch();
-}
-
-void cleanDone()
-{
-	printf("clean nozzle with a wire and press enter when finished\n");
-	getch();
 }
 
 int main(int argc, char **argv)

@@ -847,6 +847,65 @@ bool XYZV3::setLanguage(const char *lang)
 	return false;
 }
 
+bool XYZV3::cancelPrint()
+{
+	if(m_serial.isOpen())
+	{
+		m_serial.writeSerialPrintf("XYZv3/config=print[cancel]");
+		if(waitForVal("ok", true))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool XYZV3::pausePrint()
+{
+	if(m_serial.isOpen())
+	{
+		m_serial.writeSerialPrintf("XYZv3/config=print[pause]");
+		if(waitForVal("ok", true))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool XYZV3::resumePrint()
+{
+	if(m_serial.isOpen())
+	{
+		m_serial.writeSerialPrintf("XYZv3/config=print[resume]");
+		if(waitForVal("ok", true))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// call when print finished to prep for a new job
+// switches from print done to print ready
+// be sure old job is off print bed!!!
+bool XYZV3::readyPrint()
+{
+	if(m_serial.isOpen())
+	{
+		m_serial.writeSerialPrintf("XYZv3/config=print[complete]");
+		if(waitForVal("ok", true))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /*
 //****FixMe, implement these
 XYZv3/config=disconnectap
@@ -854,10 +913,6 @@ XYZv3/config=engrave:placeobject
 XYZv3/config=energy:[E] 
 XYZv3/config=life:[XX] 
 XYZv3/config=name:[N] 
-XYZv3/config=print[complete]
-XYZv3/config=print[cancel]
-XYZv3/config=print[pause]
-XYZv3/config=print[resume]
 XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
 XYZv3/config=pda:[1591]
 XYZv3/config=pdb:[4387]
@@ -865,7 +920,7 @@ XYZv3/config=pdc:[7264]
 XYZv3/config=pde:[8046]
 */
 
-bool XYZV3::printFile(const char *path)
+bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 {
 	bool status = false;
 	if(path)
@@ -882,7 +937,7 @@ bool XYZV3::printFile(const char *path)
 			if(buf)
 			{
 				fread(buf, 1, len, f);
-				status = printString(buf, len);
+				status = printString(buf, len, cbStatus);
 
 				delete [] buf;
 				buf = NULL;
@@ -897,7 +952,7 @@ bool XYZV3::printFile(const char *path)
 
 #if 0
 // print directly to serial port
-bool XYZV3::printString(const char *data, int len)
+bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 {
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
@@ -928,6 +983,9 @@ bool XYZV3::printString(const char *data, int len)
 					success = false;
 					break;
 				}
+
+				// give time to parrent
+				cbStatus();
 			}
 		}
 
@@ -941,7 +999,7 @@ bool XYZV3::printString(const char *data, int len)
 #else
 // queue up in buffer before printing
 // may help reduce chance of E7 errors
-bool XYZV3::printString(const char *data, int len)
+bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 {
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
@@ -996,9 +1054,8 @@ bool XYZV3::printString(const char *data, int len)
 						break;
 					}
 
-					//****Fixme, make this a callback
-					if(i % 4 == 0)
-						printf(".");
+					// give time to parrent
+					cbStatus();
 				}
 				delete [] bBuf;
 			}
