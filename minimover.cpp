@@ -17,13 +17,8 @@ void updateStatus()
 {
 	// notify the user that we are still uploading
 	static int printCount = 0;
-
 	if(printCount % 4 == 0)
 		printf(".");
-
-	if(printCount % (78*4) == 0)
-		printf("\n");
-
 	printCount++;
 }
 
@@ -161,6 +156,7 @@ bool printFile(const char *path)
 			// send to printer
 			if(xyz.printFile(tPath, updateStatus))
 			{
+				printf("\n");
 				// check status and wait for user to pause/cancel print
 				bool isPrintPaused = false;
 				int count = 0;

@@ -1076,18 +1076,19 @@ bool XYZV3::monitorPrintJob()
 	{
 		if(m_status.isValid)
 		{
-			printf("Status: %s, temp: %d C / %d C", 
+			printf("S: %s, temp: %d C / %d C", 
 				statusCodesToStr(m_status.printerStatus, m_status.printerSubStatus),
 				m_status.extruderActualTemp_C, m_status.extruderTargetTemp_C);
 			if(m_status.bedTemp_C > 30)
 				printf(" - %d C", m_status.bedTemp_C);
-			printf("\n");
 
 			if(m_status.printPercentComplete != 0 || m_status.printElapsedTime_m != 0 || m_status.printTimeLeft_m != 0)
-				printf("Job: %d %% %d m %d m\n", m_status.printPercentComplete, m_status.printElapsedTime_m, m_status.printTimeLeft_m);
+				printf(" Job: %d %% %d m %d m", m_status.printPercentComplete, m_status.printElapsedTime_m, m_status.printTimeLeft_m);
 
 			if(m_status.errorStatus)
-				printf("Error: %d\n", m_status.errorStatus);
+				printf(" Error: %d", m_status.errorStatus);
+
+			printf("\n");
 		}
 		// else just wait till next cycle
 
@@ -1857,35 +1858,69 @@ bool XYZV3::checkLineIsHeader(const char* lineBuf)
 
 bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinterInfo *info,  char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen)
 {
+	const int lineLen = 1024;
+	char lineBuf[lineLen];
+
 	// validate parameters
 	if(gcode && gcodeLen > 1 && info && headerBuf && headerLen && bodyBuf && bodyLen)
 	{
+		// parse header once to get info on print time
+		int printTime = 1;
+		float totalFilamen = 1.0f;
+
+		char *s = NULL;
+		const char *tcode = gcode;
+		tcode = readLineFromBuf(tcode, lineBuf, lineLen);
+		while(*lineBuf)
+		{
+			if(checkLineIsHeader(lineBuf))
+			{
+				// strip out the following parameters
+				// and capture info if possible
+				// ; filename = temp.3w
+				// ; print_time = {estimated time in seconds}
+				// ; machine = dv1MX0A000 // change to match current printer
+				// ; total_filament = {estimated filament used in mm}
+
+				// print time
+				if(NULL != (s = strstr(lineBuf, "print_time = ")))
+					printTime = atoi(s + strlen("print_time = "));
+				else if(NULL != (s = strstr(lineBuf, "TIME:")))
+					printTime = atoi(s + strlen("TIME:"));
+
+				// fillament used
+				else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
+					totalFilamen = (float)atof(s + strlen("total_filament = "));
+				else if(NULL != (s = strstr(lineBuf, "filament_used = ")))
+					totalFilamen = (float)atof(s + strlen("filament_used = "));
+				else if(NULL != (s = strstr(lineBuf, "Filament used: ")))
+					totalFilamen = 1000.0f * (float)atof(s + strlen("Filament used: ")); // m to mm
+			}
+			else
+				break;
+
+			tcode = readLineFromBuf(tcode, lineBuf, lineLen);
+		}
+
 		// create working buffer with extra room
 		int bBufMaxLen = gcodeLen + 1000;
 		int bbufOffset = 0;
-		int headerEnd = 0;
 		char * bBuf = new char[bBufMaxLen];
 		if(bBuf)
 		{
-			// for each line in gcode file
-			const char *tcode = gcode;
-			const int lineLen = 1024;
-			char lineBuf[lineLen];
-
-			int printTime = 1;
-			float fillamentLen = 1.0f;
-
 			// make a fake header to keep printer happy
 			// must come first or printer will fail
-			//****FixMe, find a way to patch this up properly so print time estimates
-			// show properly on printers with display
-			// note that xyzware will make its own print time estimate
 			bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
 			bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
 			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", info->fileNum);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilamen);
 
 			bool isHeader = true;
 			bool wasHeader = true;
+			int headerEnd = 0;
+
+			// for each line in gcode file
+			tcode = gcode;
 			tcode = readLineFromBuf(tcode, lineBuf, lineLen);
 			while(*lineBuf)
 			{
@@ -1895,53 +1930,22 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 
 				if(isHeader)
 				{
-					// strip out the following parameters
-					// and capture info if possible
-					// ; filename = temp.3w
-					// ; print_time = {estimated time in seconds}
-					// ; machine = dv1MX0A000 // change to match current printer
-					// ; total_filament = {estimated filament used in mm}
-
-					char *s = NULL;
-
+					// strip out duplicate lines
 					if( NULL != strstr(lineBuf, "filename") || 
-						NULL != strstr(lineBuf, "machine")  )
+						NULL != strstr(lineBuf, "machine") ||
+						NULL != (s = strstr(lineBuf, "print_time")) ||
+						NULL != (s = strstr(lineBuf, "total_filament")) )
 					{
 						// drop the line on the floor
 					}
-					else if(NULL != (s = strstr(lineBuf, "print_time = ")))
-						printTime = atoi(s + strlen("print_time = "));
-					/*
-					else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
-						fillamentLen = (float)atof(s + strlen("total_filament = "));
-					// from cura and other headers
-					else if(NULL != (s = strstr(lineBuf, "filament_used = ")))
-						fillamentLen = (float)atof(s + strlen("filament_used = "));
-					else if(NULL != (s = strstr(lineBuf, "Filament used:")))
-					{
-						fillamentLen = (float)atof(s + strlen("Filament used:"));
-						fillamentLen *= 1000; // m to mm
-					}
-					*/
-					else // just pass it on through
+					else // else just pass it on through
 						bbufOffset += sprintf(bBuf + bbufOffset, lineBuf);
 				}
 				else
 				{
+					// mark end of header in main buffer
 					if(wasHeader)
-					{
-						// append new header parameters
-						//****FixMe, had to move these to top to make it work
-						/*
-						bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
-						bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
-						bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", info->fileNum);
-						bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", fillamentLen);
-						*/
-
-						// mark end of header in main buffer
 						headerEnd = bbufOffset;
-					}
 
 					// convert G0 to G1
 					char *s = strstr(lineBuf, "G0");
