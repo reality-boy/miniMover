@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{E91D031F-5BF3-4567-A69E-F19413754505}</ProjectGuid>
+    <ProjectGuid>{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>miniMover</RootNamespace>
+    <RootNamespace>miniMoverUI</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -50,11 +50,12 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -65,32 +66,48 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="aes.cpp" />
-    <ClCompile Include="miniMover.cpp" />
-    <ClCompile Include="serial.cpp" />
-    <ClCompile Include="xyzv3.cpp" />
+    <ClInclude Include="..\aes.h" />
+    <ClInclude Include="..\serial.h" />
+    <ClInclude Include="..\timer.h" />
+    <ClInclude Include="..\xyzv3.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="XYZV3Thread.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="aes.h" />
-    <ClInclude Include="serial.h" />
-    <ClInclude Include="timer.h" />
-    <ClInclude Include="xyzv3.h" />
+    <ClCompile Include="..\aes.cpp" />
+    <ClCompile Include="..\serial.cpp" />
+    <ClCompile Include="..\timer.cpp" />
+    <ClCompile Include="..\xyzv3.cpp" />
+    <ClCompile Include="miniMoverUI.cpp" />
+    <ClCompile Include="XYZV3Thread.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="v3 notes.txt" />
+    <ResourceCompile Include="miniMoverUI.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="README.md" />
+    <Image Include="..\miniMover.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.gitignore" />
+    <None Include="..\CODE_OF_CONDUCT.md" />
+    <None Include="..\LICENSE" />
+    <None Include="..\README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\v3 notes.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

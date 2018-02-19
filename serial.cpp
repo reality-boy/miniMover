@@ -1,13 +1,23 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <Setupapi.h>
+#include <assert.h>
 
 #include "serial.h"
 
+#pragma comment(lib, "Setupapi.lib")
 #pragma warning(disable:4996)
 
-// set to false to stop debug output
-const static bool isVerbose = false;
+// static class data
+
+int Serial::portCount = 0;
+int Serial::defaultPortNum = -1;
+
+int Serial::portNumbers[maxPortCount] = {-1};
+char Serial::portNames[maxPortCount][maxPortName] = {""};
+
+bool Serial::isVerbose = false;
 
 bool Serial::verifyPort(int port)
 {
@@ -124,11 +134,7 @@ bool Serial::openPort(int port, int baudRate)
 	
 	// auto detect port
 	if(port < 0)
-	{
-		int portList[32];
-		int portCount = 32;
-		port = enumeratePorts(portList, &portCount);
-	}
+		port = queryForPorts();
 
 	if(port >= 2) // reject default ports, maybe there is a better way?
 	{
@@ -385,6 +391,95 @@ int Serial::writeSerialByteU32(unsigned int num)
 	return bytesWritten;
 }
 
+// enumerate all available ports and find there string name as well
+// only usb serial ports have a string name, but that is most serial devices these days
+// based on CEnumerateSerial http://www.naughter.com/enumser.html
+int Serial::queryForPorts(const char *hint)
+{
+	portCount = 0;
+	defaultPortNum = -1;
+	bool hintFound = false;
+
+	HDEVINFO hDevInfoSet = SetupDiGetClassDevsA( &GUID_DEVINTERFACE_COMPORT, 
+								NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+	if(hDevInfoSet != INVALID_HANDLE_VALUE)
+	{
+		SP_DEVINFO_DATA devInfo;
+		devInfo.cbSize = sizeof(SP_DEVINFO_DATA);
+
+		const static int maxLen = 512;
+		char tstr[maxLen];
+
+		int nIndex = 0;
+		while(SetupDiEnumDeviceInfo(hDevInfoSet, nIndex, &devInfo))
+		{
+			int nPort = -1;
+			HKEY key = SetupDiOpenDevRegKey(hDevInfoSet, &devInfo, DICS_FLAG_GLOBAL, 
+											0, DIREG_DEV, KEY_QUERY_VALUE);
+			if(key != INVALID_HANDLE_VALUE)
+			{
+				tstr[0] = '\0';
+				ULONG tLen = maxLen;
+				DWORD dwType = 0;
+				LONG status = RegQueryValueExA(key, "PortName", nullptr, &dwType, reinterpret_cast<LPBYTE>(tstr), &tLen);
+				if(ERROR_SUCCESS == status && tLen > 0 && tLen < maxLen)
+				{
+					// it may be possible for string to be unterminated
+					// add an extra terminator just to be safe
+					tstr[tLen] = '\0';
+
+					// check for COMxx wher xx is a number
+					if (strlen(tstr) > 3 && strncmp(tstr, "COM", 3) == 0 && isdigit(tstr[3]))
+					{
+						// srip off the number
+						nPort = atoi(tstr+3);
+						if (nPort != -1)
+						{
+							// if this triggers we need to increase maxPortCount
+							assert(portCount < maxPortCount);
+							if(portCount < maxPortCount)
+							{
+								portNumbers[portCount] = nPort;
+
+								// pick highest port by default, unless already found by hint
+								if(!hintFound && defaultPortNum < nPort)
+									defaultPortNum = nPort;
+
+								DWORD dwType = 0;
+								DWORD dwSize = maxPortName;
+								portNames[portCount][0] = '\0';
+								if(SetupDiGetDeviceRegistryPropertyA(hDevInfoSet, &devInfo, SPDRP_DEVICEDESC, &dwType, (PBYTE)portNames[portCount], maxPortName, &dwSize))
+								{
+									// check if this port matches our hint
+									// for now we take the last match
+									if(hint && strstr(portNames[portCount], hint))
+									{
+										hintFound = true;
+										defaultPortNum = nPort;
+									}
+								}
+								else
+									portNames[portCount][0] = '\0';
+
+								portCount++;
+							}
+						}
+					}
+				}
+				RegCloseKey(key);
+			}
+
+			++nIndex;
+		}
+
+		SetupDiDestroyDeviceInfoList(hDevInfoSet);
+	}
+	
+	return defaultPortNum;
+}
+
+//****Note, older code that is reliable but does not give you a string name for the port
+/*
 int Serial::enumeratePorts(int list[], int *count)
 {
 	//What will be the return value
@@ -445,3 +540,5 @@ int Serial::enumeratePorts(int list[], int *count)
 	}
 	return bestGuess;
 }
+*/
+

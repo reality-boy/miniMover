@@ -5,13 +5,9 @@
 
 class Serial; // from serial.h
 
-// some functions require user interaction
-// use a callback to handle that
-typedef void (*XYZCallback)(void);
-
 // printer status word
 // items marked with state have substatus words as well.
-enum XYZPrintStatus
+enum XYZPrintStatusCode
 {
 	PRINT_INITIAL = 9500,
 	PRINT_HEATING = 9501,
@@ -56,7 +52,7 @@ enum XYZPrintStatus
 };
 
 // status of current printer
-struct XYZStatus
+struct XYZPrinterState
 {
 	bool isValid;
 
@@ -79,8 +75,9 @@ struct XYZStatus
 	int printTimeLeft_m;
 
 	int errorStatus;
-	int printerStatus; // XYZPrintStatus
+	XYZPrintStatusCode printerStatus;
 	int printerSubStatus;
+	char printerStatusStr[256];
 
 	int packetSize;
 
@@ -98,6 +95,9 @@ struct XYZStatus
 	char nozelSerialNumber[64]; //32
 
 	char firmwareVersion[64]; //10
+
+	// from getZOffset()
+	int zOffset;
 
 	// m ???
 	// o t1, c1
@@ -126,6 +126,8 @@ struct XYZPrinterInfo
 	int height;
 };
 
+typedef void (*XYZCallback)(float pct);
+
 // master class
 // most functions will block while serial IO happens
 class XYZV3
@@ -140,18 +142,29 @@ public:
 	bool connect(int port = -1);
 	void disconnect();
 	bool isConnected(); // return true if connected
-	bool checkConnection(); // connect if not connected
 
-	// update status struct
-	bool updateStatus();
-	// update status struct and print to console
-	bool printStatus();
+	// expose serial functionalit
+	static int refreshPortList();
+	static int getPortCount();
+	static int getPortNumber(int id);
+	static const char* getPortName(int id);
+
+	//****FixMe, statusCode and status are too close together!!!!
+	bool updateStatus(); // update status struct
+	const XYZPrinterState* getPrinterState() { return &m_status; }
+	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
 	// run auto bed leveling routine
-	bool calibrateBed(XYZCallback cbPress, XYZCallback cbRelease);
+	// call to start
+	bool calibrateBedStart(); 
+	// ask to lower detector then call
+	bool calibrateBedRun();
+	// ask to raise detector then call
+	bool calibrateBedFinish();
 
 	// heats up nozzle so you can clean it out with a wire
-	bool cleanNozzle(XYZCallback cbDone);
+	bool cleanNozzleStart();
+	bool cleanNozzleFinish(); // call once user finishes cleaning
 
 	// home printer so you can safely move head
 	bool homePrinter();
@@ -162,8 +175,10 @@ public:
 	// unloads fillament without any user interaction
 	bool unloadFillament();
 
-	// loads fillament, be sure to hit enter when fillament comes out of extruder!!!
-	bool loadFillament(XYZCallback ldDone);
+	// loads fillament
+	bool loadFillamentStart();
+	// call when fillament comes out of extruder!!!
+	bool loadFillamentFinish();
 
 	// increment/decrement z offset by one step (1/100th of  a mm?)
 	int incrementZOffset(bool up);
@@ -180,35 +195,38 @@ public:
 	bool resumePrint();
 	bool readyPrint();
 
-	// send a .3w file to printer
+	// print a gcode or 3w file, convert as needed
 	bool printFile(const char *path, XYZCallback cbStatus);
-	bool printString(const char *data, int len, XYZCallback cbStatus);
-
-	// dump current status of print job to screen, returns false when job is finished
-	bool monitorPrintJob();
 
 	// load new firmware into the printer.
 	// probably not a good idea to mess with this!
-	bool writeFirmware(const char *path);
+	bool writeFirmware(const char *path, XYZCallback cbStatus);
 
 	//=====================
 	// file i/o
 
-	const XYZPrinterInfo* modelToInfo(const char *modelNum);
-
 	// convert a gcode file to 3w format
 	//****FixMe, modify encryptFile to take either file bools or machine info or at least override format in some way.
-	bool encryptFile(const char *inPath, const char *outPath = NULL, const XYZPrinterInfo *info = NULL);
+	bool encryptFile(const char *inPath, const char *outPath = NULL);
 
 	// convert a 3w file to gcode
 	bool decryptFile(const char *inPath, const char *outPath = NULL);
 
-protected:
-	void setCursorXY(int x, int y);
+	// convert from gcode to 3w or back depending on file type
+	bool convertFile(const char *inPath, const char *outPath = NULL);
+	bool isGcodeFile(const char *path);
+	bool is3wFile(const char *path);
 
-	float nozelIDToDiameter(int id);
+protected:
+
+	// send a .3w file to printer
+	bool print3WFile(const char *path, XYZCallback cbStatus);
+	bool print3WString(const char *data, int len, XYZCallback cbStatus);
+
 	const char* statusCodesToStr(int status, int subStatus);
+	float nozelIDToDiameter(int id);
 	bool getJsonVal(const char *str, const char *key, char *val);
+	const XYZPrinterInfo* modelToInfo(const char *modelNum);
 
 	// serial functions
 	const char* waitForLine(bool waitForEndCom, int timeout_s = 10);
@@ -232,15 +250,16 @@ protected:
 	unsigned int calcXYZcrc32(char *buf, int len);
 	const char* readLineFromBuf(const char* buf, char *lineBuf, int lineLen);
 	bool checkLineIsHeader(const char* lineBuf);
-	bool processGCode(const char *gcode, const int gcodeLen, const XYZPrinterInfo *info,  char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
+	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
+
+	void DebugPrint(char *format, ...);
 
 	Serial m_serial;
-	XYZStatus m_status;
+	XYZPrinterState m_status;
 	const XYZPrinterInfo *m_info;
 
 	static const int m_infoArrayLen = 19;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 };
-
 
 #endif // XYZV3_H

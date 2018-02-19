@@ -11,8 +11,6 @@ public:
 	{}
 	~Serial() { closePort(); }
 
-	static int enumeratePorts(int list[], int *count);
-
 	bool verifyPort(int port);
 	bool openPort(int port, int baudRate);
 	void closePort();
@@ -48,6 +46,31 @@ protected:
 	HANDLE m_serial;
 	int m_port;
 	int m_baudRate;
+
+	// static helper functions
+public:
+	// enumerate all ports and return a default port number or -1 if no ports available
+	// Pass in hint string to help guide us to best port
+	static int queryForPorts(const char *hint = NULL);
+
+	static int getPortCount() { return portCount; }
+	static int getPortNumber(int id) { return (id >= 0 && id < portCount) ? portNumbers[id] : NULL; }
+	static const char* getPortName(int id) { return (id >= 0 && id < portCount) ? portNames[id] : NULL; }
+
+	// set to true to dump debug info to console
+	void setVerbose(bool verbose) { isVerbose = verbose; }
+
+protected:
+	const static int maxPortName = 512;
+	const static int maxPortCount = 24;
+
+	static int portCount;
+	static int defaultPortNum;
+
+	static int portNumbers[maxPortCount];
+	static char portNames[maxPortCount][maxPortName];
+
+	static bool isVerbose;
 };
 
 #endif //SERIAL_H

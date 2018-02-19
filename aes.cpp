@@ -39,7 +39,6 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 #include <string.h> // CBC mode, for memset
 #include <stdio.h>
 
-#include "timer.h"
 #include "aes.h"
 
 /*****************************************************************************/
@@ -537,7 +536,6 @@ void AES_ECB_encrypt_buffer(struct AES_ctx *ctx,const uint8_t* buf, uint32_t len
 
 void AES_ECB_decrypt_buffer(struct AES_ctx* ctx,const uint8_t* buf, uint32_t length)
 {
-	microsecondTimer t1;
 	uintptr_t i;
 
 	for (i = 0; i < length; i += AES_BLOCKLEN)

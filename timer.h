@@ -3,37 +3,55 @@
 
 #include <Windows.h>
 
-class microsecondTimer
+class msTime
 {
 public:
-	microsecondTimer() 
-	{ 
-		QueryPerformanceFrequency(&Frequency);  // get conversion rate
-		QueryPerformanceCounter(&StartingTime); // start a timer
-	}
-
-	void startTimer() { QueryPerformanceCounter(&StartingTime); }
-
-	float stopTimer()
+	static float getTime_micro()
 	{
-		LARGE_INTEGER EndingTime;
-		QueryPerformanceCounter(&EndingTime);
+		if(!init)
+		{
+			QueryPerformanceFrequency(&Frequency);  // get conversion rate
+			QueryPerformanceCounter(&StartingTime); // start a timer
+			init = true;
+		}
 
-		ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
-		ElapsedMicroseconds.QuadPart *= 1000000;
-		ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+		LARGE_INTEGER CurrentTime;
+		QueryPerformanceCounter(&CurrentTime);
 
-		return ElapsedMicroseconds.QuadPart / 1000000.0f;
+		return (float) ((CurrentTime.QuadPart - StartingTime.QuadPart) * 1000000 / Frequency.QuadPart);
 	}
 
-	float getLastTime_s()     { return ElapsedMicroseconds.QuadPart / 1000000.0f; }
-	float getLastTime_ms()    { return ElapsedMicroseconds.QuadPart /    1000.0f; }
-	int getLastTime_micro() { return (int)ElapsedMicroseconds.QuadPart; }
+	static float getTime_s() { return getTime_micro() / 1000000.0f; }
+	static float getTime_ms() { return getTime_micro() / 1000.0f; }
 
 protected:
-	LARGE_INTEGER StartingTime;
-	LARGE_INTEGER ElapsedMicroseconds;
-	LARGE_INTEGER Frequency;
+	static LARGE_INTEGER StartingTime;
+	static LARGE_INTEGER Frequency;
+	static bool init;
+};
+
+class msTimer
+{
+public:
+	msTimer() 
+		: startTime(0)
+		, elapsedTime(0)
+	{}
+
+	void startTimer() { startTime = msTime::getTime_micro(); }
+	float stopTimer() 
+	{ 
+		elapsedTime = msTime::getTime_micro() - startTime;
+		return elapsedTime;
+	}
+
+	float getLastTime_s()     { return elapsedTime / 1000000.0f; }
+	float getLastTime_ms()    { return elapsedTime /    1000.0f; }
+	float getLastTime_micro() { return elapsedTime; }
+
+protected:
+	float startTime;
+	float elapsedTime;
 };
 
 #endif // TIMER_H

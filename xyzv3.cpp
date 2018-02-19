@@ -11,7 +11,7 @@
 
 #pragma warning(disable:4996) // live on the edge!
 
-const XYZPrinterInfo XYZV3::m_infoArray[] = {
+const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//modelNum,    fileNum,        serialNum, screenName,       fileIsV5, fileIsZip, comIsV3, length, width, height
 	//  older communication protocol
 	{"dvF100B000", "daVinciF10",   "3DP01P", "da Vinci 1.0",          false, true, false, 200, 200, 200},
@@ -50,19 +50,21 @@ const XYZPrinterInfo XYZV3::m_infoArray[] = {
 };
 
 XYZV3::XYZV3() 
-	: m_info(NULL) 
 {
 	memset(&m_status, 0, sizeof(m_status));
 } 
 
 bool XYZV3::connect(int port)
 {
+	// try to find a good default
+	if(port < 0)
+		port = XYZV3::refreshPortList();
+
 	if(m_serial.openPort(port, 115200))
 	{
 		m_serial.clearSerial();
 		if(updateStatus())
 		{
-			Sleep(100);
 			return true;
 		}
 	}
@@ -79,25 +81,43 @@ bool XYZV3::isConnected()
 	return m_serial.isOpen() && m_status.isValid;
 }
 
+int XYZV3::refreshPortList()
+{
+	return Serial::queryForPorts("XYZ");
+}
+
+int XYZV3::getPortCount()
+{
+	return Serial::getPortCount();
+}
+
+int XYZV3::getPortNumber(int id)
+{
+	return Serial::getPortNumber(id);
+}
+
+const char* XYZV3::getPortName(int id)
+{
+	return Serial::getPortName(id);
+}
 bool XYZV3::updateStatus()
 {
 	if(m_serial.isOpen())
 	{
 		static const int len = 1024;
 		char buf[len];
+		const char *strPtr = NULL;
 
 		// zero out results
-		m_info = NULL;
 		memset(&m_status, 0, sizeof(m_status));
 
 		m_serial.writeSerial("XYZv3/query=a");
 
 		// only try so many times for the answer
 		bool isDone = false;
-		time_t end = time(NULL) + 2; // wait a second or two
-		while(time(NULL) < end && !isDone)
+		float end = msTime::getTime_s() + 2; // wait a second or two
+		while(msTime::getTime_s() < end && !isDone)
 		{
-			Sleep(10);
 			if(m_serial.readSerialLine(buf, len))
 			{
 				int d1 = 0, d2 = 0, d3 = 0;
@@ -220,6 +240,14 @@ bool XYZV3::updateStatus()
 						m_status.printerStatus = PRINT_FATAL_ERROR;
 						break;
 					}
+
+					// fill in status string
+					strPtr = statusCodesToStr(m_status.printerStatus, m_status.printerSubStatus);
+					if(strPtr)
+						strcpy(m_status.printerStatusStr, strPtr); 
+					else 
+						m_status.printerStatusStr[0] = '\0';
+
 					break;
 
 				case 'k': // material type, k:xx
@@ -273,7 +301,7 @@ bool XYZV3::updateStatus()
 					//   sd:yes  sd card yes or no
 					//s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
 					getJsonVal(buf, "buzzer", s1);
-					m_status.buzzerEnabled = (0==strcmp(s1, "on")) ? true : false;
+					m_status.buzzerEnabled = (0==strcmp(s1, "\"on\"")) ? true : false;
 					break;
 
 				case 't': // extruder temperature, t:ss,aa,bb,cc,dd
@@ -394,101 +422,19 @@ bool XYZV3::updateStatus()
 					break;
 
 				default:
-					printf("unknown string: %s\n", buf);
+					DebugPrint("unknown string: %s\n", buf);
 					break;
 				}
 			}
 		}
 
-		return true;
-	}
-
-	return false;
-}
-
-bool XYZV3::printStatus()
-{
-	if(updateStatus())
-	{
-		if(m_status.isValid)
-		{
-			printf("Bed temperature: %d C\n", m_status.bedTemp_C);
-
-			printf("Bed calibration\n");
-			printf(" %d, %d, %d\n", m_status.calib[0], m_status.calib[2], m_status.calib[3]);
-			printf(" %d, %d, %d\n", m_status.calib[4], m_status.calib[5], m_status.calib[6]);
-			printf(" %d, %d, %d\n", m_status.calib[7], m_status.calib[8], m_status.calib[9]);
-
-			if(m_status.printPercentComplete == 0 && m_status.printElapsedTime_m == 0 && m_status.printTimeLeft_m == 0)
-				printf("No job running\n");
-			else
-				printf("Printer status: %d %% %d m %d m\n", m_status.printPercentComplete, m_status.printElapsedTime_m, m_status.printTimeLeft_m);
-
-			printf("Error: %d\n", m_status.errorStatus);
-
-			printf("Filament length: %0.3f m\n", m_status.fillimantRemaining_mm / 1000.0f);
-
-			printf("PLA filament: %d\n", m_status.isFillamentPLA);
-
-			printf("Serial number: %s\n", m_status.machineSerialNum);
-
-			printf("Status: %s\n", statusCodesToStr(m_status.printerStatus, m_status.printerSubStatus));
-
-			//printf("material type: %d\n", stats.materialType);
-
-			printf("language: %s\n", m_status.lang);
-
-			printf("printer name: %s\n", m_status.machineName);
-
-			printf("Package size: %d bytes\n", m_status.packetSize);
-
-			printf("Auto level %s\n", (m_status.autoLevelEnabled) ? "enabled" : "disabled");
-
-			printf("Model number: %s\n", m_status.machineModelNumber);
-
-			if(m_info)
-			{
-				printf("File id: %s\n", m_info->fileNum);
-				printf("Machine serial number: %s\n", m_info->serialNum);
-				printf("Machine screen name: %s\n", m_info->screenName);
-
-				printf("isV5: %d, isZip: %d, comV3: %d\n",
-							m_info->fileIsV5, // v2 is 'normal' file format, v5 is for 'pro' systems
-							m_info->fileIsZip, // older file format, zips header
-							m_info->comIsV3); // old or new serial protocol, v3 is new
-
-				// build volume
-				printf("Printer build volume: %d L %d W %d H\n", m_info->length, m_info->width, m_info->height);
-			}
-
-			printf("buzzer: %s\n", (m_status.buzzerEnabled) ? "enabled" : "disabled");
-
-			printf("Extruder temp: %d C, target temp: %d C\n", m_status.extruderActualTemp_C, m_status.extruderTargetTemp_C);
-
-			printf("Firmware version: %s\n", m_status.firmwareVersion);
-
-			printf("Filament SN: %s\n", m_status.filamentSerialNumber);
-
-			printf("Machine power on time: %d min\n", m_status.printerLifetimePowerOnTime_min);
-			printf("Extruder power on time: %d min\n", m_status.extruderLifetimePowerOnTime_min);
-			printf("Last power on time: %d min\n", m_status.printerLastPowerOnTime_min);
-
-			printf("nozel: %0.2f mm sn: %s\n", m_status.nozelDiameter_mm, m_status.nozelSerialNumber);
-		}
-		// else do nothing
+		// go ahead and pull ZOffset while we are here
+		m_status.zOffset = getZOffset();
 
 		return true;
 	}
 
 	return false;
-}
-
-// move console cursor to new position
-void XYZV3::setCursorXY(int x, int y)
-{
-	COORD pos = {x, y};
-	HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleCursorPosition(output, pos);
 }
 
 float XYZV3::nozelIDToDiameter(int id)
@@ -613,57 +559,86 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 	}
 }
 
-bool XYZV3::calibrateBed(XYZCallback cbPress, XYZCallback cbRelease)
+// call to start calibration
+bool XYZV3::calibrateBedStart()
 {
 	bool success = false;
 
-	if(m_serial.isOpen() && cbPress && cbRelease)
+	if(m_serial.isOpen())
 	{
 		m_serial.writeSerial("XYZv3/action=calibratejr:new");
 		if(waitForJsonVal("stat", "start", true) &&
 		   waitForJsonVal("stat", "pressdetector", true, 120))
 		{
-			// ask user to lower detector, via a callback
-			cbPress();
-
-			m_serial.writeSerial("XYZv3/action=calibratejr:detectorok");
-			if( waitForJsonVal("stat", "processing", true) &&
-				waitForJsonVal("stat", "ok", true, 240))
-			{
-				success = true;
-			}
-
-			// ask user to raise detector, via a callback
-			cbRelease();
+			success = true;
 		}
-
-		// back out of calibration
-		m_serial.writeSerial("XYZv3/action=calibratejr:release");
-		waitForJsonVal("stat", "complete", true);
 	}
 
 	return success;
 }
 
-bool XYZV3::cleanNozzle(XYZCallback clDone)
+// ask user to lower detector, then call this
+bool XYZV3::calibrateBedRun()
 {
 	bool success = false;
 
-	if(m_serial.isOpen() && clDone)
+	if(m_serial.isOpen())
+	{
+		m_serial.writeSerial("XYZv3/action=calibratejr:detectorok");
+		if( waitForJsonVal("stat", "processing", true) &&
+			waitForJsonVal("stat", "ok", true, 240))
+		{
+			success = true;
+		}
+	}
+
+	return success;
+}
+
+// ask user to raise detector, then call this
+bool XYZV3::calibrateBedFinish()
+{
+	bool success = false;
+
+	if(m_serial.isOpen())
+	{
+		// back out of calibration
+		m_serial.writeSerial("XYZv3/action=calibratejr:release");
+		waitForJsonVal("stat", "complete", true);
+		
+		success = true;
+	}
+
+	return success;
+}
+
+bool XYZV3::cleanNozzleStart()
+{
+	bool success = false;
+
+	if(m_serial.isOpen())
 	{
 		m_serial.writeSerial("XYZv3/action=cleannozzle:new");
 		if( waitForJsonVal("stat", "start", true) &&
 			waitForJsonVal("stat", "complete", true, 120)) // wait for nozzle to heat up //****FixMe, show temp...
 		{
-			// ask user to clean nozel via a callback
-			clDone();
-
 			success = true;
 		}
+	}
 
+	return success;
+}
+
+bool XYZV3::cleanNozzleFinish()
+{
+	bool success = false;
+
+	if(m_serial.isOpen())
+	{
 		// always clear out state
 		m_serial.writeSerial("XYZv3/action=cleannozzle:cancel");
-		waitForJsonVal("stat", "ok", true);
+		if(waitForJsonVal("stat", "ok", true))
+			success = true;
 	}
 
 	return success;
@@ -721,26 +696,34 @@ bool XYZV3::unloadFillament()
 	return false;
 }
 
-bool XYZV3::loadFillament(XYZCallback ldDone)
+bool XYZV3::loadFillamentStart()
 {
 	bool success = false;
 
-	if(m_serial.isOpen() && ldDone)
+	if(m_serial.isOpen())
 	{
 		m_serial.writeSerial("XYZv3/action=load:new");
 		if( waitForJsonVal("stat", "start", true) &&
 			//waitForJsonVal("stat", "heat", true, 120) && // extemp:26
 			waitForJsonVal("stat", "load", true, 240)) // wait for nozzle to heat up //****FixMe, show temp...
 		{
-			// have user notify us when fillament is loaded via a callback
-			ldDone();
-
 			success = true;
 		}
+	}
 
+	return success;
+}
+
+bool XYZV3::loadFillamentFinish()
+{
+	bool success = false;
+
+	if(m_serial.isOpen())
+	{
 		// always clear out state
 		m_serial.writeSerial("XYZv3/action=load:cancel");
-		waitForJsonVal("stat", "complete", true);
+		if(waitForJsonVal("stat", "complete", true))
+			success = true;
 	}
 
 	return success;
@@ -922,6 +905,43 @@ XYZv3/config=pde:[8046]
 
 bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 {
+	bool success = false;
+
+	if(path && m_serial.isOpen())
+	{
+		//****FixMe, temp file should be placed in temp folder
+		const char *temp = "temp.3w";
+		const char *tPath = NULL;
+
+		// if gcode convert to 3w file
+		bool isGcode = isGcodeFile(path);
+		if(isGcode)
+		{
+			if(encryptFile(path, temp))
+			{
+				tPath = temp;
+			}
+		}
+		else if(is3wFile(path))
+			tPath = path;
+		// else tPath is null and we fail
+
+		if(tPath)
+		{
+			// send to printer
+			if(print3WFile(tPath, cbStatus))
+				success = true;
+
+			// cleanup temp file
+			if(isGcode)
+				remove(temp);
+		}
+	}
+
+	return success;
+}
+bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
+{
 	bool status = false;
 	if(path)
 	{
@@ -936,8 +956,10 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 			char *buf = new char[len];
 			if(buf)
 			{
-				fread(buf, 1, len, f);
-				status = printString(buf, len, cbStatus);
+				if(len == fread(buf, 1, len, f))
+				{
+					status = print3WString(buf, len, cbStatus);
+				}
 
 				delete [] buf;
 				buf = NULL;
@@ -952,7 +974,7 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 #if 0
 // print directly to serial port
-bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
+bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 {
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
@@ -985,7 +1007,8 @@ bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 				}
 
 				// give time to parrent
-				cbStatus();
+				if(cbStatus)
+					cbStatus((float)i/(float)blockCount);
 			}
 		}
 
@@ -999,7 +1022,7 @@ bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 #else
 // queue up in buffer before printing
 // may help reduce chance of E7 errors
-bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
+bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 {
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
@@ -1055,7 +1078,8 @@ bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 					}
 
 					// give time to parrent
-					cbStatus();
+					if(cbStatus)
+						cbStatus((float)i/(float)blockCount);
 				}
 				delete [] bBuf;
 			}
@@ -1070,37 +1094,7 @@ bool XYZV3::printString(const char *data, int len, XYZCallback cbStatus)
 }
 #endif
 
-bool XYZV3::monitorPrintJob()
-{
-	if(updateStatus())
-	{
-		if(m_status.isValid)
-		{
-			printf("S: %s, temp: %d C / %d C", 
-				statusCodesToStr(m_status.printerStatus, m_status.printerSubStatus),
-				m_status.extruderActualTemp_C, m_status.extruderTargetTemp_C);
-			if(m_status.bedTemp_C > 30)
-				printf(" - %d C", m_status.bedTemp_C);
-
-			if(m_status.printPercentComplete != 0 || m_status.printElapsedTime_m != 0 || m_status.printTimeLeft_m != 0)
-				printf(" Job: %d %% %d m %d m", m_status.printPercentComplete, m_status.printElapsedTime_m, m_status.printTimeLeft_m);
-
-			if(m_status.errorStatus)
-				printf(" Error: %d", m_status.errorStatus);
-
-			printf("\n");
-		}
-		// else just wait till next cycle
-
-		// if not PRINT_NONE
-		return ( m_status.printerStatus != PRINT_ENDING_PROCESS_DONE &&
-				 m_status.printerStatus != PRINT_NONE);
-	}
-
-	return true; // assume we are still printing if we got an update error
-}
-
-bool XYZV3::writeFirmware(const char *path)
+bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 {
 	return false; // probably don't want to run this!
 
@@ -1150,6 +1144,10 @@ bool XYZV3::writeFirmware(const char *path)
 								success = false;
 								break;
 							}
+
+							// give time to parrent
+							if(cbStatus)
+								cbStatus((float)i/(float)blockCount);
 						}
 					}
 
@@ -1169,175 +1167,193 @@ bool XYZV3::writeFirmware(const char *path)
 	return success;
 }
 
-const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
+bool XYZV3::convertFile(const char *inPath, const char *outPath)
 {
-	if(modelNum)
+	if(m_info && inPath && m_serial.isOpen())
 	{
-		for(int i=0; i<m_infoArrayLen; i++)
-		{
-			if(0 == strcmp(modelNum, m_infoArray[i].modelNum))
-			{
-				return &m_infoArray[i];
-			}
-		}
+		if(isGcodeFile(inPath))
+			return encryptFile(inPath, outPath);
+		else if(is3wFile(inPath))
+			return decryptFile(inPath, outPath);
 	}
 
-	return NULL;
+	return false;
 }
 
-bool XYZV3::encryptFile(const char *inPath, const char *outPath, const XYZPrinterInfo *info)
+bool XYZV3::isGcodeFile(const char *path)
+{
+	if(path)
+	{
+		const char *p = strrchr(path, '.');
+		if(p)
+			return 0 == strcmp(p, ".gcode") ||
+				   0 == strcmp(p, ".gco") ||
+				   0 == strcmp(p, ".g");
+	}
+
+	return false;
+}
+
+bool XYZV3::is3wFile(const char *path)
+{
+	if(path)
+	{
+		const char *p = strrchr(path, '.');
+		if(p)
+			return 0 == strcmp(p, ".3w");
+	}
+
+	return false;
+}
+
+bool XYZV3::encryptFile(const char *inPath, const char *outPath)
 {
 	bool success = false;
 	const int bodyOffset = 8192;
 
-	if(!info)
+	// for now encrypt the file for the connected printer
+	// someday we could allow user to specify the target machine
+	if(m_info && inPath && m_serial.isOpen())
 	{
-		if(m_info) // match the machine we are connected to
-			info = m_info;
-		else // default to miniMaker
-			info = modelToInfo("dv1MX0A000");
-	}
+		const char *fileNum = m_info->fileNum;
+		bool fileIsV5 = m_info->fileIsV5;
+		bool fileIsZip = m_info->fileIsZip;
 
-	if(info)
-	{
-		if(inPath)
+		// open our source file
+		FILE *fi = fopen(inPath, "rb");
+		if(fi)
 		{
-			// open our source file
-			FILE *fi = fopen(inPath, "rb");
-			if(fi)
+			// and write to disk
+			FILE *f = NULL;
+			if(outPath)
+				f = fopen(outPath, "wb");
+			else
 			{
-				// and write to disk
-				FILE *f = NULL;
-				if(outPath)
-					f = fopen(outPath, "wb");
-				else
+				char tPath[MAX_PATH] = "";
+				strcpy(tPath, inPath);
+				char *ptr = strrchr(tPath, '.');
+				if(!ptr)
+					ptr = tPath + strlen(tPath);
+				sprintf(ptr, ".3w");
+				f = fopen(tPath, "wb");
+			}
+
+			// and our destination file
+			if(f)
+			{
+				//==============================
+				// process the source gcode file
+
+				// get file length
+				fseek(fi, 0, SEEK_END);
+				int gcodeLen = ftell(fi);
+				fseek(fi, 0, SEEK_SET);
+
+				// grab gcode file data
+				char *gcode = new char[gcodeLen+1];
+				if(gcode)
 				{
-					char tPath[MAX_PATH] = "";
-					strcpy(tPath, inPath);
-					char *ptr = strrchr(tPath, '.');
-					if(!ptr)
-						ptr = tPath + strlen(tPath);
-					sprintf(ptr, ".3w");
-					f = fopen(tPath, "wb");
-				}
+					fread(gcode, 1, gcodeLen, fi);
+					gcode[gcodeLen] = '\0';
 
-				// and our destination file
-				if(f)
-				{
-					//==============================
-					// process the source gcode file
-
-					// get file length
-					fseek(fi, 0, SEEK_END);
-					int gcodeLen = ftell(fi);
-					fseek(fi, 0, SEEK_SET);
-
-					// grab gcode file data
-					char *gcode = new char[gcodeLen+1];
-					if(gcode)
+					// convert G0 commands to G1
+					// strip out print time info from header
+					// add back in print time info in xyz format
+					// work out length of header
+					// padd full file to 16 byte boundary buffer
+					int headerLen = 0, bodyLen = 0;
+					char *bodyBuf = NULL, *headerBuf = NULL;
+					if(processGCode(gcode, gcodeLen, fileNum, fileIsV5, fileIsZip, &headerBuf, &headerLen, &bodyBuf, &bodyLen))
 					{
-						fread(gcode, 1, gcodeLen, fi);
-						gcode[gcodeLen] = '\0';
+						//==================
+						// write header info
 
-						// convert G0 commands to G1
-						// strip out print time info from header
-						// add back in print time info in xyz format
-						// work out length of header
-						// padd full file to 16 byte boundary buffer
-						int headerLen = 0, bodyLen = 0;
-						char *bodyBuf = NULL, *headerBuf = NULL;
-						if(processGCode(gcode, gcodeLen, info, &headerBuf, &headerLen, &bodyBuf, &bodyLen))
-						{
-							//==================
-							// write header info
+						// write file id
+						fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), f);
 
-							// write file id
-							fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), f);
+						// id, what is this
+						writeByte(f, 1);
 
-							// id, what is this
-							writeByte(f, 1);
+						// file format version is 2 or 5
+						if(fileIsV5)
+							writeByte(f, 5);
+						else
+							writeByte(f, 2);
+						
+						// pad to 4 bytes
+						writeByte(f, 0);
+						writeByte(f, 0);
 
-							// file format version is 2 or 5
-							if(info->fileIsV5)
-								writeByte(f, 5);
-							else
-								writeByte(f, 2);
-							
-							// pad to 4 bytes
-							writeByte(f, 0);
-							writeByte(f, 0);
+						// offset to zip marker
+						int pos1 = ftell(f) + 4; // count from next byte after count
+						// force at least 16 bytes of padding, is this needed?
+						int zipOffset = roundUpTo16(pos1 + 4684) - pos1;
+						writeWord(f, zipOffset);
+						writeRepeatByte(f, 0, zipOffset);
 
-							// offset to zip marker
-							int pos1 = ftell(f) + 4; // count from next byte after count
-							// force at least 16 bytes of padding, is this needed?
-							int zipOffset = roundUpTo16(pos1 + 4684) - pos1;
-							writeWord(f, zipOffset);
-							writeRepeatByte(f, 0, zipOffset);
+						// zip format marker
+						if(fileIsZip)
+							fwrite("TagEa128", 1, strlen("TagEa128"), f);
+						else
+							fwrite("TagEJ256", 1, strlen("TagEJ256"), f);
 
-							// zip format marker
-							if(info->fileIsZip)
-								fwrite("TagEa128", 1, strlen("TagEa128"), f);
-							else
-								fwrite("TagEJ256", 1, strlen("TagEJ256"), f);
+						// optional header len
+						if(fileIsV5)
+							writeWord(f, headerLen);
 
-							// optional header len
-							if(info->fileIsV5)
-								writeWord(f, headerLen);
+						// offset to header
+						int pos2 = ftell(f) + 4; // count from next byte after count
+						// force at least 16 bytes of padding, is this needed?
+						int headerOffset = roundUpTo16(pos2 + 68) - pos2; 
+						writeWord(f, headerOffset);
 
-							// offset to header
-							int pos2 = ftell(f) + 4; // count from next byte after count
-							// force at least 16 bytes of padding, is this needed?
-							int headerOffset = roundUpTo16(pos2 + 68) - pos2; 
-							writeWord(f, headerOffset);
+						// mark current file location
+						int offset1 = ftell(f);
 
-							// mark current file location
-							int offset1 = ftell(f);
+						//?? 
+						if(fileIsV5)
+							writeWord(f, 1);
 
-							//?? 
-							if(info->fileIsV5)
-								writeWord(f, 1);
+						int crc32 = calcXYZcrc32(bodyBuf, bodyLen);
+						writeWord(f, crc32);
 
-							int crc32 = calcXYZcrc32(bodyBuf, bodyLen);
-							writeWord(f, crc32);
+						// zero pad to header offset
+						int pad1 = headerOffset - (ftell(f) - offset1);
+						writeRepeatByte(f, 0, pad1);
 
-							// zero pad to header offset
-							int pad1 = headerOffset - (ftell(f) - offset1);
-							writeRepeatByte(f, 0, pad1);
+						// write encrypted and padded header out
+						fwrite(headerBuf, 1, headerLen, f);
 
-							// write encrypted and padded header out
-							fwrite(headerBuf, 1, headerLen, f);
+						// mark current file location
+						int pad2 = bodyOffset - ftell(f);
+						// pad with zeros to start of body
+						writeRepeatByte(f, 0, pad2);
 
-							// mark current file location
-							int pad2 = bodyOffset - ftell(f);
-							// pad with zeros to start of body
-							writeRepeatByte(f, 0, pad2);
+						// write encrypted and padded body out
+						fwrite(bodyBuf, 1, bodyLen, f);
 
-							// write encrypted and padded body out
-							fwrite(bodyBuf, 1, bodyLen, f);
+						// yeay, it worked
+						success = true;
 
-							// yeay, it worked
-							success = true;
+						// cleanup
+						delete [] headerBuf;
+						headerBuf = NULL;
 
-							// cleanup
-							delete [] headerBuf;
-							headerBuf = NULL;
-
-							delete [] bodyBuf;
-							bodyBuf = NULL;
-						}
-
-						delete [] gcode;
-						gcode = NULL;
+						delete [] bodyBuf;
+						bodyBuf = NULL;
 					}
 
-					// clean up file data
-					fclose(f);
-					f = NULL;
+					delete [] gcode;
+					gcode = NULL;
 				}
 
-				fclose(fi);
-				fi = NULL;
+				// clean up file data
+				fclose(f);
+				f = NULL;
 			}
+
+			fclose(fi);
+			fi = NULL;
 		}
 	}
 
@@ -1441,7 +1457,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					pkcs7unpad(hbuf, headerLen);
 
 					//****FixMe, do something with it
-					printf(hbuf);
+					DebugPrint(hbuf);
 
 					delete [] hbuf;
 					hbuf = NULL;
@@ -1460,7 +1476,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					bbuf[bodyLen] = '\0';
 
 					if(crc32 != calcXYZcrc32(bbuf, bodyLen))
-						printf("crc's don't match!!!\n");
+						DebugPrint("crc's don't match!!!\n");
 
 					if(isZip)
 					{
@@ -1543,10 +1559,9 @@ const char* XYZV3::waitForLine(bool waitForEndCom, int timeout_s)
 	if(m_serial.isOpen())
 	{
 		// only try so many times for the answer
-		time_t end = time(NULL) + timeout_s + 1;
-		while(time(NULL) < end)
+		float end = msTime::getTime_s() + timeout_s;
+		while(msTime::getTime_s() < end)
 		{
-			Sleep(10);
 			if(m_serial.readSerialLine(buf, len))
 			{
 				if(buf[0] == '$')
@@ -1556,26 +1571,27 @@ const char* XYZV3::waitForLine(bool waitForEndCom, int timeout_s)
 
 				break;
 			}
+			Sleep(1);
 		}
-		if(time(NULL) >= end)
-			printf("waitForLine, timeout triggered %d\n", timeout_s);
+		if(msTime::getTime_s() >= end)
+			DebugPrint("waitForLine, timeout triggered %d\n", timeout_s);
 
 		if(waitForEndCom)
 		{
 			// check for '$' indicating end of message
 			char buf2[len];
-			end = time(NULL) + timeout_s + 1;
-			while(time(NULL) < end)
+			end = msTime::getTime_s() + timeout_s;
+			while(msTime::getTime_s() < end)
 			{
-				Sleep(10);
 				if(m_serial.readSerialLine(buf2, len))
 				{
 					if(buf2[0] == '$')
 						return buf;
 				}
+				Sleep(1);
 			}
-			if(time(NULL) >= end)
-				printf("waitForLine $ timeout triggered %d\n", timeout_s);
+			if(msTime::getTime_s() >= end)
+				DebugPrint("waitForLine $ timeout triggered %d\n", timeout_s);
 		}
 	}
 
@@ -1603,8 +1619,8 @@ bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, 
 		static const int len = 1024;
 		char tVal[len];
 
-		time_t end = time(NULL) + timeout_s + 1;
-		while(time(NULL) < end)
+		float end = msTime::getTime_s() + timeout_s;
+		while(msTime::getTime_s() < end)
 		{
 			const char* buf = waitForLine(waitForEndCom, timeout_s);
 			if(getJsonVal(buf, key, tVal))
@@ -1856,13 +1872,14 @@ bool XYZV3::checkLineIsHeader(const char* lineBuf)
 	return true; // else just white space, assume header
 }
 
-bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinterInfo *info,  char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen)
+bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen)
 {
+	
 	const int lineLen = 1024;
 	char lineBuf[lineLen];
 
 	// validate parameters
-	if(gcode && gcodeLen > 1 && info && headerBuf && headerLen && bodyBuf && bodyLen)
+	if(gcode && gcodeLen > 1 && headerBuf && headerLen && bodyBuf && bodyLen)
 	{
 		// parse header once to get info on print time
 		int printTime = 1;
@@ -1912,7 +1929,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 			// must come first or printer will fail
 			bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
 			bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", info->fileNum);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", fileNum);
 			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilamen);
 
 			bool isHeader = true;
@@ -1978,7 +1995,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 
 				// encrypt the header in CBC mode
 				// it appears that v5 files don't always encrypt
-				if(!info->fileIsV5)
+				if(!fileIsV5)
 				{
 				    struct AES_ctx ctx;
 					uint8_t iv[16] = {0}; // 16 zeros
@@ -1991,7 +2008,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 				//============
 				// fix up body
 
-				if(info->fileIsZip)
+				if(fileIsZip)
 				{
 					// not finished, can't count on this code
 					assert(false);
@@ -2048,4 +2065,41 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const XYZPrinter
 	}
 
 	return false;
+}
+
+const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
+{
+	if(modelNum)
+	{
+		for(int i=0; i<m_infoArrayLen; i++)
+		{
+			if(0 == strcmp(modelNum, m_infoArray[i].modelNum))
+			{
+				return &m_infoArray[i];
+			}
+		}
+	}
+
+	return NULL;
+}
+
+#define ERR_C_BUFFER_SIZE 2048
+void XYZV3::DebugPrint(char *format, ...)
+{
+	char msgBuf[ERR_C_BUFFER_SIZE];
+	va_list arglist;
+
+	va_start(arglist, format);
+	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+	msgBuf[sizeof(msgBuf)-1] = '\0';
+	va_end(arglist);
+
+#if 1
+	// dump to debug log
+	OutputDebugString(msgBuf);
+	OutputDebugString("\n");
+#else
+	// dump to console
+	printf("%s\n", msgBuf);
+#endif
 }
