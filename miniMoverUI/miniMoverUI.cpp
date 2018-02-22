@@ -112,6 +112,7 @@ HTREEITEM treeAddNode(HWND hTree, HTREEITEM parrent, bool expand, bool leaf, con
 void MainDlgUpdateStatusTree(const XYZPrinterState *st, const XYZPrinterInfo *inf)
 {
 	HTREEITEM root, first;
+	int d, h, m;
 
 	if(hwndTreeInfo && st && inf)
 	{
@@ -126,7 +127,6 @@ void MainDlgUpdateStatusTree(const XYZPrinterState *st, const XYZPrinterInfo *in
 
 		root = treeAddNode(hwndTreeInfo, NULL, true, false, "Machine Info");
 
-		// XYZPrinterInfo constants
 		treeAddNode(hwndTreeInfo, root, true, false, "Name: %s", inf->screenName);
 		//treeAddNode(hwndTreeInfo, root, true, false, "Given name: %s", st->machineName);
 		//treeAddNode(hwndTreeInfo, root, true, false, "Model num: %s", st->info.modelNum);
@@ -138,20 +138,16 @@ void MainDlgUpdateStatusTree(const XYZPrinterState *st, const XYZPrinterInfo *in
 		treeAddNode(hwndTreeInfo, root, true, false, "Fillament serial: %s", st->filamentSerialNumber);
 		treeAddNode(hwndTreeInfo, root, true, false, "Nozel serial: %s", st->nozelSerialNumber);
 		treeAddNode(hwndTreeInfo, root, true, false, "Firmware ver: %s", st->firmwareVersion);
+		treeAddNode(hwndTreeInfo, root, true, false, "Nozel ID: %d", st->nozelID);
+		treeAddNode(hwndTreeInfo, root, true, false, "Nozel Diam: %0.2f mm", st->nozelDiameter_mm);
 
+		treeAddNode(hwndTreeInfo, root, true, false, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
 		treeAddNode(hwndTreeInfo, root, true, false, "File is v5: %d", inf->fileIsV5);
 		treeAddNode(hwndTreeInfo, root, true, false, "File is zip: %d", inf->fileIsZip);
 		//treeAddNode(hwndTreeInfo, root, true, false, "Com is v3: %d", inf->comIsV3);
-		treeAddNode(hwndTreeInfo, root, true, false, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
-
-		// XYZPrinterState
-		treeAddNode(hwndTreeInfo, root, true, false, "Bed temp: %d C", st->bedTemp_C);
-		treeAddNode(hwndTreeInfo, root, true, false, "Extruder temp: %d/%d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
-		treeAddNode(hwndTreeInfo, root, true, false, "Fillament remain: %0.3f m", st->fillimantRemaining_mm / 1000.0f);
-
 		treeAddNode(hwndTreeInfo, root, true, false, "Is PLA: %d", st->isFillamentPLA);
-		treeAddNode(hwndTreeInfo, root, true, false, "Nozel ID: %d", st->nozelID);
-		treeAddNode(hwndTreeInfo, root, true, false, "Nozel Diam: %0.2f mm", st->nozelDiameter_mm);
+		treeAddNode(hwndTreeInfo, root, true, false, "Packet size: %d", st->packetSize);
+
 		treeAddNode(hwndTreeInfo, root, true, false, "Calib: %d,%d,%d,%d,%d,%d,%d,%d,%d", 
 														st->calib[0], st->calib[1], st->calib[2],
 														st->calib[3], st->calib[4], st->calib[5],
@@ -159,17 +155,37 @@ void MainDlgUpdateStatusTree(const XYZPrinterState *st, const XYZPrinterInfo *in
 		treeAddNode(hwndTreeInfo, root, true, false, "Auto level: %d", st->autoLevelEnabled);
 		treeAddNode(hwndTreeInfo, root, true, false, "Buzzer: %d", st->buzzerEnabled);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Print complete: %d %", st->printPercentComplete);
-		treeAddNode(hwndTreeInfo, root, true, false, "Print elapsed: %d min", st->printElapsedTime_m);
-		treeAddNode(hwndTreeInfo, root, true, false, "Print remain: %d min", st->printTimeLeft_m);
+		d =  st->printerLifetimePowerOnTime_min / (60 * 24);
+		h = (st->printerLifetimePowerOnTime_min / 60) % 24;
+		m =  st->printerLifetimePowerOnTime_min % 60;
+		treeAddNode(hwndTreeInfo, root, true, false, "Lifetime on: %d d %d h %d m", d, h, m);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Error: %d", st->errorStatus);
+		d =  st->printerLastPowerOnTime_min / (60 * 24);
+		h = (st->printerLastPowerOnTime_min / 60) % 24;
+		m =  st->printerLastPowerOnTime_min % 60;
+		treeAddNode(hwndTreeInfo, root, true, false, "Last power on: %d d %d h %d m", d, h, m);
+
+		d =  st->extruderLifetimePowerOnTime_min / (60 * 24);
+		h = (st->extruderLifetimePowerOnTime_min / 60) % 24;
+		m =  st->extruderLifetimePowerOnTime_min % 60;
+		treeAddNode(hwndTreeInfo, root, true, false, "Power on: %d d %d h %d m", d, h, m);
+
+		treeAddNode(hwndTreeInfo, root, true, false, "Bed temp: %d C", st->bedTemp_C);
+		treeAddNode(hwndTreeInfo, root, true, false, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
+		treeAddNode(hwndTreeInfo, root, true, false, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
+
+		treeAddNode(hwndTreeInfo, root, true, false, "Print pct complete: %d %%", st->printPercentComplete);
+
+		h = st->printElapsedTime_m / 60;
+		m = st->printElapsedTime_m % 60;
+		treeAddNode(hwndTreeInfo, root, true, false, "Print elapsed: %d h %d m", h, m);
+
+		h = st->printTimeLeft_m / 60;
+		m = st->printTimeLeft_m % 60;
+		treeAddNode(hwndTreeInfo, root, true, false, "Print remain: %d h %d m", h, m);
+
+		treeAddNode(hwndTreeInfo, root, true, false, "Error: 0x%08x", st->errorStatus);
 		treeAddNode(hwndTreeInfo, root, true, false, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
-		treeAddNode(hwndTreeInfo, root, true, false, "Packet size: %d", st->packetSize);
-		//****FixMe, convert these to day/hour/min
-		treeAddNode(hwndTreeInfo, root, true, false, "Lifetime on: %d min", st->printerLifetimePowerOnTime_min);
-		treeAddNode(hwndTreeInfo, root, true, false, "Last power on: %d min", st->printerLastPowerOnTime_min);
-		treeAddNode(hwndTreeInfo, root, true, false, "Power on: %d min", st->extruderLifetimePowerOnTime_min);
 
 		// scroll tree
 		TreeView_SelectSetFirstVisible(hwndTreeInfo, first);

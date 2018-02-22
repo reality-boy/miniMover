@@ -455,7 +455,7 @@ float XYZV3::nozelIDToDiameter(int id)
 		return 0.8f;
 	}
 
-	return -1;
+	return -1.0f;
 }
 
 const char* XYZV3::statusCodesToStr(int status, int subStatus)
