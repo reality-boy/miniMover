@@ -6,7 +6,6 @@
 
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 
-//#pragma warning(disable: 4995)
 #pragma warning(disable: 4996) // disable deprecated warning 
 #pragma warning(disable: 4800)
 
@@ -43,14 +42,18 @@
 
 XYZV3 xyz;
 
-bool g_guiNeesUpdate = true;
+int g_timerInterval = 500;
+
 bool g_threadRunning = false;
 
 const int g_maxPorts = 24;
 int g_comIDtoPort[g_maxPorts] = {-1};
 
+UINT_PTR g_timer = 0;
+int g_printPct = 0;
+
 // controls
-HWND hwndTreeInfo = NULL;
+HWND hwndListInfo = NULL;
 
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
@@ -58,7 +61,7 @@ HCURSOR defaultCursor;
 // source
 
 #define ERR_C_BUFFER_SIZE 2048
-void DebugPrint(char *format, ...)
+void debugPrint(char *format, ...)
 {
 	char msgBuf[ERR_C_BUFFER_SIZE];
 	va_list arglist;
@@ -68,136 +71,114 @@ void DebugPrint(char *format, ...)
 	msgBuf[sizeof(msgBuf)-1] = '\0';
 	va_end(arglist);
 
+#ifdef _CONSOLE
+	printf("%s\n",msgBuf);
+#else
 	OutputDebugString(msgBuf);
-	OutputDebugString("\n");
+#endif
 }
-
-//-------------------------------------------
-// printing dialog
-
 
 //-------------------------------------------
 // main dialog
 
-HTREEITEM treeAddNode(HWND hTree, HTREEITEM parrent, bool expand, bool leaf, const char *format, ...)
+void listAddLine(HWND hList, const char *format, ...)
 {
-	TVINSERTSTRUCT tvnode;
-	HTREEITEM hRet = NULL;
-
 	char msgBuf[ERR_C_BUFFER_SIZE];
 	va_list arglist;
 
-	if(hTree)
+	if(hList)
 	{
 		va_start(arglist, format);
 		_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		(void)leaf; //****FixMe, set icon based on this
-		tvnode.hParent = parrent;
-		tvnode.hInsertAfter = TVI_LAST;
-		tvnode.item.mask = TVIF_TEXT | TVIF_STATE;
-		tvnode.item.pszText = msgBuf;
-		tvnode.item.cchTextMax = 0;
-		tvnode.item.state = (expand) ? TVIS_EXPANDED : 0;
-		tvnode.item.stateMask = TVIS_EXPANDED;
-		hRet = TreeView_InsertItem(hTree, &tvnode);
+		SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)msgBuf);
 	}
-
-	return hRet;
 }
 
-
-void MainDlgUpdateStatusTree(const XYZPrinterState *st, const XYZPrinterInfo *inf)
+void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrinterInfo *inf)
 {
-	HTREEITEM root, first;
 	int d, h, m;
 
-	if(hwndTreeInfo && st && inf)
+	if(hwndListInfo && st && inf)
 	{
 		// don't repaint till we are done drawing
-		LockWindowUpdate(hwndTreeInfo);
+		SetWindowRedraw(hwndListInfo, FALSE);
 
-		// get scroll bar position
-		first = TreeView_GetFirstVisible(hwndTreeInfo);
+		int index = ListBox_GetTopIndex(hwndListInfo);
+		SendMessage(hwndListInfo, LB_RESETCONTENT, 0, 0);
 
-		//empty the tree
-		TreeView_DeleteItem(hwndTreeInfo, NULL);
+		listAddLine(hwndListInfo, "Name: %s", inf->screenName);
+		//listAddLine(hwndListInfo, "Given name: %s", st->machineName);
+		//listAddLine(hwndListInfo, "Model num: %s", st->info.modelNum);
+		listAddLine(hwndListInfo, "Model num: %s", st->machineModelNumber);
+		listAddLine(hwndListInfo, "File id: %s", inf->fileNum);
+		//listAddLine(hwndListInfo, "Serial num: %s", st->info.serialNum);
+		listAddLine(hwndListInfo, "Serial num: %s", st->machineSerialNum);
 
-		root = treeAddNode(hwndTreeInfo, NULL, true, false, "Machine Info");
+		listAddLine(hwndListInfo, "Fillament serial: %s", st->filamentSerialNumber);
+		listAddLine(hwndListInfo, "Nozel serial: %s", st->nozelSerialNumber);
+		listAddLine(hwndListInfo, "Firmware ver: %s", st->firmwareVersion);
+		listAddLine(hwndListInfo, "Nozel ID: %d", st->nozelID);
+		listAddLine(hwndListInfo, "Nozel Diam: %0.2f mm", st->nozelDiameter_mm);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Name: %s", inf->screenName);
-		//treeAddNode(hwndTreeInfo, root, true, false, "Given name: %s", st->machineName);
-		//treeAddNode(hwndTreeInfo, root, true, false, "Model num: %s", st->info.modelNum);
-		treeAddNode(hwndTreeInfo, root, true, false, "Model num: %s", st->machineModelNumber);
-		treeAddNode(hwndTreeInfo, root, true, false, "File id: %s", inf->fileNum);
-		//treeAddNode(hwndTreeInfo, root, true, false, "Serial num: %s", st->info.serialNum);
-		treeAddNode(hwndTreeInfo, root, true, false, "Serial num: %s", st->machineSerialNum);
+		listAddLine(hwndListInfo, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
+		listAddLine(hwndListInfo, "File is v5: %d", inf->fileIsV5);
+		listAddLine(hwndListInfo, "File is zip: %d", inf->fileIsZip);
+		//listAddLine(hwndListInfo, "Com is v3: %d", inf->comIsV3);
+		listAddLine(hwndListInfo, "Is PLA: %d", st->isFillamentPLA);
+		listAddLine(hwndListInfo, "Packet size: %d", st->packetSize);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Fillament serial: %s", st->filamentSerialNumber);
-		treeAddNode(hwndTreeInfo, root, true, false, "Nozel serial: %s", st->nozelSerialNumber);
-		treeAddNode(hwndTreeInfo, root, true, false, "Firmware ver: %s", st->firmwareVersion);
-		treeAddNode(hwndTreeInfo, root, true, false, "Nozel ID: %d", st->nozelID);
-		treeAddNode(hwndTreeInfo, root, true, false, "Nozel Diam: %0.2f mm", st->nozelDiameter_mm);
-
-		treeAddNode(hwndTreeInfo, root, true, false, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
-		treeAddNode(hwndTreeInfo, root, true, false, "File is v5: %d", inf->fileIsV5);
-		treeAddNode(hwndTreeInfo, root, true, false, "File is zip: %d", inf->fileIsZip);
-		//treeAddNode(hwndTreeInfo, root, true, false, "Com is v3: %d", inf->comIsV3);
-		treeAddNode(hwndTreeInfo, root, true, false, "Is PLA: %d", st->isFillamentPLA);
-		treeAddNode(hwndTreeInfo, root, true, false, "Packet size: %d", st->packetSize);
-
-		treeAddNode(hwndTreeInfo, root, true, false, "Calib: %d,%d,%d,%d,%d,%d,%d,%d,%d", 
+		listAddLine(hwndListInfo, "Calib: %d,%d,%d,%d,%d,%d,%d,%d,%d", 
 														st->calib[0], st->calib[1], st->calib[2],
 														st->calib[3], st->calib[4], st->calib[5],
 														st->calib[6], st->calib[7], st->calib[8]);
-		treeAddNode(hwndTreeInfo, root, true, false, "Auto level: %d", st->autoLevelEnabled);
-		treeAddNode(hwndTreeInfo, root, true, false, "Buzzer: %d", st->buzzerEnabled);
+		listAddLine(hwndListInfo, "Auto level: %d", st->autoLevelEnabled);
+		listAddLine(hwndListInfo, "Buzzer: %d", st->buzzerEnabled);
+		listAddLine(hwndListInfo, "Z Offset: %d", st->zOffset);
 
 		d =  st->printerLifetimePowerOnTime_min / (60 * 24);
 		h = (st->printerLifetimePowerOnTime_min / 60) % 24;
 		m =  st->printerLifetimePowerOnTime_min % 60;
-		treeAddNode(hwndTreeInfo, root, true, false, "Lifetime on: %d d %d h %d m", d, h, m);
+		listAddLine(hwndListInfo, "Lifetime on: %d d %d h %d m", d, h, m);
 
 		d =  st->printerLastPowerOnTime_min / (60 * 24);
 		h = (st->printerLastPowerOnTime_min / 60) % 24;
 		m =  st->printerLastPowerOnTime_min % 60;
-		treeAddNode(hwndTreeInfo, root, true, false, "Last power on: %d d %d h %d m", d, h, m);
+		listAddLine(hwndListInfo, "Last power on: %d d %d h %d m", d, h, m);
 
 		d =  st->extruderLifetimePowerOnTime_min / (60 * 24);
 		h = (st->extruderLifetimePowerOnTime_min / 60) % 24;
 		m =  st->extruderLifetimePowerOnTime_min % 60;
-		treeAddNode(hwndTreeInfo, root, true, false, "Power on: %d d %d h %d m", d, h, m);
+		listAddLine(hwndListInfo, "Power on: %d d %d h %d m", d, h, m);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Bed temp: %d C", st->bedTemp_C);
-		treeAddNode(hwndTreeInfo, root, true, false, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
-		treeAddNode(hwndTreeInfo, root, true, false, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
+		listAddLine(hwndListInfo, "Bed temp: %d C", st->bedTemp_C);
+		listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
+		listAddLine(hwndListInfo, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Print pct complete: %d %%", st->printPercentComplete);
+		listAddLine(hwndListInfo, "Print pct complete: %d %%", st->printPercentComplete);
 
 		h = st->printElapsedTime_m / 60;
 		m = st->printElapsedTime_m % 60;
-		treeAddNode(hwndTreeInfo, root, true, false, "Print elapsed: %d h %d m", h, m);
+		listAddLine(hwndListInfo, "Print elapsed: %d h %d m", h, m);
 
 		h = st->printTimeLeft_m / 60;
 		m = st->printTimeLeft_m % 60;
-		treeAddNode(hwndTreeInfo, root, true, false, "Print remain: %d h %d m", h, m);
+		listAddLine(hwndListInfo, "Print remain: %d h %d m", h, m);
 
-		treeAddNode(hwndTreeInfo, root, true, false, "Error: 0x%08x", st->errorStatus);
-		treeAddNode(hwndTreeInfo, root, true, false, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
+		listAddLine(hwndListInfo, "Error: 0x%08x", st->errorStatus);
+		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
 
-		// scroll tree
-		TreeView_SelectSetFirstVisible(hwndTreeInfo, first);
-
+		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
-		LockWindowUpdate(NULL);
+		SetWindowRedraw(hwndListInfo, TRUE);
 	}
 }
 
+
 void MainDlgSetStatus(HWND hDlg, const char *msg)
 {
-	 
 	SendDlgItemMessage(hDlg, IDC_STATIC_STATUS, WM_SETTEXT, 0, (LPARAM)msg);
 }
 
@@ -227,6 +208,31 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
 }
 
+void MainDlgUpdate(HWND hDlg)
+{
+	// don't set wait cursor since this triggers 2x a second
+	if(!g_threadRunning && xyz.updateStatus())
+	{
+		const XYZPrinterState *st = xyz.getPrinterState();
+		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
+
+		if(st->isValid)
+		{
+			MainDlgUpdateStatusList(hDlg, st, inf);
+
+			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->buzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->autoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+
+			SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
+
+			int pct = max(g_printPct, st->printPercentComplete);
+			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
+		}
+	}
+	else
+		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+}
+
 void MainDlgConnect(HWND hDlg)
 {
 	int comID = SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_GETCURSEL, 0, 0);
@@ -237,36 +243,17 @@ void MainDlgConnect(HWND hDlg)
 		MainDlgSetStatus(hDlg, "connected");
 	else
 		MainDlgSetStatus(hDlg, "not connected");
-
-	g_guiNeesUpdate = true;
 }
 
-void MainDlgUpdate(HWND hDlg)
+void setZOffset(HWND hDlg)
 {
-	(void)hDlg;
-
-	if(g_guiNeesUpdate)
-	{
-		g_guiNeesUpdate = false;
-
-		SetCursor(waitCursor);
-		if(xyz.updateStatus())
-		{
-			const XYZPrinterState *st = xyz.getPrinterState();
-			const XYZPrinterInfo *inf = xyz.getPrinterInfo();
-
-			if(st->isValid)
-			{
-				MainDlgUpdateStatusTree(st, inf);
-
-				SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->buzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
-				SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->autoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
-
-				SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
-			}
-		}
-		SetCursor(defaultCursor);
-	}
+	SetCursor(waitCursor);
+	MainDlgSetStatus(hDlg, "set z-offset");
+	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
+		MainDlgSetStatus(hDlg, "set z-offset complete");
+	else
+		MainDlgSetStatus(hDlg, "set z-offset failed");
+	SetCursor(defaultCursor);
 }
 
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -280,9 +267,9 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MainDlgUpdateComDropdown(hDlg);
 			MainDlgConnect(hDlg);
 
-			hwndTreeInfo = GetDlgItem(hDlg, IDC_TREE_STATUS);
-			if(hwndTreeInfo) // may help reduce flicker
-				TreeView_SetExtendedStyle(hwndTreeInfo, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
+			hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
+
+			g_timer = SetTimer(hDlg, NULL, g_timerInterval, NULL);
 
 			SendDlgItemMessage(hDlg, IDC_SPIN_ZOFF, UDM_SETRANGE, 0, MAKELONG( 1000, 1));
             break;
@@ -295,6 +282,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_CLOSE:
 			DestroyWindow(hDlg);
 			xyz.disconnect();
+
+			KillTimer(hDlg, g_timer);
 	        return TRUE;
 
         case WM_ACTIVATE:
@@ -316,30 +305,28 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			SetCursor(defaultCursor);
 			break;
 
+		case  WM_TIMER:
+			MainDlgUpdate(hDlg);
+			break;
+
+		case  WM_VSCROLL:
+			//****FixMe, how do I id what spin control triggered?
+            if(LOWORD(wParam) == SB_ENDSCROLL)
+				setZOffset(hDlg);
+			break;
+
         case WM_COMMAND:
 
-			//MessageBeep(MB_ICONEXCLAMATION);
-			// do nothing if thread alrady running
-			if(g_threadRunning)
+			if(g_threadRunning && LOWORD(wParam) != IDCANCEL)
 				break;
 
             switch(LOWORD(wParam))
             {
 			case IDOK:
 				if(GetFocus() == GetDlgItem(hDlg, IDC_EDIT_ZOFF))
-				{
-					SetCursor(waitCursor);
-					MainDlgSetStatus(hDlg, "set z-offset");
-					if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
-					{
-						MainDlgSetStatus(hDlg, "set z-offset complete");
-						g_guiNeesUpdate = true;
-					}
-					else
-						MainDlgSetStatus(hDlg, "set z-offset failed");
-					SetCursor(defaultCursor);
-				}
+					setZOffset(hDlg);
 				break;
+
             case IDCANCEL:
                 EndDialog(hDlg, 0);
                 break;
@@ -349,10 +336,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					MainDlgConnect(hDlg);
 				else if(HIWORD(wParam) == CBN_DROPDOWN)
 					MainDlgUpdateComDropdown(hDlg);
-				break;
-
-			case IDC_BUTTON_REFRESH:
-				g_guiNeesUpdate = true;
 				break;
 
 			case IDC_BUTTON_PRINT:
@@ -365,6 +348,36 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					SetCursor(defaultCursor);
 					MainDlgSetStatus(hDlg, "print failed");
 				}
+				break;
+
+			case IDC_BUTTON_PAUSE:
+				MainDlgSetStatus(hDlg, "pause print");
+				SetCursor(waitCursor);
+				if(xyz.pausePrint())
+					MainDlgSetStatus(hDlg, "print paused");
+				else
+					MainDlgSetStatus(hDlg, "pause print failed");
+				SetCursor(defaultCursor);
+				break;
+
+			case IDC_BUTTON_RESUME:
+				MainDlgSetStatus(hDlg, "resume print");
+				SetCursor(waitCursor);
+				if(xyz.resumePrint())
+					MainDlgSetStatus(hDlg, "print resumed");
+				else
+					MainDlgSetStatus(hDlg, "resume print failed");
+				SetCursor(defaultCursor);
+				break;
+
+			case IDC_BUTTON_CANCEL:
+				MainDlgSetStatus(hDlg, "cancel print");
+				SetCursor(waitCursor);
+				if(xyz.cancelPrint())
+					MainDlgSetStatus(hDlg, "print canceld");
+				else
+					MainDlgSetStatus(hDlg, "cancel print failed");
+				SetCursor(defaultCursor);
 				break;
 
 			case IDC_BUTTON_CONVERT:
@@ -445,18 +458,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			case IDC_EDIT_ZOFF:
 				if(HIWORD(wParam) == EN_KILLFOCUS)
-				{
-					SetCursor(waitCursor);
-					MainDlgSetStatus(hDlg, "set z-offset");
-					if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
-					{
-						MainDlgSetStatus(hDlg, "set z-offset complete");
-						g_guiNeesUpdate = true;
-					}
-					else
-						MainDlgSetStatus(hDlg, "set z-offset failed");
-					SetCursor(defaultCursor);
-				}
+					setZOffset(hDlg);
 				break;
 
 			case IDC_BUTTON_HOME: 
@@ -536,7 +538,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					xyz.enableAutoLevel(true);
 				else
 					xyz.enableAutoLevel(false);
-				g_guiNeesUpdate = true;
 				SetCursor(defaultCursor);
 				break;
 
@@ -548,7 +549,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				else
 					xyz.enableBuzzer(false);
 				SetCursor(defaultCursor);
-				g_guiNeesUpdate = true;
 				break;
 
 			//xyz.restoreDefaults();
@@ -582,45 +582,24 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 
 	timeBeginPeriod(1); // get 1 millisecond timers
 
-    HWND main_hWnd = CreateDialog(hInst, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, MainDlgProc);
-
-    int status = 1;
-    if(main_hWnd)
+    HWND hDlg = CreateDialog(hInst, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, MainDlgProc);
+    if(hDlg)
     {
-	    MSG  msg;
-	    while(status > 0)
+		MSG msg;
+		while(GetMessage(&msg, 0, 0, 0) > 0)
 		{
-			//don't let windows stop us from processing messages
-			int maxCount = 50;
-
-			//peak so we don't stall waiting for a message from windows
-			//but pump all windows messages
-			while(--maxCount && 
-				status > 0 &&  
-				PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) 
-			{  
-				//crank message pump to make windows happy
-				status = GetMessage (& msg, 0, 0, 0);
-				if(status > 0)
-			    {
-			        if (!IsDialogMessage (main_hWnd, & msg))
-			        {
-			            TranslateMessage ( & msg );
-			            DispatchMessage ( & msg );
-			        }
-			    }
-			}  
-
-			// do the real work
-			MainDlgUpdate(main_hWnd);
-
-			Sleep(100);
+			if(!IsDialogMessage(hDlg, &msg)) 
+			{
+				TranslateMessage(&msg); /* translate virtual-key messages */
+				DispatchMessage(&msg); /* send it to dialog procedure */
+			}
 		}
+
 		//do shut down code here
-		DestroyWindow(main_hWnd);
+		DestroyWindow(hDlg);
     }
 
 	timeEndPeriod(1); // release 1 millisecond timer
 
-	return status;
+	return 0;
 }

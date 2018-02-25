@@ -109,6 +109,8 @@ bool printStatus()
 
 			printf("Auto level %s\n", (st->autoLevelEnabled) ? "enabled" : "disabled");
 
+			printf("Z-Offset %d\n", st->zOffset);
+
 			printf("Model number: %s\n", st->machineModelNumber);
 
 			if(inf)

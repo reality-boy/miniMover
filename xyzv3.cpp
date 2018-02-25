@@ -11,6 +11,9 @@
 
 #pragma warning(disable:4996) // live on the edge!
 
+//****FixMe, rather than calling clearSerial() we
+// should check what data was left over and assert!
+
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//modelNum,    fileNum,        serialNum, screenName,       fileIsV5, fileIsZip, comIsV3, length, width, height
 	//  older communication protocol
@@ -52,10 +55,19 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 XYZV3::XYZV3() 
 {
 	memset(&m_status, 0, sizeof(m_status));
+	ghMutex = CreateMutex(NULL, FALSE, NULL);
+} 
+
+XYZV3::~XYZV3() 
+{
+	CloseHandle(ghMutex);
 } 
 
 bool XYZV3::connect(int port)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	// try to find a good default
 	if(port < 0)
 		port = XYZV3::refreshPortList();
@@ -65,15 +77,19 @@ bool XYZV3::connect(int port)
 		m_serial.clearSerial();
 		if(updateStatus())
 		{
-			return true;
+			success = true;
 		}
 	}
-	return false;
+
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 void XYZV3::disconnect()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	m_serial.closePort();
+	ReleaseMutex(ghMutex);
 }
 
 bool XYZV3::isConnected()
@@ -102,8 +118,13 @@ const char* XYZV3::getPortName(int id)
 }
 bool XYZV3::updateStatus()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		static const int len = 1024;
 		char buf[len];
 		const char *strPtr = NULL;
@@ -355,8 +376,8 @@ bool XYZV3::updateStatus()
 				case 'x': break; // unused
 				case 'y': break; // unused
 
-				case 'z': // ????
-					sscanf(buf, "z:%d", &d1);
+				case 'z': // z offset
+					sscanf(buf, "z:%d", &m_status.zOffset);
 					break;
 
 				// case 'A' to 'K' unused
@@ -422,19 +443,17 @@ bool XYZV3::updateStatus()
 					break;
 
 				default:
-					DebugPrint("unknown string: %s\n", buf);
+					debugPrint("unknown string: %s\n", buf);
 					break;
 				}
 			}
 		}
 
-		// go ahead and pull ZOffset while we are here
-		m_status.zOffset = getZOffset();
-
-		return true;
+		success = true;
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 float XYZV3::nozelIDToDiameter(int id)
@@ -562,10 +581,13 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 // call to start calibration
 bool XYZV3::calibrateBedStart()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=calibratejr:new");
 		if(waitForJsonVal("stat", "start", true) &&
 		   waitForJsonVal("stat", "pressdetector", true, 120))
@@ -574,16 +596,20 @@ bool XYZV3::calibrateBedStart()
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 // ask user to lower detector, then call this
 bool XYZV3::calibrateBedRun()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=calibratejr:detectorok");
 		if( waitForJsonVal("stat", "processing", true) &&
 			waitForJsonVal("stat", "ok", true, 240))
@@ -592,16 +618,20 @@ bool XYZV3::calibrateBedRun()
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 // ask user to raise detector, then call this
 bool XYZV3::calibrateBedFinish()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		// back out of calibration
 		m_serial.writeSerial("XYZv3/action=calibratejr:release");
 		waitForJsonVal("stat", "complete", true);
@@ -609,15 +639,19 @@ bool XYZV3::calibrateBedFinish()
 		success = true;
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::cleanNozzleStart()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=cleannozzle:new");
 		if( waitForJsonVal("stat", "start", true) &&
 			waitForJsonVal("stat", "complete", true, 120)) // wait for nozzle to heat up //****FixMe, show temp...
@@ -626,82 +660,106 @@ bool XYZV3::cleanNozzleStart()
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::cleanNozzleFinish()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		// always clear out state
 		m_serial.writeSerial("XYZv3/action=cleannozzle:cancel");
 		if(waitForJsonVal("stat", "ok", true))
 			success = true;
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::homePrinter()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=home");
 		if( waitForJsonVal("stat", "start", true) &&
 			waitForJsonVal("stat", "complete", true, 120))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::jogPrinter(char axis, int dist_mm)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
 			axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm));
 		if( waitForJsonVal("stat", "start", true) &&
 			waitForJsonVal("stat", "complete", true, 120))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::unloadFillament()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=unload:new");
 		if( waitForJsonVal("stat", "start", true) &&
 			// waitForJsonVal("stat", "heat", true, 120) && // extemp:22
 			waitForJsonVal("stat", "unload", true, 240) &&
 			waitForJsonVal("stat", "complete", true, 240))
 		{
-			return true;
+			success = true;
 		}
+
+		// clear out state
+		//m_serial.writeSerial("XYZv3/action=unload:cancel");
+		//waitForJsonVal("stat", "complete", true);
 	}
 
-	// clear out state
-	//m_serial.writeSerial("XYZv3/action=unload:cancel");
-	//waitForJsonVal("stat", "complete", true);
-
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::loadFillamentStart()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerial("XYZv3/action=load:new");
 		if( waitForJsonVal("stat", "start", true) &&
 			//waitForJsonVal("stat", "heat", true, 120) && // extemp:26
@@ -711,165 +769,229 @@ bool XYZV3::loadFillamentStart()
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::loadFillamentFinish()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		// always clear out state
 		m_serial.writeSerial("XYZv3/action=load:cancel");
 		if(waitForJsonVal("stat", "complete", true))
 			success = true;
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 int XYZV3::incrementZOffset(bool up)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	int ret = -1;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/action=zoffset:%s", (up) ? "up" : "down");
 		const char* buf = waitForLine(true);
 		if(*buf)
 		{
-			int ret = atoi(buf);
-			return ret;
+			ret = atoi(buf);
 		}
 	}
 
-	return -1;
+	ReleaseMutex(ghMutex);
+	return ret;
 }
 
 int XYZV3::getZOffset()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	int ret = -1;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
 		const char* buf = waitForLine(true);
 		if(*buf)
 		{
-			return atoi(buf);
+			ret = atoi(buf);
 		}
 	}
 
-	return -1;
+	ReleaseMutex(ghMutex);
+	return ret;
 }
 
 bool XYZV3::setZOffset(int offset)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen() && offset > 0)
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=zoffset:set[%d]", offset);
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::restoreDefaults()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=restoredefault:on");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::enableBuzzer(bool enable)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=buzzer:%s", (enable) ? "on" : "off");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::enableAutoLevel(bool enable)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=autolevel:%s", (enable) ? "on" : "off");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setLanguage(const char *lang)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen() && lang)
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=lang:[%s]", lang);
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::cancelPrint()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=print[cancel]");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::pausePrint()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=print[pause]");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::resumePrint()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=print[resume]");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 // call when print finished to prep for a new job
@@ -877,16 +999,22 @@ bool XYZV3::resumePrint()
 // be sure old job is off print bed!!!
 bool XYZV3::readyPrint()
 {
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/config=print[complete]");
 		if(waitForVal("ok", true))
 		{
-			return true;
+			success = true;
 		}
 	}
 
-	return false;
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 /*
@@ -905,6 +1033,7 @@ XYZv3/config=pde:[8046]
 
 bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
 	if(path && m_serial.isOpen())
@@ -938,11 +1067,13 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
+
 bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
 {
-	bool status = false;
+	bool success = false;
 	if(path)
 	{
 		FILE *f = fopen(path, "rb");
@@ -958,7 +1089,7 @@ bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
 			{
 				if(len == fread(buf, 1, len, f))
 				{
-					status = print3WString(buf, len, cbStatus);
+					success = print3WString(buf, len, cbStatus);
 				}
 
 				delete [] buf;
@@ -969,18 +1100,21 @@ bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
 		}
 	}
 
-	return status;
+	return success;
 }
 
 #if 0
 // print directly to serial port
 bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
 		if(waitForVal("ok", false))
 		{
@@ -1017,6 +1151,7 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 		//waitForVal("ok", true);
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 #else
@@ -1024,11 +1159,14 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 // may help reduce chance of E7 errors
 bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
 
 	if(m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
 		if(waitForVal("ok", false))
 		{
@@ -1066,16 +1204,9 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 
 					// write out in one shot
 					m_serial.writeSerialArray(bBuf, blockLen + 12);
-
-					bool stat = waitForVal("ok", false);
-					if(stat)
-						success = true;
-					else
-					{
-						// bail on error
-						success = false;
+					success = waitForVal("ok", false);
+					if(!success) // bail on error
 						break;
-					}
 
 					// give time to parrent
 					if(cbStatus)
@@ -1087,9 +1218,11 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 
 		// close out printing
 		m_serial.writeSerial("XYZv3/uploadDidFinish");
-		//waitForVal("ok", true);
+		if(!waitForVal("ok", false))
+			success = false;
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 #endif
@@ -1098,11 +1231,14 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 {
 	return false; // probably don't want to run this!
 
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 	bool downgrade = false;
 
 	if(path && m_serial.isOpen())
 	{
+		m_serial.clearSerial();
+
 		FILE *f = fopen(path, "rb");
 		if(f)
 		{
@@ -1164,12 +1300,13 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::convertFile(const char *inPath, const char *outPath)
 {
-	if(m_info && inPath && m_serial.isOpen())
+	if(m_info && inPath)
 	{
 		if(isGcodeFile(inPath))
 			return encryptFile(inPath, outPath);
@@ -1208,6 +1345,7 @@ bool XYZV3::is3wFile(const char *path)
 
 bool XYZV3::encryptFile(const char *inPath, const char *outPath)
 {
+	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 	const int bodyOffset = 8192;
 
@@ -1357,6 +1495,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath)
 		}
 	}
 
+	ReleaseMutex(ghMutex);
 	return success;
 }
 
@@ -1457,7 +1596,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					pkcs7unpad(hbuf, headerLen);
 
 					//****FixMe, do something with it
-					DebugPrint(hbuf);
+					debugPrint(hbuf);
 
 					delete [] hbuf;
 					hbuf = NULL;
@@ -1476,7 +1615,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					bbuf[bodyLen] = '\0';
 
 					if(crc32 != calcXYZcrc32(bbuf, bodyLen))
-						DebugPrint("crc's don't match!!!\n");
+						debugPrint("crc's don't match!!!\n");
 
 					if(isZip)
 					{
@@ -1574,7 +1713,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, int timeout_s)
 			Sleep(1);
 		}
 		if(msTime::getTime_s() >= end)
-			DebugPrint("waitForLine, timeout triggered %d\n", timeout_s);
+			debugPrint("waitForLine, timeout triggered %d\n", timeout_s);
 
 		if(waitForEndCom)
 		{
@@ -1591,7 +1730,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, int timeout_s)
 				Sleep(1);
 			}
 			if(msTime::getTime_s() >= end)
-				DebugPrint("waitForLine $ timeout triggered %d\n", timeout_s);
+				debugPrint("waitForLine $ timeout triggered %d\n", timeout_s);
 		}
 	}
 
@@ -2084,7 +2223,7 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 }
 
 #define ERR_C_BUFFER_SIZE 2048
-void XYZV3::DebugPrint(char *format, ...)
+void XYZV3::debugPrint(char *format, ...)
 {
 	char msgBuf[ERR_C_BUFFER_SIZE];
 	va_list arglist;
@@ -2094,12 +2233,9 @@ void XYZV3::DebugPrint(char *format, ...)
 	msgBuf[sizeof(msgBuf)-1] = '\0';
 	va_end(arglist);
 
-#if 1
-	// dump to debug log
-	OutputDebugString(msgBuf);
-	OutputDebugString("\n");
-#else
-	// dump to console
+#ifdef _CONSOLE
 	printf("%s\n", msgBuf);
+#else
+	OutputDebugString(msgBuf);
 #endif
 }

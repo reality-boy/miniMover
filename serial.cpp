@@ -284,7 +284,7 @@ int Serial::readSerialLine(char *lineBuf, int len)
 						int len = lineBufStart - lineBuf;
 
 						if(isVerbose && len > 0)
-							printf("recieved: %s\n", lineBuf);
+							debugPrint("recieved: %s\n", lineBuf);
 
 						return len;
 					}
@@ -296,7 +296,7 @@ int Serial::readSerialLine(char *lineBuf, int len)
 		int len = lineBufStart - lineBuf;
 
 		if(isVerbose && len > 0)
-			printf("recieved partial: %s\n", lineBuf);
+			debugPrint("recieved partial: %s\n", lineBuf);
 
 		return len;
 	}
@@ -313,7 +313,7 @@ int Serial::writeSerial(const char *buf)
 		int len = strlen(buf);
 
 		if(isVerbose && buf > 0)
-			printf("sent: %s\n", buf);
+			debugPrint("sent: %s\n", buf);
 
 		if(WriteFile(m_serial, buf, len, &bytesWritten, NULL))
 		{
@@ -503,7 +503,7 @@ int Serial::enumeratePorts(int list[], int *count)
 	{
 		DWORD dwError = GetLastError();
 		if (dwError == ERROR_INSUFFICIENT_BUFFER)
-			printf("needs more room!\n");
+			debugPrint("needs more room!\n");
 	}
 	else
 	{
@@ -542,3 +542,21 @@ int Serial::enumeratePorts(int list[], int *count)
 }
 */
 
+
+#define ERR_C_BUFFER_SIZE 2048
+void Serial::debugPrint(const char *format, ...)
+{
+	char msgBuf[ERR_C_BUFFER_SIZE];
+	va_list arglist;
+
+	va_start(arglist, format);
+	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+	msgBuf[sizeof(msgBuf)-1] = '\0';
+	va_end(arglist);
+
+#ifdef _CONSOLE
+	printf("%s\n",msgBuf);
+#else
+	OutputDebugString(msgBuf);
+#endif
+}

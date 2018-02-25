@@ -134,6 +134,7 @@ class XYZV3
 {
 public:
 	XYZV3();
+	~XYZV3(); 
 
 	//===========================
 	// serial communication
@@ -252,7 +253,7 @@ protected:
 	bool checkLineIsHeader(const char* lineBuf);
 	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
 
-	void DebugPrint(char *format, ...);
+	void debugPrint(char *format, ...);
 
 	Serial m_serial;
 	XYZPrinterState m_status;
@@ -260,6 +261,8 @@ protected:
 
 	static const int m_infoArrayLen = 19;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
+
+	HANDLE ghMutex;
 };
 
 #endif // XYZV3_H

@@ -71,6 +71,7 @@ protected:
 	static char portNames[maxPortCount][maxPortName];
 
 	static bool isVerbose;
+	void debugPrint(const char *format, ...);
 };
 
 #endif //SERIAL_H

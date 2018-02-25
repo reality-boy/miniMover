@@ -12,16 +12,6 @@
 
 #pragma warning(disable:4996) // live on the edge!
 
-/*
-#define WM_XYZ_PROCESS_START  (WM_APP + 101)
-#define WM_XYZ_PROCESS_FINISH (WM_APP + 102)
-
-CRITICAL_SECTION CriticalSection;
-InitializeCriticalSectionAndSpinCount(&CriticalSection, 0x00000400);
-DeleteCriticalSection(&CriticalSection);
-
-*/
-
 bool getFilePath(HWND hDlg, char *path, int len, bool isOpen)
 {
 	if(path && len > 0)
@@ -49,10 +39,10 @@ bool getFilePath(HWND hDlg, char *path, int len, bool isOpen)
 }
 
 
+extern int g_printPct;
 void printFileCallback(float pct)
 {
-	(void)pct;
-	// log progress
+	g_printPct = (int)(pct * 100);
 }
 
 struct data
@@ -71,7 +61,11 @@ DWORD __stdcall threadHandler(void *param)
 	if(d && d->hWnd && d->xyz)
 	{
 		if(d->doPrint)
+		{
+			g_printPct = 0;
 			success = d->xyz->printFile(d->in, printFileCallback);
+			g_printPct = 0;
+		}
 		else
 			success = d->xyz->convertFile(d->in, d->out);
 	}

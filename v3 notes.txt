@@ -325,7 +325,8 @@ XYZv3/query=w
 XYZv3/query=x
 XYZv3/query=y
 
-// ????
+// z offset
+// where z is offset in mm * 100
 XYZv3/query=z
 	z:327
 
