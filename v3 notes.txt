@@ -11,7 +11,7 @@ XYZv3/upload={filename},{size}{option}
 XYZv3/firmware={filename},{size}
 XYZv3/uploadDidFinish
 
-// all commands return $ on sucess or E0$ or E1$ on error
+// Most commands return $ on sucess or E0$ or E1$ on error
 
 //************************
 // Send_Query_command or aboutconnect, SendCmd(), ActionOrder, queryIp (check ExcuteOrder)

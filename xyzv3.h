@@ -102,7 +102,6 @@ struct XYZPrinterState
 	// m ???
 	// o t1, c1
 	// s ???
-	// z ???
 	// W
 	// 4
 };
@@ -144,7 +143,7 @@ public:
 	void disconnect();
 	bool isConnected(); // return true if connected
 
-	// expose serial functionalit
+	// expose serial functionality
 	static int refreshPortList();
 	static int getPortCount();
 	static int getPortNumber(int id);

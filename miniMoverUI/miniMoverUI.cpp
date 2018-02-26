@@ -588,12 +588,16 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 //-------------------------------------------
 
-INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
+INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT)
 {
     // Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
+	//****FixMe, process command line
+	(void)lpCmdLine;
+	//CommandLineToArgv()
 
 	INITCOMMONCONTROLSEX ex;
 	ex.dwSize = sizeof(ex);

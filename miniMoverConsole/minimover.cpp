@@ -15,8 +15,6 @@ int port = -1;
 
 void updateStatus(float pct)
 {
-	(void)pct;
-
 	// notify the user that we are still uploading
 	static int printCount = 0;
 	if(printCount % 4 == 0)
@@ -239,7 +237,6 @@ bool handlePrintFile(const char *path)
 
 	return false;
 }
-
 
 int main(int argc, char **argv)
 {
@@ -534,4 +531,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-

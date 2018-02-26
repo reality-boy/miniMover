@@ -457,7 +457,7 @@ static void Cipher(state_t* state, uint8_t* RoundKey, bool isAES256)
 {
 	const unsigned int Nb = 4;						// The number of columns comprising a state in AES. This is a constant in AES. Value=4
 	const unsigned int Nk = (isAES256) ? 8 : 4;		// The number of 32 bit words in a key.
-	const unsigned int Nr = (isAES256) ? 14 : 10;		// The number of rounds in AES Cipher.
+	const unsigned int Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
 
 	uint8_t round = 0;
 
@@ -486,7 +486,7 @@ static void InvCipher(state_t* state, uint8_t* RoundKey, bool isAES256)
 {
 	const unsigned int Nb = 4;						// The number of columns comprising a state in AES. This is a constant in AES. Value=4
 	const unsigned int Nk = (isAES256) ? 8 : 4;		// The number of 32 bit words in a key.
-	const unsigned int Nr = (isAES256) ? 14 : 10;		// The number of rounds in AES Cipher.
+	const unsigned int Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
 
 	uint8_t round = 0;
 

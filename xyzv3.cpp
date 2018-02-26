@@ -15,32 +15,32 @@
 // should check what data was left over and assert!
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
-	//modelNum,    fileNum,        serialNum, screenName,       fileIsV5, fileIsZip, comIsV3, length, width, height
+	//modelNum,    fileNum,        serialNum, screenName,				fileIsV5, fileIsZip, comIsV3, length, width, height
 	//  older communication protocol
-	{"dvF100B000", "daVinciF10",   "3DP01P", "da Vinci 1.0",          false, true, false, 200, 200, 200},
-	{"dvF100A000", "daVinciF10",   "3F10AP", "da Vinci 1.0A",         false, true, false, 200, 200, 200},
-	{"dvF10SA000", "daVinciF10",   "3S10AP", "da Vinci AIO",          false, true, false, 200, 200, 200},
-	{"dvF200B000", "daVinciF20",   "3F20XP", "da Vinci 2.0 Duo",      false, true, false, 200, 150, 200},
-	{"dvF200A000", "daVinciF20",   "3F20AP", "da Vinci 2.0A Duo",     false, true, false, 200, 150, 200},
+	{"dvF100B000", "daVinciF10",   "3DP01P", "da Vinci 1.0",			false, true, false, 200, 200, 200},
+	{"dvF100A000", "daVinciF10",   "3F10AP", "da Vinci 1.0A",			false, true, false, 200, 200, 200},
+	{"dvF10SA000", "daVinciF10",   "3S10AP", "da Vinci AIO",			false, true, false, 200, 200, 200},
+	{"dvF200B000", "daVinciF20",   "3F20XP", "da Vinci 2.0 Duo",		false, true, false, 200, 150, 200},
+	{"dvF200A000", "daVinciF20",   "3F20AP", "da Vinci 2.0A Duo",		false, true, false, 200, 150, 200},
 
 	// new v3 communication protocol
-	{"dvF110B000", "daVinciF11",   "3F11XP", "da Vinci 1.1 Plus",     false, true, true, 200, 200, 200}, //???? I'm suspicious of this one, think it belongs above
+	{"dvF110B000", "daVinciF11",   "3F11XP", "da Vinci 1.1 Plus",		false, true, true, 200, 200, 200}, //???? I'm suspicious of this one, think it belongs above
 
-	{"dv1NX0A000", "dv1NX0A000",   "3FN1XP", "da Vinci Nano",         false, false, true, 120, 120, 120},
-	{"dv1MW0A000", "dv1MW0A000",   "3FM1WP", "da Vinci Mini w",       false, false, true, 150, 150, 150},
-	{"dv1MX0A000", "dv1MX0A000",   "3FM1XP", "da Vinci miniMaker",    false, false, true, 150, 150, 150},
-	{"dv1J00A000", "daVinciJR10",  "??????", "da Vinci Jr. 1.0",      false, false, true, 150, 150, 150},
-	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "da Vinci Jr. 1.0 Wireless", false, false, true, 150, 150, 150},
-	{"dv1JS0A000", "dv1JSOA000",   "3F1JSP", "da Vinci Jr. 3in1",     false, false, true, 150, 150, 150},
-	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", "da Vinci Jr. 2.0 Mix",  false, false, true, 150, 150, 150},
-	{"dv1JA0A000", "dv1JA0A000",   "3F1JAP", "da Vinci Jr. 1.0A",     false, false, true, 175, 175, 175},
+	{"dv1NX0A000", "dv1NX0A000",   "3FN1XP", "da Vinci Nano",			false, false, true, 120, 120, 120},
+	{"dv1MW0A000", "dv1MW0A000",   "3FM1WP", "da Vinci Mini w",			false, false, true, 150, 150, 150},
+	{"dv1MX0A000", "dv1MX0A000",   "3FM1XP", "da Vinci miniMaker",		false, false, true, 150, 150, 150},
+	{"dv1J00A000", "daVinciJR10",  "??????", "da Vinci Jr. 1.0",		false, false, true, 150, 150, 150},
+	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "da Vinci Jr. 1.0 Wireless",false,false, true, 150, 150, 150},
+	{"dv1JS0A000", "dv1JSOA000",   "3F1JSP", "da Vinci Jr. 3in1",		false, false, true, 150, 150, 150},
+	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", "da Vinci Jr. 2.0 Mix",	false, false, true, 150, 150, 150},
+	{"dv1JA0A000", "dv1JA0A000",   "3F1JAP", "da Vinci Jr. 1.0A",		false, false, true, 175, 175, 175},
 
 	// new v5 file format
-	{"dv1JP0A000", "dv1JP0A000",   "3F1JPP", "da Vinci Jr. 1.0 Pro",  true, false, true, 150, 150, 150},
+	{"dv1JP0A000", "dv1JP0A000",   "3F1JPP", "da Vinci Jr. 1.0 Pro",	true, false, true, 150, 150, 150},
 	{"dv1JSOA000", "daVinciJR10S", "3F1JOP", "da Vinci Jr. 3in1 (Open filament)", true, false, true, 150, 150, 150},
-	{"dvF1W0A000", "daVinciAW10",  "3F1AWP", "da Vinci 1.0 Pro",      true, false, true, 200, 200, 200},
-	{"dvF1WSA000", "daVinciAS10",  "3F1ASP", "da Vinci 1.0 Pro 3in1", true, false, true, 200, 200, 190},
-	{"dv1SW0A000", "dv1SW0A000",   "3F1SWP", "da Vinci 1.0 Super",    true, false, true, 300, 300, 300},
+	{"dvF1W0A000", "daVinciAW10",  "3F1AWP", "da Vinci 1.0 Pro",		true, false, true, 200, 200, 200},
+	{"dvF1WSA000", "daVinciAS10",  "3F1ASP", "da Vinci 1.0 Pro 3in1",	true, false, true, 200, 200, 190},
+	{"dv1SW0A000", "dv1SW0A000",   "3F1SWP", "da Vinci 1.0 Super",		true, false, true, 300, 300, 300},
 
 	//  unknown
 	//{"dv1CP0A000"},
@@ -1039,6 +1039,7 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 	if(path && m_serial.isOpen())
 	{
 		//****FixMe, temp file should be placed in temp folder
+		// see GetTempFileName() and GetTempPath()
 		const char *temp = "temp.3w";
 		const char *tPath = NULL;
 

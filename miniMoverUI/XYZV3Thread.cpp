@@ -38,7 +38,6 @@ bool getFilePath(HWND hDlg, char *path, int len, bool isOpen)
 	return false;
 }
 
-
 extern int g_printPct;
 void printFileCallback(float pct)
 {
