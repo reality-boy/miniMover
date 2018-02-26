@@ -54,6 +54,7 @@ int g_printPct = 0;
 
 // controls
 HWND hwndListInfo = NULL;
+HWND hwndListPInfo = NULL;
 
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
@@ -153,29 +154,46 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		m =  st->extruderLifetimePowerOnTime_min % 60;
 		listAddLine(hwndListInfo, "Power on: %d d %d h %d m", d, h, m);
 
-		listAddLine(hwndListInfo, "Bed temp: %d C", st->bedTemp_C);
-		listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
-		listAddLine(hwndListInfo, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
-
-		listAddLine(hwndListInfo, "Print pct complete: %d %%", st->printPercentComplete);
-
-		h = st->printElapsedTime_m / 60;
-		m = st->printElapsedTime_m % 60;
-		listAddLine(hwndListInfo, "Print elapsed: %d h %d m", h, m);
-
-		h = st->printTimeLeft_m / 60;
-		m = st->printTimeLeft_m % 60;
-		listAddLine(hwndListInfo, "Print remain: %d h %d m", h, m);
-
-		listAddLine(hwndListInfo, "Error: 0x%08x", st->errorStatus);
-		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
-
 		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
 		SetWindowRedraw(hwndListInfo, TRUE);
 	}
 }
 
+void MainDlgUpdatePStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrinterInfo *inf)
+{
+	int h, m;
+
+	if(hwndListPInfo && st && inf)
+	{
+		// don't repaint till we are done drawing
+		SetWindowRedraw(hwndListPInfo, FALSE);
+
+		int index = ListBox_GetTopIndex(hwndListPInfo);
+		SendMessage(hwndListPInfo, LB_RESETCONTENT, 0, 0);
+
+		listAddLine(hwndListPInfo, "Bed temp: %d C", st->bedTemp_C);
+		listAddLine(hwndListPInfo, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
+		listAddLine(hwndListPInfo, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
+
+		listAddLine(hwndListPInfo, "Print pct complete: %d %%", st->printPercentComplete);
+
+		h = st->printElapsedTime_m / 60;
+		m = st->printElapsedTime_m % 60;
+		listAddLine(hwndListPInfo, "Print elapsed: %d h %d m", h, m);
+
+		h = st->printTimeLeft_m / 60;
+		m = st->printTimeLeft_m % 60;
+		listAddLine(hwndListPInfo, "Print remain: %d h %d m", h, m);
+
+		listAddLine(hwndListPInfo, "Error: 0x%08x", st->errorStatus);
+		listAddLine(hwndListPInfo, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
+
+		ListBox_SetTopIndex(hwndListPInfo, index);
+		// now repaint all at once
+		SetWindowRedraw(hwndListPInfo, TRUE);
+	}
+}
 
 void MainDlgSetStatus(HWND hDlg, const char *msg)
 {
@@ -219,6 +237,7 @@ void MainDlgUpdate(HWND hDlg)
 		if(st->isValid)
 		{
 			MainDlgUpdateStatusList(hDlg, st, inf);
+			MainDlgUpdatePStatusList(hDlg, st, inf);
 
 			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->buzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->autoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -268,6 +287,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MainDlgConnect(hDlg);
 
 			hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
+			hwndListPInfo = GetDlgItem(hDlg, IDC_LIST_PSTATUS);
 
 			g_timer = SetTimer(hDlg, NULL, g_timerInterval, NULL);
 
