@@ -18,6 +18,7 @@ This comes in two flavors, a win32 GUI and a command line utility.
 
 Here is a summary of the commands that the command line can take.
 
+`
 usage: miniMover <args>
   -? - print help message
   -a+ - enable auto level
@@ -39,6 +40,7 @@ usage: miniMover <args>
   -y num - jog y axis by num, or 10 if num not provided
   -z num - jog z axis by num, or 10 if num not provided
   file - print file if .gcode, otherwise convert to gcode if .3w
+`
 
 #Here are some related projects:
 
