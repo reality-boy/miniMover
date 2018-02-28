@@ -1,15 +1,15 @@
 ## miniMover
 
-Code to control XYZ 3D printers that use the version 3 serial protocol.  
-These include the Nano, Mini W, miniMaker and Jr. line of printers.
+Code to control XYZ 3D printers that use the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers.
 
 You can read up on the development progress in this forum.
+
 http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 
-This is inspired by the threedub programs listed below but it is based 
-on a fresh reverse engineering of the serial protocol.
+This is inspired by the threedub programs listed below but it is based on a fresh reverse engineering of the serial protocol.
 
 This uses a modified version of the tiny-AES project by kkoke.
+
 https://github.com/kokke/tiny-AES-c
 
 This comes in two flavors, a win32 GUI and a command line utility.
@@ -42,7 +42,7 @@ usage: miniMover <args>
   file - print file if .gcode, otherwise convert to gcode if .3w
 ```
 
-#Here are some related projects:
+Here are some related projects:
 
 https://gitlab.com/anthem/py-threedub
 
