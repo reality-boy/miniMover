@@ -14,7 +14,7 @@ https://github.com/kokke/tiny-AES-c
 
 This comes in two flavors, a win32 GUI and a command line utility.
 
-![My image](soliforum.com/i/?8IOJXEv.png)
+![My image](http://soliforum.com/i/?8IOJXEv.png)
 
 Here is a summary of the commands that the command line can take.
 
