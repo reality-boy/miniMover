@@ -20,26 +20,47 @@ Here is a summary of the commands that the command line can take.
 
 `
 usage: miniMover <args>
+
   -? - print help message
+
   -a+ - enable auto level
+
   -a- - disable auto level
+
   -b+ - enable buzzer
+
   -b- - disable buzzer
+
   -cl - clean nozzel
+
   -ca - calibrate bed
+
   -c file - convert file
+
   -f file - upload firmware, experimental!
+
   -h - home printer
+
   -l - load fillament
+
   -o num - increment/decrement z offset by num
+
   -po num - set serial port number, -1 auto detects port
+
   -p file - print file
+
   -s - print status
+
   -u - unload fillament
+
   -x num - jog x axis by num, or 10 if num not provided
+
   -y num - jog y axis by num, or 10 if num not provided
+
   -z num - jog z axis by num, or 10 if num not provided
+
   file - print file if .gcode, otherwise convert to gcode if .3w
+
 `
 
 #Here are some related projects:
