@@ -71,21 +71,24 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md">
-      <Filter>Misc Files</Filter>
-    </None>
-    <None Include="..\LICENSE">
-      <Filter>Misc Files</Filter>
-    </None>
-    <None Include="..\CODE_OF_CONDUCT.md">
-      <Filter>Misc Files</Filter>
-    </None>
     <None Include="..\.gitignore">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="..\docs\CODE_OF_CONDUCT.md">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="..\docs\ISSUE_TEMPLATE.md">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="..\docs\LICENSE">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="..\docs\README.md">
       <Filter>Misc Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\v3 notes.txt">
+    <Text Include="..\docs\v3 notes.txt">
       <Filter>Misc Files</Filter>
     </Text>
   </ItemGroup>

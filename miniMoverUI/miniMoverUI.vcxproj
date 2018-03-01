@@ -102,12 +102,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
-    <None Include="..\CODE_OF_CONDUCT.md" />
-    <None Include="..\LICENSE" />
-    <None Include="..\README.md" />
+    <None Include="..\docs\CODE_OF_CONDUCT.md" />
+    <None Include="..\docs\ISSUE_TEMPLATE.md" />
+    <None Include="..\docs\LICENSE" />
+    <None Include="..\docs\README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\v3 notes.txt" />
+    <Text Include="..\docs\v3 notes.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
