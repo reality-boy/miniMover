@@ -1,12 +1,35 @@
 ## miniMover
 
-Code to control XYZ 3D printers that use the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers.
+This is a project that lets you send GCode to an XYZ da Vinci prniter.  It will also convert from a .3w file to .gcode and back, and can monitor and setup the printer as well.  This works with newer printers that implement the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers among others.
 
 You can read up on the development progress in this forum.
 
 http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 
-This is inspired by the threedub programs listed below but it is based on a fresh reverse engineering of the serial protocol.
+This works with the following printers over a USB connection.  There is no wireless support yet, but I could look into it if there is any interest.
+
+da Vinci Nano
+da Vinci Mini w
+da Vinci miniMaker
+da Vinci Jr. 1.0
+da Vinci Jr. 1.0 Wireless
+da Vinci Jr. 1.0A
+da Vinci Jr. 1.0 Pro
+da Vinci Jr. 3in1
+da Vinci Jr. 3in1 (Open filament)
+da Vinci Jr. 2.0 Mix
+da Vinci 1.0 Pro
+da Vinci 1.0 Pro 3in1
+da Vinci 1.0 Super
+
+It does not work with these printers, they use an older communication protocol that I have not implemented yet. It would not be hard to implement if there is any interest in it.
+
+da Vinci 1.0
+da Vinci 1.0A
+da Vinci AIO
+da Vinci 2.0 Duo
+da Vinci 2.0A Duo
+da Vinci 1.1 Plus
 
 This uses a modified version of the tiny-AES project by kkoke.
 
@@ -42,7 +65,7 @@ usage: miniMover <args>
   file - print file if .gcode, otherwise convert to gcode if .3w
 ```
 
-Here are some related projects:
+This is inspired by the threedub programs listed below but it is based on a fresh reverse engineering of the serial protocol.
 
 https://gitlab.com/anthem/py-threedub
 
