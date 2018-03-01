@@ -154,6 +154,9 @@ public:
 	const XYZPrinterState* getPrinterState() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
+	// dump what is returned from the serial port to console
+	bool printRawStatus(); 
+
 	// run auto bed leveling routine
 	// call to start
 	bool calibrateBedStart(); 

@@ -39,6 +39,7 @@ void postHelp()
 	printf("  -o num - increment/decrement z offset by num\n");
 	printf("  -po num - set serial port number, -1 auto detects port\n");
 	printf("  -p file - print file\n");
+	printf("  -r - print raw status\n");
 	printf("  -s - print status\n");
 	printf("  -u - unload fillament\n");
 	printf("  -x num - jog x axis by num, or 10 if num not provided\n");
@@ -439,6 +440,10 @@ int main(int argc, char **argv)
 					else
 						printf("invalid argument\n");
 				}
+				break;
+			case 'r': // status
+				if(checkCon())
+					xyz.printRawStatus();
 				break;
 			case 's': // status
 				if(checkCon())

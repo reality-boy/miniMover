@@ -456,6 +456,39 @@ bool XYZV3::updateStatus()
 	return success;
 }
 
+bool XYZV3::printRawStatus()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = false;
+
+	if(m_serial.isOpen())
+	{
+		m_serial.clearSerial();
+
+		static const int len = 1024;
+		char buf[len];
+		const char *strPtr = NULL;
+
+		m_serial.writeSerial("XYZv3/query=a");
+
+		// only try so many times for the answer
+		bool isDone = false;
+		float end = msTime::getTime_s() + 2; // wait a second or two
+		while(msTime::getTime_s() < end && !isDone)
+		{
+			if(m_serial.readSerialLine(buf, len))
+			{
+				debugPrint(buf);
+			}
+		}
+
+		success = true;
+	}
+
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
 float XYZV3::nozelIDToDiameter(int id)
 {
 	switch(id)
