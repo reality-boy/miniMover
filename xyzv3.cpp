@@ -404,20 +404,20 @@ bool XYZV3::updateStatus()
 				case 'X': // Nozzel Info, X:nt,sn
 					//   nt is nozzel type one of 
 					//     3, 84
-					//       nozel diameter 0.3 mm
+					//       nozzle diameter 0.3 mm
 					//     1, 2, 77, 82 
-					//       nozel diameter 0.4 mm
+					//       nozzle diameter 0.4 mm
 					//     54
-					//       nozel diameter 0.6 mm
+					//       nozzle diameter 0.6 mm
 					//     56 
-					//       nozel diameter 0.8 mm
+					//       nozzle diameter 0.8 mm
 					//     L, N, H, Q
 					//       lazer engraver
 					//   sn is serial number in the form xx-xx-xx-xx-xx-yy
-					//     where xx is the nozel serial number
-					//     and yy is the total nozel print time (in minutes)
-					sscanf(buf, "X:%d,%s", &m_status.nozelID, m_status.nozelSerialNumber);
-					m_status.nozelDiameter_mm = nozelIDToDiameter(m_status.nozelID);
+					//     where xx is the nozzle serial number
+					//     and yy is the total nozzle print time (in minutes)
+					sscanf(buf, "X:%d,%s", &m_status.nozzleID, m_status.nozzleSerialNumber);
+					m_status.nozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.nozzleID);
 					break;
 
 				// case 'Y' to '3' unused
@@ -479,6 +479,8 @@ bool XYZV3::printRawStatus()
 			if(m_serial.readSerialLine(buf, len))
 			{
 				debugPrint(buf);
+				if(buf[0] == '$' || buf[0] == 'E')
+					isDone = true;
 			}
 		}
 
@@ -489,7 +491,7 @@ bool XYZV3::printRawStatus()
 	return success;
 }
 
-float XYZV3::nozelIDToDiameter(int id)
+float XYZV3::nozzleIDToDiameter(int id)
 {
 	switch(id)
 	{

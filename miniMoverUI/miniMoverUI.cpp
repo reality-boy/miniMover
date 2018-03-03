@@ -119,10 +119,10 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		listAddLine(hwndListInfo, "Serial num: %s", st->machineSerialNum);
 
 		listAddLine(hwndListInfo, "Fillament serial: %s", st->filamentSerialNumber);
-		listAddLine(hwndListInfo, "Nozel serial: %s", st->nozelSerialNumber);
+		listAddLine(hwndListInfo, "Nozzle serial: %s", st->nozzleSerialNumber);
 		listAddLine(hwndListInfo, "Firmware ver: %s", st->firmwareVersion);
-		listAddLine(hwndListInfo, "Nozel ID: %d", st->nozelID);
-		listAddLine(hwndListInfo, "Nozel Diam: %0.2f mm", st->nozelDiameter_mm);
+		listAddLine(hwndListInfo, "Nozzle ID: %d", st->nozzleID);
+		listAddLine(hwndListInfo, "Nozzle Diam: %0.2f mm", st->nozzleDiameter_mm);
 
 		listAddLine(hwndListInfo, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
 		listAddLine(hwndListInfo, "File is v5: %d", inf->fileIsV5);
@@ -417,7 +417,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				MainDlgSetStatus(hDlg, "loading fillament");
 				if(xyz.loadFillamentStart())
 				{
-					MessageBox(NULL, "Hit ok when filliment comes out of nozel.", "Load Fillament", MB_OK);
+					MessageBox(NULL, "Hit ok when filliment comes out of nozzle.", "Load Fillament", MB_OK);
 					if(xyz.loadFillamentFinish())
 						MainDlgSetStatus(hDlg, "loading fillament complete");
 					else
@@ -440,17 +440,17 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			case IDC_BUTTON_CLEAN: 
 				SetCursor(waitCursor);
-				MainDlgSetStatus(hDlg, "cleaning nozel");
+				MainDlgSetStatus(hDlg, "cleaning nozzle");
 				if(xyz.cleanNozzleStart())
 				{
-					MessageBox(NULL, "Hit ok after cleaning nozel.", "Clean Nozel", MB_OK);
+					MessageBox(NULL, "Hit ok after cleaning nozzle.", "Clean Nozzle", MB_OK);
 					if(xyz.cleanNozzleFinish())
-						MainDlgSetStatus(hDlg, "cleaning nozel complete");
+						MainDlgSetStatus(hDlg, "cleaning nozzle complete");
 					else
-						MainDlgSetStatus(hDlg, "cleaning nozel failed");
+						MainDlgSetStatus(hDlg, "cleaning nozzle failed");
 				}
 				else
-					MainDlgSetStatus(hDlg, "cleaning nozel failed");
+					MainDlgSetStatus(hDlg, "cleaning nozzle failed");
 				SetCursor(defaultCursor);
 				break;
 

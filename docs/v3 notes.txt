@@ -373,18 +373,18 @@ XYZv3/query=W
 // X:nt,sn
 //   nt is nozzel type one of 
 //     3, 84
-//       nozel diameter 0.3 mm
+//       nozzle diameter 0.3 mm
 //     1, 2, 77, 82 
-//       nozel diameter 0.4 mm
+//       nozzle diameter 0.4 mm
 //     54
-//       nozel diameter 0.6 mm
+//       nozzle diameter 0.6 mm
 //     56 
-//       nozel diameter 0.8 mm
+//       nozzle diameter 0.8 mm
 //     L, N, H, Q
 //       lazer engraver
 //   sn is serial number in the form xx-xx-xx-xx-xx-yy
-//     where xx is the nozel serial number
-//     and yy is the total nozel print time (in minutes)
+//     where xx is the nozzle serial number
+//     and yy is the total nozzle print time (in minutes)
 XYZv3/query=X
 	X:2,GB-0002-0000-TH-68T-0250-5482
 
@@ -494,7 +494,7 @@ calibratejr:{"stat":"complete"}
 // gets data?  maybe send after ok and before release?
 XYZv3/action=calibratejr:getdata
 
-// clean nozle
+// clean nozzle
 // send to start heating
 XYZv3/action=cleannozzle:new
 // on start returns
@@ -530,7 +530,7 @@ XYZv3/action=load:new
 load:{"stat":"start"}
 load:{"stat":"heat","extemp":"26"}
 load:{"stat":"load"}
-// send when filament comes out of nozel
+// send when filament comes out of nozzle
 XYZv3/action=load:cancel
 load:{"stat":"complete"}
 // send these to cancel or retry

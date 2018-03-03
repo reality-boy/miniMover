@@ -63,8 +63,8 @@ struct XYZPrinterState
 	int fillimantRemaining_mm;
 //	int materialType;
 	int isFillamentPLA;
-	int nozelID;
-	float nozelDiameter_mm;
+	int nozzleID;
+	float nozzleDiameter_mm;
 
 	int calib[9];
 	bool autoLevelEnabled;
@@ -92,7 +92,7 @@ struct XYZPrinterState
 
 	char machineSerialNum[64]; //20
 	char filamentSerialNumber[64]; //16
-	char nozelSerialNumber[64]; //32
+	char nozzleSerialNumber[64]; //32
 
 	char firmwareVersion[64]; //10
 
@@ -227,7 +227,7 @@ protected:
 	bool print3WString(const char *data, int len, XYZCallback cbStatus);
 
 	const char* statusCodesToStr(int status, int subStatus);
-	float nozelIDToDiameter(int id);
+	static float nozzleIDToDiameter(int id);
 	bool getJsonVal(const char *str, const char *key, char *val);
 	const XYZPrinterInfo* modelToInfo(const char *modelNum);
 

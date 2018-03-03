@@ -24,7 +24,7 @@ void updateStatus(float pct)
 
 void postHelp()
 {
-	printf("miniMover v0.4\n");
+	printf("miniMover v0.5\n");
 	printf("usage: miniMover <args>\n");
 	printf("  -? - print help message\n");
 	printf("  -a+ - enable auto level\n");
@@ -140,7 +140,7 @@ bool printStatus()
 			printf("Extruder power on time: %d min\n", st->extruderLifetimePowerOnTime_min);
 			printf("Last power on time: %d min\n", st->printerLastPowerOnTime_min);
 
-			printf("nozel: %0.2f mm sn: %s\n", st->nozelDiameter_mm, st->nozelSerialNumber);
+			printf("nozzle: %0.2f mm sn: %s\n", st->nozzleDiameter_mm, st->nozzleSerialNumber);
 		}
 		// else do nothing
 
@@ -301,13 +301,13 @@ int main(int argc, char **argv)
 
 							if(xyz.cleanNozzleFinish())
 							{
-								printf("clean nozel succeeded\n");
+								printf("clean nozzle succeeded\n");
 							}
 							else
-								printf("clean nozel failed\n");
+								printf("clean nozzle failed\n");
 						}
 						else
-							printf("clean nozel failed\n");
+							printf("clean nozzle failed\n");
 					}
 				}
 				else if(argv[i][2] == 'a') // calibrate
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
 					printf("starting load fillament\n");
 					if(xyz.loadFillamentStart())
 					{
-						printf("wait for fillament to come out of nozel then hit enter\n");
+						printf("wait for fillament to come out of nozzle then hit enter\n");
 						getch();
 
 						if(xyz.loadFillamentFinish())
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
 						printf("invalid argument\n");
 				}
 				break;
-			case 'r': // status
+			case 'r': // raw status
 				if(checkCon())
 					xyz.printRawStatus();
 				break;
@@ -531,7 +531,7 @@ int main(int argc, char **argv)
 	xyz.disconnect();
 
 #ifdef _DEBUG
-	printf("hit any key to continue.\n");
+	printf("\nhit any key to continue.\n");
 	getch();
 #endif
 
