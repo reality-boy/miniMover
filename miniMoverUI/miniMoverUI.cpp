@@ -136,7 +136,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 														st->calib[3], st->calib[4], st->calib[5],
 														st->calib[6], st->calib[7], st->calib[8]);
 		listAddLine(hwndListInfo, "Auto level: %d", st->autoLevelEnabled);
-		listAddLine(hwndListInfo, "Buzzer: %d", st->buzzerEnabled);
+		listAddLine(hwndListInfo, "Buzzer: %d", st->sBuzzerEnabled);
 		listAddLine(hwndListInfo, "Z Offset: %d", st->zOffset);
 
 		d =  st->printerLifetimePowerOnTime_min / (60 * 24);
@@ -153,6 +153,30 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		h = (st->extruderLifetimePowerOnTime_min / 60) % 24;
 		m =  st->extruderLifetimePowerOnTime_min % 60;
 		listAddLine(hwndListInfo, "Power on: %d d %d h %d m", d, h, m);
+
+		//****FixMe, dump
+		/*
+		st->mVal[0];
+		st->mVal[1];
+		st->mVal[2];
+		st->sButton;
+		st->sFrontDoor;
+		st->sTopDoor;
+		st->sHasLazer;
+		st->sFd;
+		st->sFm;
+		st->sOpenFilament;
+		st->sSDCard;
+		st->netIP;
+		st->netSSID;
+		st->netChan;
+		st->netMAC;
+		st->oT;
+		st->oC;
+		st->mVal;
+		st->vString;
+		st->wString;
+		*/
 
 		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
@@ -172,7 +196,7 @@ void MainDlgUpdatePStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPri
 		int index = ListBox_GetTopIndex(hwndListPInfo);
 		SendMessage(hwndListPInfo, LB_RESETCONTENT, 0, 0);
 
-		listAddLine(hwndListPInfo, "Bed temp: %d C", st->bedTemp_C);
+		listAddLine(hwndListPInfo, "Bed temp: %d C, target temp: %d C", st->bedActualTemp_C, st->bedTargetTemp_C);
 		listAddLine(hwndListPInfo, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
 		listAddLine(hwndListPInfo, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
 
@@ -186,7 +210,7 @@ void MainDlgUpdatePStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPri
 		m = st->printTimeLeft_m % 60;
 		listAddLine(hwndListPInfo, "Print remain: %d h %d m", h, m);
 
-		listAddLine(hwndListPInfo, "Error: 0x%08x", st->errorStatus);
+		listAddLine(hwndListPInfo, "Error: %s", st->errorStatusStr);
 		listAddLine(hwndListPInfo, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
 
 		ListBox_SetTopIndex(hwndListPInfo, index);
@@ -239,7 +263,7 @@ void MainDlgUpdate(HWND hDlg)
 			MainDlgUpdateStatusList(hDlg, st, inf);
 			MainDlgUpdatePStatusList(hDlg, st, inf);
 
-			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->buzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->autoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 
 			SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);

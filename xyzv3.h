@@ -56,25 +56,34 @@ struct XYZPrinterState
 {
 	bool isValid;
 
-	int bedTemp_C;
+	int bedActualTemp_C;
+	int bedTargetTemp_C;
 	int extruderActualTemp_C;
 	int extruderTargetTemp_C;
 
 	int fillimantRemaining_mm;
-//	int materialType;
+	int materialType;
 	int isFillamentPLA;
 	int nozzleID;
 	float nozzleDiameter_mm;
 
 	int calib[9];
 	bool autoLevelEnabled;
-	bool buzzerEnabled;
+	bool sBuzzerEnabled;
+	bool sButton;
+	bool sFrontDoor;
+	bool sTopDoor;
+	bool sHasLazer;
+	bool sFd;
+	bool sFm;
+	bool sOpenFilament;
+	bool sSDCard;
 
 	int printPercentComplete;
 	int printElapsedTime_m;
 	int printTimeLeft_m;
 
-	int errorStatus;
+	char errorStatusStr[64];
 	XYZPrintStatusCode printerStatus;
 	int printerSubStatus;
 	char printerStatusStr[256];
@@ -96,13 +105,22 @@ struct XYZPrinterState
 
 	char firmwareVersion[64]; //10
 
+	char netIP[64]; //16
+	char netSSID[64];
+	char netChan[64];
+	char netMAC[64];
+
+	//****FixMe, work out what this is
+	int oT; // unknown from o: command
+	int oC; // unknown from o: command
+	int mVal[3]; // unknown m:x,y,z values
+	char vString[64]; // unknown V:version number
+	char wString[64]; // unknown W:wifi settings
+
 	// from getZOffset()
 	int zOffset;
 
-	// m ???
 	// o t1, c1
-	// s ???
-	// W
 	// 4
 };
 

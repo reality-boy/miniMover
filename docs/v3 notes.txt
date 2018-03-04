@@ -22,22 +22,25 @@ XYZv3/query=a
 	b:20
 	c:{448,464,462,448,457,449,414,436,426}
 	d:0,0,0
-	w:1,PMP6PTH6840596
 	e:0
 	f:1,84090
 	i:3FM1XPUS5CA68P0591
-	j:9511,0
-	L:1,268830,5529,295
+	j:9511,0 or j:9511
+	l:en
 	m:0,0,0
+	n:daVinci Mini 1  
 	o:p8,t1,c1,a+
 	p:dv1MX0A000
-	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
-	t:1,24,0
+	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"} or s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
+	t:1,24,0 or t:1,16
 	v:1.1.1
-	n:daVinci Mini 1  
-	X:2,GB-0002-0000-TH-68T-0250-5482
-	l:en
+	w:1,PMP6PTH6840596 or w:1,--------------
 	z:327
+	L:1,268830,5529,295 or L:1,320700,58543
+	O:{"nozzle":"240","bed":"90"}
+	V:5.1.5
+	X:2,GB-0002-0000-TH-68T-0250-5482
+	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
 
 // heat bed temperature
 // b:xx
@@ -45,7 +48,7 @@ XYZv3/query=a
 XYZv3/query=b 
 	b:20
 
-// Calibration values
+// Calibration values, only on miniMaker machines?
 // These are the 9 bed level sensor readings
 // c:{x1,x2,x3,x4,x5,x6,x7,x8,x9}
 XYZv3/query=c
@@ -325,7 +328,7 @@ XYZv3/query=w
 XYZv3/query=x
 XYZv3/query=y
 
-// z offset
+// z offset, only on miniMaker machines?
 // where z is offset in mm * 100
 XYZv3/query=z
 	z:327
@@ -355,17 +358,27 @@ XYZv3/query=L
 // unused
 XYZv3/query=M
 XYZv3/query=N
+
+// target temps?
+// O:{"nozzle":"xx","bed":"yy"}
+//   xx is nozzle target temp in C
+//   yy is bed target temp in C
 XYZv3/query=O
+	O:{"nozzle":"240","bed":"90"}
+
+// unused
 XYZv3/query=P
 XYZv3/query=Q
 XYZv3/query=R
 XYZv3/query=S
 XYZv3/query=T
 XYZv3/query=U
-XYZv3/query=V
 
-// Ask wifi information
-// not used by miniMaker
+// firmware version?
+XYZv3/query=V
+	V:5.1.5
+
+// Ask wifi information, only with mini w?
 // some sort of json with ssid, bssid, channel, rssiValue, PHY, security
 XYZv3/query=W
 
@@ -396,10 +409,9 @@ XYZv3/query=1
 XYZv3/query=2
 XYZv3/query=3
 
-// Query IP
-// not used by miniMaker
-// some sort of json string with wlan, ip, ssid, MAC, rssiValue
+// Query IP only machines with network
 XYZv3/query=4
+	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
 
 // unused
 XYZv3/query=5

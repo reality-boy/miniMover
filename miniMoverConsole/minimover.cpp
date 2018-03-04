@@ -77,7 +77,8 @@ bool printStatus()
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
-			printf("Bed temperature: %d C\n", st->bedTemp_C);
+			printf("Bed temperature: %d C, target temp: %d C\n", 
+				st->bedActualTemp_C, st->bedTargetTemp_C);
 
 			printf("Bed calibration\n");
 			printf(" %d, %d, %d\n", st->calib[0], st->calib[1], st->calib[2]);
@@ -89,7 +90,7 @@ bool printStatus()
 			else
 				printf("Printer status: %d %% %d m %d m\n", st->printPercentComplete, st->printElapsedTime_m, st->printTimeLeft_m);
 
-			printf("Error: %d\n", st->errorStatus);
+			printf("Error: %s\n", st->errorStatusStr);
 
 			printf("Filament length: %0.3f m\n", st->fillimantRemaining_mm / 1000.0f);
 
@@ -128,7 +129,7 @@ bool printStatus()
 				printf("Printer build volume: %d L %d W %d H\n", inf->length, inf->width, inf->height);
 			}
 
-			printf("buzzer: %s\n", (st->buzzerEnabled) ? "enabled" : "disabled");
+			printf("buzzer: %s\n", (st->sBuzzerEnabled) ? "enabled" : "disabled");
 
 			printf("Extruder temp: %d C, target temp: %d C\n", st->extruderActualTemp_C, st->extruderTargetTemp_C);
 
@@ -141,6 +142,30 @@ bool printStatus()
 			printf("Last power on time: %d min\n", st->printerLastPowerOnTime_min);
 
 			printf("nozzle: %0.2f mm sn: %s\n", st->nozzleDiameter_mm, st->nozzleSerialNumber);
+
+			//****FixMe, dump
+			/*
+			st->mVal[0];
+			st->mVal[1];
+			st->mVal[2];
+			st->sButton;
+			st->sFrontDoor;
+			st->sTopDoor;
+			st->sHasLazer;
+			st->sFd;
+			st->sFm;
+			st->sOpenFilament;
+			st->sSDCard;
+			st->netIP;
+			st->netSSID;
+			st->netChan;
+			st->netMAC;
+			st->oT;
+			st->oC;
+			st->mVal;
+			st->vString;
+			st->wString;
+			*/
 		}
 		// else do nothing
 
@@ -161,14 +186,17 @@ bool monitorPrintJob()
 			printf("S: %s, temp: %d C / %d C", 
 				st->printerStatusStr,
 				st->extruderActualTemp_C, st->extruderTargetTemp_C);
-			if(st->bedTemp_C > 30)
-				printf(" - %d C", st->bedTemp_C);
+
+			if(st->bedActualTemp_C > 30)
+				printf(" - %d C / %d C", 
+					st->bedActualTemp_C,
+					st->bedTargetTemp_C);
 
 			if(st->printPercentComplete != 0 || st->printElapsedTime_m != 0 || st->printTimeLeft_m != 0)
 				printf(" Job: %d %% %d m %d m", st->printPercentComplete, st->printElapsedTime_m, st->printTimeLeft_m);
 
-			if(st->errorStatus)
-				printf(" Error: %d", st->errorStatus);
+			if(st->errorStatusStr[0] != '\0')
+				printf(" Error: %s", st->errorStatusStr);
 
 			printf("\n");
 		}
