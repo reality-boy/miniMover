@@ -56,19 +56,44 @@ struct XYZPrinterState
 {
 	bool isValid;
 
-	int bedActualTemp_C;
-	int bedTargetTemp_C;
-	int extruderActualTemp_C;
-	int extruderTargetTemp_C;
+	int bBedActualTemp_C;
 
-	int fillimantRemaining_mm;
-	int materialType;
-	int isFillamentPLA;
-	int nozzleID;
-	float nozzleDiameter_mm;
+	bool cCalibIsValid;
+	int cCalib[9];
 
-	int calib[9];
-	bool autoLevelEnabled;
+	int dPrintPercentComplete;
+	int dPrintElapsedTime_m;
+	int dPrintTimeLeft_m;
+
+	char eErrorStatusStr[64];
+
+	int fFillimantSpoolCount;
+	int fFillimant1Remaining_mm;
+	int fFillimant2Remaining_mm;
+
+	int hIsFillamentPLA;
+
+	char iMachineSerialNum[64]; //20
+
+	XYZPrintStatusCode jPrinterStatus;
+	int jPrinterSubStatus;
+	char jPrinterStatusStr[256];
+
+	int kMaterialType;
+
+	char lLang[32]; //4
+
+	int mVal[3]; // unknown m:x,y,z values
+
+	char nMachineName[64]; //32
+
+	int oPacketSize;
+	int oT; // unknown from o: command
+	int oC; // unknown from o: command
+	bool oAutoLevelEnabled;
+
+	char pMachineModelNumber[64]; //12
+
 	bool sBuzzerEnabled;
 	bool sButton;
 	bool sFrontDoor;
@@ -79,49 +104,48 @@ struct XYZPrinterState
 	bool sOpenFilament;
 	bool sSDCard;
 
-	int printPercentComplete;
-	int printElapsedTime_m;
-	int printTimeLeft_m;
+	int tExtruderCount;
+	int tExtruder1ActualTemp_C;
+	int tExtruder2ActualTemp_C;
+	int tExtruderTargetTemp_C; // set by t: or O:
 
-	char errorStatusStr[64];
-	XYZPrintStatusCode printerStatus;
-	int printerSubStatus;
-	char printerStatusStr[256];
+	char vFirmwareVersion[64]; //10
 
-	int packetSize;
+	int wFilamentCount;
+	char wFilament1SerialNumber[64]; //16
+	char wFilament2SerialNumber[64]; //16
 
-	int printerLifetimePowerOnTime_min;
-	int printerLastPowerOnTime_min;
-	int extruderLifetimePowerOnTime_min;
+	int zOffset; // from getZOffset()
 
-	char lang[32]; //4
+	char GLastUsed[64];
 
-	char machineName[64]; //32
-	char machineModelNumber[64]; //12
+	int LExtruderCount;
+	int LPrinterLifetimePowerOnTime_min;
+	int LPrinterLastPowerOnTime_min;
+	int LExtruderLifetimePowerOnTime_min;
+	// I suspect there are two of these on a dual color pinter
 
-	char machineSerialNum[64]; //20
-	char filamentSerialNumber[64]; //16
-	char nozzleSerialNumber[64]; //32
+	int OBedTargetTemp_C;
 
-	char firmwareVersion[64]; //10
+	char VString[64]; // unknown V:version number
 
-	char netIP[64]; //16
-	char netSSID[64];
-	char netChan[64];
-	char netMAC[64];
+	char WSSID[64];
+	char WBSSID[64];
+	char WChannel[64];
+	char WRssiValue[64];
+	char WPHY[64];
+	char WSecurity[64];
 
-	//****FixMe, work out what this is
-	int oT; // unknown from o: command
-	int oC; // unknown from o: command
-	int mVal[3]; // unknown m:x,y,z values
-	char vString[64]; // unknown V:version number
-	char wString[64]; // unknown W:wifi settings
+	int XNozzleID;
+	float XNozzleDiameter_mm;
+	char XNozzle1SerialNumber[64]; //32
+	char XNozzle2SerialNumber[64]; //32
 
-	// from getZOffset()
-	int zOffset;
-
-	// o t1, c1
-	// 4
+	char N4NetIP[64]; //16
+	char N4NetSSID[64];
+	char N4NetChan[64];
+	char N4NetMAC[64];
+	char N4NetRssiValue[64];
 };
 
 // info on each printer type

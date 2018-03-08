@@ -73,49 +73,124 @@ bool printStatus()
 {
 	if(xyz.updateStatus())
 	{
+		printf("\nPrinter Status\n\n");
 		const XYZPrinterState *st = xyz.getPrinterState();
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
 			printf("Bed temperature: %d C, target temp: %d C\n", 
-				st->bedActualTemp_C, st->bedTargetTemp_C);
+				st->bBedActualTemp_C, st->OBedTargetTemp_C);
 
 			printf("Bed calibration\n");
-			printf(" %d, %d, %d\n", st->calib[0], st->calib[1], st->calib[2]);
-			printf(" %d, %d, %d\n", st->calib[3], st->calib[4], st->calib[5]);
-			printf(" %d, %d, %d\n", st->calib[6], st->calib[7], st->calib[8]);
+			printf(" %d, %d, %d\n", st->cCalib[0], st->cCalib[1], st->cCalib[2]);
+			printf(" %d, %d, %d\n", st->cCalib[3], st->cCalib[4], st->cCalib[5]);
+			printf(" %d, %d, %d\n", st->cCalib[6], st->cCalib[7], st->cCalib[8]);
 
-			if(st->printPercentComplete == 0 && st->printElapsedTime_m == 0 && st->printTimeLeft_m == 0)
+			if(st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
 				printf("No job running\n");
 			else
-				printf("Printer status: %d %% %d m %d m\n", st->printPercentComplete, st->printElapsedTime_m, st->printTimeLeft_m);
+				printf("Printer status: %d %% %d m %d m\n", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
-			printf("Error: %s\n", st->errorStatusStr);
+			if(st->eErrorStatusStr[0] && st->eErrorStatusStr[0] != '0')
+				printf("Error: %s\n", st->eErrorStatusStr);
 
-			printf("Filament length: %0.3f m\n", st->fillimantRemaining_mm / 1000.0f);
+			if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
+				printf("Filament length: %0.3f m, %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
+			else 
+				printf("Filament length: %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f);
 
-			printf("PLA filament: %d\n", st->isFillamentPLA);
+			printf("PLA filament: %d\n", st->hIsFillamentPLA);
 
-			printf("Serial number: %s\n", st->machineSerialNum);
+			printf("Serial number: %s\n", st->iMachineSerialNum);
 
-			printf("Status: %s\n", st->printerStatusStr);
+			printf("Status: (%d, %d) %s\n", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
 
-			//printf("material type: %d\n", st->materialType);
+			if(st->kMaterialType > 0)
+				printf("material type: %d\n", st->kMaterialType);
 
-			printf("language: %s\n", st->lang);
+			printf("language: %s\n", st->lLang);
 
-			printf("printer name: %s\n", st->machineName);
+			if(st->mVal[0] != 0)
+				printf("mVal: %d,%d,%d\n", st->mVal[0], st->mVal[1], st->mVal[2]);
 
-			printf("Package size: %d bytes\n", st->packetSize);
+			printf("printer name: %s\n", st->nMachineName);
 
-			printf("Auto level %s\n", (st->autoLevelEnabled) ? "enabled" : "disabled");
+			printf("Package size: %d bytes\n", st->oPacketSize);
+			printf("ot: %d bytes\n", st->oT);
+			printf("oc: %d bytes\n", st->oC);
+			printf("Auto level %s\n", (st->oAutoLevelEnabled) ? "enabled" : "disabled");
+
+			printf("Model number: %s\n", st->pMachineModelNumber);
+
+			printf("Buzzer: %s\n", (st->sBuzzerEnabled) ? "enabled" : "disabled");
+			printf("Fd: %d\n", st->sFd);
+			printf("Fm: %d\n", st->sFm);
+			if(st->sButton)
+				printf("Has button\n");
+			if(st->sFrontDoor)
+				printf("Front door open\n");
+			if(st->sTopDoor)
+				printf("Top door open\n");
+			if(st->sHasLazer)
+				printf("Has lazer\n");
+			if(st->sOpenFilament)
+				printf("Uses open filament\n");
+			if(st->sSDCard)
+				printf("Has sd card\n");
+
+			if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
+				printf("Extruder temp: %d C, %d C, target temp: %d C\n", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
+			else
+				printf("Extruder temp: %d C, target temp: %d C\n", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
+
+			printf("Firmware version: %s\n", st->vFirmwareVersion);
+
+			printf("Filament SN: %s\n", st->wFilament1SerialNumber);
+			if(st->wFilamentCount > 1 && st->wFilament2SerialNumber[0])
+				printf("Filament 2 SN: %s\n", st->wFilament2SerialNumber);
 
 			printf("Z-Offset %d\n", st->zOffset);
 
-			printf("Model number: %s\n", st->machineModelNumber);
+			if(st->GLastUsed[0])
+				printf("Fillament last used: %s m\n", st->GLastUsed);
+
+			printf("Lifetime power on time: %d min\n", st->LPrinterLifetimePowerOnTime_min);
+			if(st->LPrinterLastPowerOnTime_min > 0)
+				printf("Last print time: %d min\n", st->LPrinterLastPowerOnTime_min);
+			printf("Extruder total time: %d min\n", st->LExtruderLifetimePowerOnTime_min);
+			// maybe a second extruder timer?
+
+			if(st->VString[0])
+				printf("v string: %s\n", st->VString);
+
+			if(st->WSSID[0])
+			{
+				printf("Wireless SSID: %s\n", st->WSSID);
+				printf("Wireless BSSID: %s\n", st->WBSSID);
+				printf("Wireless Channel: %s\n", st->WChannel);
+				printf("Wireless RssiValue: %s\n", st->WRssiValue);
+				printf("Wireless PHY: %s\n", st->WPHY);
+				printf("Wireless Security: %s\n", st->WSecurity);
+			}
+
+			printf("nozzle: %0.2f mm sn: %s", st->XNozzleDiameter_mm, st->XNozzle1SerialNumber);
+			if(st->XNozzle2SerialNumber[0])
+				printf(", %s", st->XNozzle2SerialNumber);
+			printf("\n");
+
+			if(st->N4NetSSID[0])
+			{
+				printf("Wireless SSID: %s\n", st->N4NetSSID);
+				printf("Wireless IP: %s\n", st->N4NetIP);
+				printf("Wireless Channel: %s\n", st->N4NetChan);
+				printf("Wireless MAC: %s\n", st->N4NetMAC);
+				printf("Wireless RssiValue: %s\n", st->N4NetRssiValue);
+			}
 
 			if(inf)
 			{
+				// model number is redundant, printed above
+
 				printf("File id: %s\n", inf->fileNum);
 				printf("Machine serial number: %s\n", inf->serialNum);
 				printf("Machine screen name: %s\n", inf->screenName);
@@ -128,44 +203,6 @@ bool printStatus()
 				// build volume
 				printf("Printer build volume: %d L %d W %d H\n", inf->length, inf->width, inf->height);
 			}
-
-			printf("buzzer: %s\n", (st->sBuzzerEnabled) ? "enabled" : "disabled");
-
-			printf("Extruder temp: %d C, target temp: %d C\n", st->extruderActualTemp_C, st->extruderTargetTemp_C);
-
-			printf("Firmware version: %s\n", st->firmwareVersion);
-
-			printf("Filament SN: %s\n", st->filamentSerialNumber);
-
-			printf("Machine power on time: %d min\n", st->printerLifetimePowerOnTime_min);
-			printf("Extruder power on time: %d min\n", st->extruderLifetimePowerOnTime_min);
-			printf("Last power on time: %d min\n", st->printerLastPowerOnTime_min);
-
-			printf("nozzle: %0.2f mm sn: %s\n", st->nozzleDiameter_mm, st->nozzleSerialNumber);
-
-			//****FixMe, dump
-			/*
-			st->mVal[0];
-			st->mVal[1];
-			st->mVal[2];
-			st->sButton;
-			st->sFrontDoor;
-			st->sTopDoor;
-			st->sHasLazer;
-			st->sFd;
-			st->sFm;
-			st->sOpenFilament;
-			st->sSDCard;
-			st->netIP;
-			st->netSSID;
-			st->netChan;
-			st->netMAC;
-			st->oT;
-			st->oC;
-			st->mVal;
-			st->vString;
-			st->wString;
-			*/
 		}
 		// else do nothing
 
@@ -183,28 +220,31 @@ bool monitorPrintJob()
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
-			printf("S: %s, temp: %d C / %d C", 
-				st->printerStatusStr,
-				st->extruderActualTemp_C, st->extruderTargetTemp_C);
+			printf("S: %s", st->jPrinterStatusStr);
 
-			if(st->bedActualTemp_C > 30)
+			if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
+				printf(", temp: %d C %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
+			else
+				printf(", temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
+
+			if(st->bBedActualTemp_C > 30)
 				printf(" - %d C / %d C", 
-					st->bedActualTemp_C,
-					st->bedTargetTemp_C);
+					st->bBedActualTemp_C,
+					st->OBedTargetTemp_C);
 
-			if(st->printPercentComplete != 0 || st->printElapsedTime_m != 0 || st->printTimeLeft_m != 0)
-				printf(" Job: %d %% %d m %d m", st->printPercentComplete, st->printElapsedTime_m, st->printTimeLeft_m);
+			if(st->dPrintPercentComplete != 0 || st->dPrintElapsedTime_m != 0 || st->dPrintTimeLeft_m != 0)
+				printf(" Job: %d %% %d m %d m", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
-			if(st->errorStatusStr[0] != '\0')
-				printf(" Error: %s", st->errorStatusStr);
+			if(st->eErrorStatusStr[0] != '\0')
+				printf(" Error: %s", st->eErrorStatusStr);
 
 			printf("\n");
 		}
 		// else just wait till next cycle
 
 		// if not PRINT_NONE
-		return ( st->printerStatus != PRINT_ENDING_PROCESS_DONE &&
-				 st->printerStatus != PRINT_NONE);
+		return ( st->jPrinterStatus != PRINT_ENDING_PROCESS_DONE &&
+				 st->jPrinterStatus != PRINT_NONE);
 	}
 
 	return true; // assume we are still printing if we got an update error
@@ -273,87 +313,95 @@ int main(int argc, char **argv)
 	if(argc <= 1)
 	{
 		postHelp();
-		return 0;
-	}
 
-	for(int i=1; i<argc; i++)
+#ifdef _DEBUG
+		if(checkCon())
+			xyz.printRawStatus();
+#endif
+	}
+	else
 	{
-		if(!isKey(argv[i]))
+		for(int i=1; i<argc; i++)
 		{
-			// print or convert file depending on extension
-			if(xyz.isGcodeFile(argv[i]))
+			if(!isKey(argv[i]))
 			{
-				printf("starting print file\n");
-				if(handlePrintFile(argv[i]))
-					printf("print file succeeded\n");
+				// print or convert file depending on extension
+				if(xyz.isGcodeFile(argv[i]))
+				{
+					printf("starting print file\n");
+					if(handlePrintFile(argv[i]))
+						printf("print file succeeded\n");
+					else
+						printf("print file failed to print %s\n", argv[i]);
+				}
+				else if(xyz.is3wFile(argv[i]))
+				{
+					printf("starting convert file\n");
+					checkCon(); 
+					if(xyz.convertFile(argv[i]))
+						printf("convert file succeeded\n");
+					else
+						printf("convert file failed to convert %s\n", argv[i]);
+				}
 				else
-					printf("print file failed to print %s\n", argv[i]);
-			}
-			else if(xyz.is3wFile(argv[i]))
-			{
-				printf("starting convert file\n");
-				checkCon(); 
-				if(xyz.convertFile(argv[i]))
-					printf("convert file succeeded\n");
-				else
-					printf("convert file failed to convert %s\n", argv[i]);
+					printf("unknown file type %s\n", argv[i]);
 			}
 			else
-				printf("unknown file type %s\n", argv[i]);
-		}
-		else
-		{
-			switch(argv[i][1])
 			{
-			case '?':
-				postHelp();
-				break;
-			case 'a':
-				if(checkCon())
-					xyz.enableAutoLevel(argv[i][2] != '-');
-				break;
-			case 'b':
-				if(checkCon())
-					xyz.enableBuzzer(argv[i][2] != '-');
-				break;
-			case 'c':
-				if(argv[i][2] == 'l') // clean
+				switch(argv[i][1])
 				{
+				case '?':
+					postHelp();
+					break;
+				case 'a':
 					if(checkCon())
+						xyz.enableAutoLevel(argv[i][2] != '-');
+					break;
+				case 'b':
+					if(checkCon())
+						xyz.enableBuzzer(argv[i][2] != '-');
+					break;
+				case 'c':
+					if(argv[i][2] == 'l') // clean
 					{
-						printf("starting clean nozzel\n");
-						if(xyz.cleanNozzleStart())
+						if(checkCon())
 						{
-							printf("clean nozzle with a wire and press enter when finished\n");
-							getch();
-
-							if(xyz.cleanNozzleFinish())
+							printf("starting clean nozzel\n");
+							if(xyz.cleanNozzleStart())
 							{
-								printf("clean nozzle succeeded\n");
+								printf("clean nozzle with a wire and press enter when finished\n");
+								getch();
+
+								if(xyz.cleanNozzleFinish())
+								{
+									printf("clean nozzle succeeded\n");
+								}
+								else
+									printf("clean nozzle failed\n");
 							}
 							else
 								printf("clean nozzle failed\n");
 						}
-						else
-							printf("clean nozzle failed\n");
 					}
-				}
-				else if(argv[i][2] == 'a') // calibrate
-				{
-					if(checkCon())
+					else if(argv[i][2] == 'a') // calibrate
 					{
-						printf("starting calibration\n");
-						if(xyz.calibrateBedStart())
+						if(checkCon())
 						{
-							printf("lower detector and hit enter to continue...\n");
-							getch();
-							if(xyz.calibrateBedRun())
+							printf("starting calibration\n");
+							if(xyz.calibrateBedStart())
 							{
-								printf("raise detector and hit enter to continue...\n");
+								printf("lower detector and hit enter to continue...\n");
 								getch();
-								if(xyz.calibrateBedFinish())
+								if(xyz.calibrateBedRun())
 								{
-									printf("calibration completed succesfully\n");
+									printf("raise detector and hit enter to continue...\n");
+									getch();
+									if(xyz.calibrateBedFinish())
+									{
+										printf("calibration completed succesfully\n");
+									}
+									else
+										printf("calibration failed\n");
 								}
 								else
 									printf("calibration failed\n");
@@ -361,196 +409,194 @@ int main(int argc, char **argv)
 							else
 								printf("calibration failed\n");
 						}
-						else
-							printf("calibration failed\n");
 					}
-				}
-				else // convert
-				{
-					if(i+1 < argc && !isKey(argv[i+1])) 
+					else // convert
 					{
-						printf("starting convert file\n");
-						checkCon(); 
-						if(xyz.convertFile(argv[i+1]))
-							printf("convert file succeeded\n");
-						else
-							printf("convert file failed to convert %s\n", argv[i+1]);
-						i++;
-					}
-					else
-						printf("invalid argument\n");
-				}
-				break;
-			case 'f':
-				if(i+1 < argc && !isKey(argv[i+1])) 
-				{
-					if(checkCon())
-					{
-						printf("starting update firmware\n");
-						if(xyz.writeFirmware(argv[i+1], updateStatus))
-							printf("update firmware succeeded\n");
-						else
-							printf("update firmware failed to upload %s\n", argv[i+1]);
-					}
-					i++;
-				}
-				else
-					printf("invalid argument\n");
-				break;
-			case 'h':
-				if(checkCon())
-				{
-					printf("start home printer\n");
-					if(xyz.homePrinter())
-						printf("home printer succeeded\n");
-					else
-						printf("home printer failed\n");
-				}
-				break;
-			case 'l':
-				if(checkCon())
-				{
-					printf("starting load fillament\n");
-					if(xyz.loadFillamentStart())
-					{
-						printf("wait for fillament to come out of nozzle then hit enter\n");
-						getch();
-
-						if(xyz.loadFillamentFinish())
+						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
-							printf("load fillament succeeded\n");
+							printf("starting convert file\n");
+							checkCon(); 
+							if(xyz.convertFile(argv[i+1]))
+								printf("convert file succeeded\n");
+							else
+								printf("convert file failed to convert %s\n", argv[i+1]);
+							i++;
 						}
 						else
-							printf("load fillament failed\n");
+							printf("invalid argument\n");
 					}
-					else
-						printf("load fillament failed\n");
-				}
-				break;
-			case 'o':
-				if(i+1 < argc && !isKey(argv[i+1]))
-				{
-					int t = atoi(argv[i+1]);
-					if(checkCon())
-					{
-						int offset = xyz.getZOffset();
-						if(offset > 0)
-							xyz.setZOffset(offset + t);
-					}
-					i++;
-				}
-				else
-					printf("invalid argument\n");
-				break;
-			case 'p': // set port
-				if(argv[i][2] == 'o')
-				{
-					if(i+1 < argc && !isKey(argv[i+1])) 
-					{
-						port = atoi(argv[i+1]);
-						i++;
-					} else 
-						printf("port needs a number\n");
-				}
-				else
-				{
+					break;
+				case 'f':
 					if(i+1 < argc && !isKey(argv[i+1])) 
 					{
 						if(checkCon())
 						{
-							printf("starting print file\n");
-							if(handlePrintFile(argv[i+1]))
-								printf("print file succeeded\n");
+							printf("starting update firmware\n");
+							if(xyz.writeFirmware(argv[i+1], updateStatus))
+								printf("update firmware succeeded\n");
 							else
-								printf("print file failed to print %s\n", argv[i+1]);
+								printf("update firmware failed to upload %s\n", argv[i+1]);
 						}
 						i++;
 					}
 					else
 						printf("invalid argument\n");
-				}
-				break;
-			case 'r': // raw status
-				if(checkCon())
-					xyz.printRawStatus();
-				break;
-			case 's': // status
-				if(checkCon())
-					printStatus();
-				break;
-			case 'u':
-				if(checkCon())
-				{
-					printf("start unload fillament\n");
-					if(xyz.unloadFillament())
-						printf("unload fillament succeeded\n");
+					break;
+				case 'h':
+					if(checkCon())
+					{
+						printf("start home printer\n");
+						if(xyz.homePrinter())
+							printf("home printer succeeded\n");
+						else
+							printf("home printer failed\n");
+					}
+					break;
+				case 'l':
+					if(checkCon())
+					{
+						printf("starting load fillament\n");
+						if(xyz.loadFillamentStart())
+						{
+							printf("wait for fillament to come out of nozzle then hit enter\n");
+							getch();
+
+							if(xyz.loadFillamentFinish())
+							{
+								printf("load fillament succeeded\n");
+							}
+							else
+								printf("load fillament failed\n");
+						}
+						else
+							printf("load fillament failed\n");
+					}
+					break;
+				case 'o':
+					if(i+1 < argc && !isKey(argv[i+1]))
+					{
+						int t = atoi(argv[i+1]);
+						if(checkCon())
+						{
+							int offset = xyz.getZOffset();
+							if(offset > 0)
+								xyz.setZOffset(offset + t);
+						}
+						i++;
+					}
 					else
-						printf("unload fillament failed\n");
-				}
-				break;
-			case 'x':
-				if(i+1 < argc && !isKey(argv[i+1])) 
-				{
-					int t = atoi(argv[i+1]);
+						printf("invalid argument\n");
+					break;
+				case 'p': // set port
+					if(argv[i][2] == 'o')
+					{
+						if(i+1 < argc && !isKey(argv[i+1])) 
+						{
+							port = atoi(argv[i+1]);
+							i++;
+						} else 
+							printf("port needs a number\n");
+					}
+					else
+					{
+						if(i+1 < argc && !isKey(argv[i+1])) 
+						{
+							if(checkCon())
+							{
+								printf("starting print file\n");
+								if(handlePrintFile(argv[i+1]))
+									printf("print file succeeded\n");
+								else
+									printf("print file failed to print %s\n", argv[i+1]);
+							}
+							i++;
+						}
+						else
+							printf("invalid argument\n");
+					}
+					break;
+				case 'r': // raw status
+					if(checkCon())
+						xyz.printRawStatus();
+					break;
+				case 's': // status
+					if(checkCon())
+						printStatus();
+					break;
+				case 'u':
 					if(checkCon())
 					{
-						if(!xyz.jogPrinter('x', t))
-							printf("jog printer failed\n");
+						printf("start unload fillament\n");
+						if(xyz.unloadFillament())
+							printf("unload fillament succeeded\n");
+						else
+							printf("unload fillament failed\n");
 					}
-					i++;
-				}
-				else
-				{
-					if(checkCon())
+					break;
+				case 'x':
+					if(i+1 < argc && !isKey(argv[i+1])) 
 					{
-						if(!xyz.jogPrinter('x', 10))
-							printf("jog printer failed\n");
+						int t = atoi(argv[i+1]);
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('x', t))
+								printf("jog printer failed\n");
+						}
+						i++;
 					}
-				}
-				break;
-			case 'y':
-				if(i+1 < argc && !isKey(argv[i+1]))
-				{
-					int t = atoi(argv[i+1]);
-					if(checkCon())
+					else
 					{
-						if(!xyz.jogPrinter('y', t))
-							printf("jog printer failed\n");
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('x', 10))
+								printf("jog printer failed\n");
+						}
 					}
-					i++;
-				}
-				else
-				{
-					if(checkCon())
+					break;
+				case 'y':
+					if(i+1 < argc && !isKey(argv[i+1]))
 					{
-						if(!xyz.jogPrinter('y', 10))
-							printf("jog printer failed\n");
+						int t = atoi(argv[i+1]);
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('y', t))
+								printf("jog printer failed\n");
+						}
+						i++;
 					}
-				}
-				break;
-			case 'z':
-				if(i+1 < argc && !isKey(argv[i+1]))
-				{
-					int t = atoi(argv[i+1]);
-					if(checkCon())
+					else
 					{
-						if(!xyz.jogPrinter('z', t))
-							printf("jog printer failed\n");
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('y', 10))
+								printf("jog printer failed\n");
+						}
 					}
-					i++;
-				}
-				else
-				{
-					if(checkCon())
+					break;
+				case 'z':
+					if(i+1 < argc && !isKey(argv[i+1]))
 					{
-						if(!xyz.jogPrinter('z', 10))
-							printf("jog printer failed\n");
+						int t = atoi(argv[i+1]);
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('z', t))
+								printf("jog printer failed\n");
+						}
+						i++;
 					}
+					else
+					{
+						if(checkCon())
+						{
+							if(!xyz.jogPrinter('z', 10))
+								printf("jog printer failed\n");
+						}
+					}
+					break;
+				default:
+					printf("unknown argument %s\n", argv[i]);
+					break;
 				}
-				break;
-			default:
-				printf("unknown argument %s\n", argv[i]);
-				break;
 			}
 		}
 	}

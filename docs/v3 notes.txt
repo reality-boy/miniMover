@@ -24,23 +24,77 @@ XYZv3/query=a
 	d:0,0,0
 	e:0
 	f:1,84090
+	//h:x
 	i:3FM1XPUS5CA68P0591
 	j:9511,0 or j:9511
+	//k:xx
 	l:en
 	m:0,0,0
 	n:daVinci Mini 1  
 	o:p8,t1,c1,a+
 	p:dv1MX0A000
-	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"} or s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
+	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"} 
+		or s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
 	t:1,24,0 or t:1,16
 	v:1.1.1
-	w:1,PMP6PTH6840596 or w:1,--------------
+	w:1,PMP6PTH6840596 
+		or w:1,--------------
 	z:327
-	L:1,268830,5529,295 or L:1,320700,58543
+	//G:{"LastUsed":"len"}
+	L:1,268830,5529,295 
+		or L:1,320700,58543
 	O:{"nozzle":"240","bed":"90"}
 	V:5.1.5
+	//W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
 	X:2,GB-0002-0000-TH-68T-0250-5482
 	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
+
+
+// da Vinci miniMaker
+XYZv3/query=a
+	b:20
+	c:{428,446,458,425,437,446,404,411,421}
+	d:0,0,0
+	w:1,PMP6PTH6840596
+	e:0
+	f:1,33365
+	i:3FM1XPUS5CA68P0591
+	j:9511,0
+	L:1,365640,7975,4
+	m:0,0,0
+	o:p8,t1,c1,a+
+	p:dv1MX0A000
+	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
+	t:1,20,0
+	v:1.1.1
+	n:daVinci Mini 1
+	X:2,GB-0002-0000-TH-68T-0250-9579
+	l:en
+	z:321
+
+// da Vinci 1.0 Pro
+XYZv3/query=a
+	b:21
+	d:0,0,0
+	e:0
+	f:1,200000
+	i:3F1AWPUS5TH638T072
+	j:9511
+	L:1,320700,58543
+	m:0,0,0
+	o:p8,t1,c1,a-
+	O:{"nozzle":"240","bed":"90"}
+	p:dvF1W0A000
+	s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
+	t:1,16
+	v:1.3.8
+	w:1,--------------
+	n:daVinci Pro. 1w
+	X:2,GB-0004-0000-TH-637-0383-38470
+	l:en
+	V:5.1.5
+	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
+	$
 
 // heat bed temperature
 // b:xx
@@ -64,16 +118,117 @@ XYZv3/query=d
 	d:0,0,0
 
 // error status
-// e:ec
+// e:ec,optional?
 //   ec - some sort of string
-//****ToDo, scan code for details
+	/*
+	F10
+	"" - no error
+	0 - no error
+	2 - nozzle heater timeout (0011)
+	3 - print bed heater timeout (0003)
+	4 - nozzle heat controll error (0014)
+	5 - print bed heat controll error (0013)
+	6 - corrupt flash drive call Format_SD(1)
+	7 - eeprom write error (0007)
+	8 - eeprom read error (0008)
+	9 - x axis move error (0030)
+	10 - y axis move error (0031)
+	11 - z axis move error (0032)
+	14 - firmware update error
+	15 - filament jam
+	16 - filament out
+	17 - wrong filament
+	18 - flash memory error (0050)
+	20 - top door open
+	21 - front door open
+	22 - ??? not an error ???
+	23 - filament low or out
+	24 - filament out
+	26 - ??? not an error ???
+	27 - machine buisy
+	28 - no filament cassette (0028)
+	29 - filament cassette empty (0029)
+	30 - ??? not an error ???
+	31 - scanner error
+	32 - scanner buisy
+
+	F11, F20
+	"" - no error
+	2 - no error
+	3 - M_MACHINE_BUSY
+	258: M_THERMAL_BED_OUT_TIMER 0003
+	259: - no error
+	262: - no error
+	263: - no error
+	268 - no error
+	260: M_THERMAL_BED_OUT_CONTROL 0013
+	261: L_ERROR_SD_CARD // flash disk corrupt this.gsettExport.Format_SD(2);
+	264: M_MACHINE_ERROR_X_AXIS 0030
+	265: M_MACHINE_ERROR_Y_AXIS 0031
+	266: M_MACHINE_ERROR_Z_AXIS 0032
+	267: M_FLASHMEMORY_ERROR 0050
+	269: L_ERROR_FLASH_RAM 0051
+	270: L_ERROR_NOZZLE_EEPROM 0052
+	271: L_40W35W_NOZZLE_EEPROM 0054
+	513: M_PC_COMMUNICATION_ERROR 0201
+	514: M_FW_UPDATE_ERROR
+	523: L_ERROR_SD_CARD
+	524: L_ERROR_SD_CARD
+	1025: M_TOP_DOOR_OPEN
+	1026: M_FRONT_DOOR_OPEN
+	536871169: M_THERMAL_HEATER_OUT_TIMER1 0012
+	536871171: M_THERMAL_HEATER_OUT_CONTROL1 0015
+	536871427: M_FILAMENT_JAM1
+	536871428: - no error
+	536871435: - no error
+	536871436: - no error
+	536871437: - no error
+	536871438: - no error
+	536871429: M_FILAMENT_WRONG1
+	536871430: M_NO_CASSETTE1 0028
+	536871431: M_CASSETTE_EMPTY1 0029
+	536871432: M_EEPROM_WRITE_ERROR1 0007
+	536871433: M_EEPROM_READ_ERROR1 0008
+	536871434: - no error
+	536871439: L_FILAMENT_NO_INSTALL1
+	536871939: M_FILAMENT_LOW1
+	536871940: M_FILAMENT_LOW_TO_EMPTY1
+	536871941: M_FILAMENT_END1
+	1073742081: M_THERMAL_HEATER_OUT_TIMER 0011
+	1073742082: - no error
+	1073742083: M_THERMAL_HEATER_OUT_CONTROL 0014
+	1073742339: M_FILAMENT_JAM
+	1073742340: - no error
+	1073742347: - no error
+	1073742348: - no error
+	1073742349: - no error
+	1073742350: - no error
+	1073742341: M_FILAMENT_WRONG
+	1073742342: M_NO_CASSETTE 0028
+	1073742343: M_CASSETTE_EMPTY 0029
+	1073742344: M_EEPROM_WRITE_ERROR 0007
+	1073742345: M_EEPROM_READ_ERROR 0008
+	1073742346: - no error
+	1073742351: L_FILAMENT_NO_INSTALL
+	1073742851: M_FILAMENT_LOW
+	1073742852: M_FILAMENT_LOW_TO_EMPTY
+	1073742853: M_FILAMENT_END
+
+
+	FM1W, FM1X, FN1X
+
+	1073742342
+	1073742345
+	1073742342,1073742345
+	*/
 XYZv3/query=e
 	e:0
 
 // filament remaining
-// f:ct,len
+// f:ct,len,len2
 //   ct - how many spools on printer, 1 for normal printer
 //   len - filament left in millimeters
+//   len2 - filament num2 left in millimeters, optional
 XYZv3/query=f
 	f:1,84090
 
@@ -90,10 +245,10 @@ XYZv3/query=h
 // i:sn
 //   sn - serial number
 //   note, convert ? characters to - characters when parsing sn
-//   AAAAAABBBCCCCDDDDD
+//   AAAAAABBCCCCCDDDDD
 //   AAAAAA machine id
-//   BBB ???
-//   CCCC ???
+//   BB     region (US, etc)
+//   CCCCC ???
 //   DDDDD ??? 
 XYZv3/query=i
 	i:3FM1XPUS5CA68P0591
@@ -101,7 +256,7 @@ XYZv3/query=i
 // printer status
 // j:st,sb
 //   st - status id
-//   sb - substatus id
+//   sb - substatus id, optional
 /*
    status ID:
 
@@ -168,7 +323,7 @@ XYZv3/query=j
 
 // material type
 // k:xx
-//   xx is material type?
+//   xx is material type, in hex?
 //   one of 41 46 47 50 51 54 56
 XYZv3/query=k
 	// not used on miniMaker
@@ -217,7 +372,8 @@ XYZv3/query=o
 //	F11,	"dvF110B000",	"daVinciF11",	3F11XP,	0, 2, 1, 3, 200x200x200,	"da Vinci 1.1 Plus" //???? I'm suspicious of this one, think it belongs above
 //
 //	FN1X,	"dv1NX0A000",	"dv1NX0A000",	3FN1XP,	1, 2, 1, 3, 120x120x120,	"da Vinci Nano"
-//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3, 150x150x150,	"da Vinci Mini w"
+//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3,
+150x150x150,	"da Vinci Mini w" // may show up as "dv1MW0B000"
 //	FM1X,	"dv1MX0A000",	"dv1MX0A000",	3FM1XP,	1, 2, 1, 3, 150x150x150,	"da Vinci miniMaker"
 //	FJR10,	"dv1J00A000",	"daVinciJR10",	??????,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0"
 //	FJR10W,	"dv1JW0A000",	"daVinciJR10W",	3F1JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0 Wireless"
@@ -274,17 +430,16 @@ XYZv3/query=r
 //   sd:yes  sd card yes or no
 XYZv3/query=s
 	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
+	s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
 
 // extruder temperature
-// t:ss,aa,bb,cc,dd
+// t:ss,aa,bb
 //   if ss == 1
 //     aa is extruder temp in C
-//     bb is target temp in C
+//     bb is target temp in C, optional
 //   else
 //     aa is extruder 1 temp
 //     bb is extruder 2 temp
-//     cc is target 1 temp???
-//     dd is target 2 temp???
 XYZv3/query=t
 	t:1,20,0
 
@@ -292,10 +447,10 @@ XYZv3/query=t
 XYZv3/query=u
 
 // firmware version
-// v:fw or v:os,ap,fw
-//   fw is firmware version string
+// v:en or v:os,ap,en
 //   os is os version string
 //   ap is app version string
+//   en is engine version string (firmware)
 XYZv3/query=v
 	v:1.1.1
 
@@ -303,7 +458,7 @@ XYZv3/query=v
 // w:id,sn,xx
 //   if id == 1
 //     sn is filament 1 serial number
-//     xx is optional default filament temp
+//     xx is default filament temp, optional
 //   else
 //     sn is filament 1 serial number
 //     xx is filament 2 serial number
@@ -312,6 +467,7 @@ XYZv3/query=v
 //   DDMLCMMTTTSSSS
 //   	DD - Dloc
 //   	M - Material
+//	// from here down is opional
 //   	L - Length
 //   	    varies but in general 
 //   	    3 - 120000 mm
@@ -320,7 +476,7 @@ XYZv3/query=v
 //   	C - color
 //   	MM - Mloc
 //   	TTT - Mdate
-//   	SSSS - serial number
+//   	SSSS - serial number, optional
 XYZv3/query=w
 	w:1,PMP6PTH6840596
 
@@ -340,7 +496,14 @@ XYZv3/query=C
 XYZv3/query=D
 XYZv3/query=E
 XYZv3/query=F
+
+// info on last print and fillament used?
+// len is length of fillament used in last print
+//**** need to see this from a real printer
 XYZv3/query=G
+	G:{"LastUsed":"len"} 
+
+// unused
 XYZv3/query=H
 XYZv3/query=I
 XYZv3/query=J
@@ -351,7 +514,7 @@ XYZv3/query=K
 //   xx - unknown, set to 1
 //   ml - machine lifetime power on time (minutes)
 //   el - extruder lifetime power on time (minutes) (print time)
-//   lt - last power on time (minutes) (or last print time?)
+//   lt - last power on time (minutes) (or last print time?), optional
 XYZv3/query=L
 	L:1,268830,5529,295
 
@@ -379,25 +542,38 @@ XYZv3/query=V
 	V:5.1.5
 
 // Ask wifi information, only with mini w?
-// some sort of json with ssid, bssid, channel, rssiValue, PHY, security
+//
+// W:{"ssid":"a","bssid":"b","channel":"c","rssiValue":"d","PHY":"e","security":"f"}
+// all are optional
+//  a is ssid
+//  b is bssid
+//  c is channel
+//  d is rssiValue
+//  e is PHY
+//  f is security
+//
 XYZv3/query=W
+	W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
 
 // Nozzel Info
-// X:nt,sn
+// X:nt,sn,sn2
 //   nt is nozzel type one of 
 //     3, 84
 //       nozzle diameter 0.3 mm
-//     1, 2, 77, 82 
+//     1, 77, 82
 //       nozzle diameter 0.4 mm
+//     2
+//       nozzle diameter 0.4 mm, could be dual extruder
 //     54
 //       nozzle diameter 0.6 mm
 //     56 
 //       nozzle diameter 0.8 mm
 //     L, N, H, Q
 //       lazer engraver
-//   sn is serial number in the form xx-xx-xx-xx-xx-yy
+//   sn is serial number in the form xx-xx-xx-xx-xx-xx-yy
 //     where xx is the nozzle serial number
 //     and yy is the total nozzle print time (in minutes)
+//   sn2 is optional second serial number for second nozzle
 XYZv3/query=X
 	X:2,GB-0002-0000-TH-68T-0250-5482
 
@@ -410,8 +586,9 @@ XYZv3/query=2
 XYZv3/query=3
 
 // Query IP only machines with network
+//  port is always 9100
 XYZv3/query=4
-	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
+	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd","rssiValue":"num?"}}
 
 // unused
 XYZv3/query=5

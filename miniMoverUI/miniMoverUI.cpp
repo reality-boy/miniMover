@@ -111,72 +111,111 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		SendMessage(hwndListInfo, LB_RESETCONTENT, 0, 0);
 
 		listAddLine(hwndListInfo, "Name: %s", inf->screenName);
-		//listAddLine(hwndListInfo, "Given name: %s", st->machineName);
-		//listAddLine(hwndListInfo, "Model num: %s", st->info.modelNum);
-		listAddLine(hwndListInfo, "Model num: %s", st->machineModelNumber);
+		//listAddLine(hwndListInfo, "Given name: %s", st->nMachineName);
+		//listAddLine(hwndListInfo, "Model num: %s", inf->modelNum);
+		listAddLine(hwndListInfo, "Model num: %s", st->pMachineModelNumber);
 		listAddLine(hwndListInfo, "File id: %s", inf->fileNum);
-		//listAddLine(hwndListInfo, "Serial num: %s", st->info.serialNum);
-		listAddLine(hwndListInfo, "Serial num: %s", st->machineSerialNum);
+		//listAddLine(hwndListInfo, "Serial num: %s", inf->serialNum);
+		listAddLine(hwndListInfo, "Serial num: %s", st->iMachineSerialNum);
 
-		listAddLine(hwndListInfo, "Fillament serial: %s", st->filamentSerialNumber);
-		listAddLine(hwndListInfo, "Nozzle serial: %s", st->nozzleSerialNumber);
-		listAddLine(hwndListInfo, "Firmware ver: %s", st->firmwareVersion);
-		listAddLine(hwndListInfo, "Nozzle ID: %d", st->nozzleID);
-		listAddLine(hwndListInfo, "Nozzle Diam: %0.2f mm", st->nozzleDiameter_mm);
+		listAddLine(hwndListInfo, "Fillament serial: %s", st->wFilament1SerialNumber);
+		if(st->wFilamentCount > 1 && st->wFilament2SerialNumber[0])
+			listAddLine(hwndListInfo, "Fillament 2 serial: %s", st->wFilament2SerialNumber);
+
+		listAddLine(hwndListInfo, "Nozzle serial: %s", st->XNozzle1SerialNumber);
+		if(st->XNozzle2SerialNumber[0])
+			listAddLine(hwndListInfo, "Nozzle 2 serial: %s", st->XNozzle2SerialNumber);
+		listAddLine(hwndListInfo, "Firmware ver: %s", st->vFirmwareVersion);
+		listAddLine(hwndListInfo, "Nozzle ID: %d, Diam %0.2f mm", st->XNozzleID, st->XNozzleDiameter_mm);
 
 		listAddLine(hwndListInfo, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
-		listAddLine(hwndListInfo, "File is v5: %d", inf->fileIsV5);
-		listAddLine(hwndListInfo, "File is zip: %d", inf->fileIsZip);
-		//listAddLine(hwndListInfo, "Com is v3: %d", inf->comIsV3);
-		listAddLine(hwndListInfo, "Is PLA: %d", st->isFillamentPLA);
-		listAddLine(hwndListInfo, "Packet size: %d", st->packetSize);
+		if(inf->fileIsV5)
+			listAddLine(hwndListInfo, "File is v5");
+		if(inf->fileIsZip)
+			listAddLine(hwndListInfo, "File is zip");
+		//if(inf->comIsV3)
+		//	listAddLine(hwndListInfo, "Com is v3");
+		if(st->hIsFillamentPLA)
+			listAddLine(hwndListInfo, "Is PLA");
 
-		listAddLine(hwndListInfo, "Calib: %d,%d,%d,%d,%d,%d,%d,%d,%d", 
-														st->calib[0], st->calib[1], st->calib[2],
-														st->calib[3], st->calib[4], st->calib[5],
-														st->calib[6], st->calib[7], st->calib[8]);
-		listAddLine(hwndListInfo, "Auto level: %d", st->autoLevelEnabled);
+		listAddLine(hwndListInfo, "Packet size: %d", st->oPacketSize);
+
+		if(st->cCalibIsValid)
+			listAddLine(hwndListInfo, "Calib: %d,%d,%d,%d,%d,%d,%d,%d,%d", 
+								st->cCalib[0], st->cCalib[1], st->cCalib[2],
+								st->cCalib[3], st->cCalib[4], st->cCalib[5],
+								st->cCalib[6], st->cCalib[7], st->cCalib[8]);
+		listAddLine(hwndListInfo, "Auto level: %d", st->oAutoLevelEnabled);
 		listAddLine(hwndListInfo, "Buzzer: %d", st->sBuzzerEnabled);
 		listAddLine(hwndListInfo, "Z Offset: %d", st->zOffset);
+		listAddLine(hwndListInfo, "oT: %d, oC: %d, Fd: %d, Fm: %d", 
+			st->oT, st->oC, st->sFd, st->sFm);
 
-		d =  st->printerLifetimePowerOnTime_min / (60 * 24);
-		h = (st->printerLifetimePowerOnTime_min / 60) % 24;
-		m =  st->printerLifetimePowerOnTime_min % 60;
-		listAddLine(hwndListInfo, "Lifetime on: %d d %d h %d m", d, h, m);
+		if(st->sFrontDoor)
+			listAddLine(hwndListInfo, "Front Door Open");
+		if(st->sTopDoor)
+			listAddLine(hwndListInfo, "Top Door Open");
+		if(st->sHasLazer)
+			listAddLine(hwndListInfo, "Has Lazer");
+		if(st->sButton)
+			listAddLine(hwndListInfo, "Has button");
+		if(st->sOpenFilament)
+			listAddLine(hwndListInfo, "Uses Open Filamen");
+		if(st->sSDCard)
+			listAddLine(hwndListInfo, "Has SD card");
 
-		d =  st->printerLastPowerOnTime_min / (60 * 24);
-		h = (st->printerLastPowerOnTime_min / 60) % 24;
-		m =  st->printerLastPowerOnTime_min % 60;
-		listAddLine(hwndListInfo, "Last power on: %d d %d h %d m", d, h, m);
+		d =  st->LPrinterLifetimePowerOnTime_min / (60 * 24);
+		h = (st->LPrinterLifetimePowerOnTime_min / 60) % 24;
+		m =  st->LPrinterLifetimePowerOnTime_min % 60;
+		listAddLine(hwndListInfo, "Lifetime power on time: %d d %d h %d m", d, h, m);
 
-		d =  st->extruderLifetimePowerOnTime_min / (60 * 24);
-		h = (st->extruderLifetimePowerOnTime_min / 60) % 24;
-		m =  st->extruderLifetimePowerOnTime_min % 60;
-		listAddLine(hwndListInfo, "Power on: %d d %d h %d m", d, h, m);
+		if(st->LPrinterLastPowerOnTime_min > 0)
+		{
+			d =  st->LPrinterLastPowerOnTime_min / (60 * 24);
+			h = (st->LPrinterLastPowerOnTime_min / 60) % 24;
+			m =  st->LPrinterLastPowerOnTime_min % 60;
+			listAddLine(hwndListInfo, "Last print time: %d d %d h %d m", d, h, m);
+		}
 
-		//****FixMe, dump
-		/*
-		st->mVal[0];
-		st->mVal[1];
-		st->mVal[2];
-		st->sButton;
-		st->sFrontDoor;
-		st->sTopDoor;
-		st->sHasLazer;
-		st->sFd;
-		st->sFm;
-		st->sOpenFilament;
-		st->sSDCard;
-		st->netIP;
-		st->netSSID;
-		st->netChan;
-		st->netMAC;
-		st->oT;
-		st->oC;
-		st->mVal;
-		st->vString;
-		st->wString;
-		*/
+		//st->LExtruderCount
+		// I suspect there are two of these
+		d =  st->LExtruderLifetimePowerOnTime_min / (60 * 24);
+		h = (st->LExtruderLifetimePowerOnTime_min / 60) % 24;
+		m =  st->LExtruderLifetimePowerOnTime_min % 60;
+		listAddLine(hwndListInfo, "Extruder total time: %d d %d h %d m", d, h, m);
+
+		if(st->kMaterialType > 0)
+			listAddLine(hwndListInfo, "kMaterialType: %d", st->kMaterialType);
+
+		listAddLine(hwndListInfo, "Lang: %s", st->lLang);
+
+		if(st->mVal[0] != 0)
+			listAddLine(hwndListInfo, "mVal: %d", st->mVal);
+
+		if(st->GLastUsed[0])
+			listAddLine(hwndListInfo, "LastUsed: %s", st->GLastUsed);
+
+		if(st->VString[0])
+			listAddLine(hwndListInfo, "VString: %s", st->VString);
+
+		if(st->WSSID[0])
+		{
+			listAddLine(hwndListInfo, "Wifi SSID: %s", st->WSSID);
+			listAddLine(hwndListInfo, "Wifi BSSID: %s", st->WBSSID);
+			listAddLine(hwndListInfo, "Wifi Channel: %s", st->WChannel);
+			listAddLine(hwndListInfo, "Wifi Rssi: %s", st->WRssiValue);
+			listAddLine(hwndListInfo, "Wifi PHY: %s", st->WPHY);
+			listAddLine(hwndListInfo, "Wifi Security: %s", st->WSecurity);
+		}
+
+		if(st->N4NetSSID[0])
+		{
+			listAddLine(hwndListInfo, "Wifi IP: %s", st->N4NetIP);
+			listAddLine(hwndListInfo, "Wifi SSID: %s", st->N4NetSSID);
+			listAddLine(hwndListInfo, "Wifi Chan: %s", st->N4NetChan);
+			listAddLine(hwndListInfo, "Wifi MAC: %s", st->N4NetMAC);
+			listAddLine(hwndListInfo, "Wifi Rssi: %s", st->N4NetRssiValue);
+		}
 
 		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
@@ -196,22 +235,37 @@ void MainDlgUpdatePStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPri
 		int index = ListBox_GetTopIndex(hwndListPInfo);
 		SendMessage(hwndListPInfo, LB_RESETCONTENT, 0, 0);
 
-		listAddLine(hwndListPInfo, "Bed temp: %d C, target temp: %d C", st->bedActualTemp_C, st->bedTargetTemp_C);
-		listAddLine(hwndListPInfo, "Extruder temp: %d C / %d C", st->extruderActualTemp_C, st->extruderTargetTemp_C);
-		listAddLine(hwndListPInfo, "Fillament remain: %0.2f m", st->fillimantRemaining_mm / 1000.0f);
+		if(st->bBedActualTemp_C > 20 || st->OBedTargetTemp_C > 0)
+			listAddLine(hwndListPInfo, "Bed temp: %d C, target temp: %d C", st->bBedActualTemp_C, st->OBedTargetTemp_C);
 
-		listAddLine(hwndListPInfo, "Print pct complete: %d %%", st->printPercentComplete);
+		if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
+			listAddLine(hwndListPInfo, "Extruder temp: %d C, %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
+		else
+			listAddLine(hwndListPInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
 
-		h = st->printElapsedTime_m / 60;
-		m = st->printElapsedTime_m % 60;
-		listAddLine(hwndListPInfo, "Print elapsed: %d h %d m", h, m);
+		if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
+			listAddLine(hwndListPInfo, "Fillament remain: %0.2f m, %0.2f m", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
+		else
+			listAddLine(hwndListPInfo, "Fillament remain: %0.2f m", st->fFillimant1Remaining_mm / 1000.0f);
 
-		h = st->printTimeLeft_m / 60;
-		m = st->printTimeLeft_m % 60;
-		listAddLine(hwndListPInfo, "Print remain: %d h %d m", h, m);
+		if(st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
+				listAddLine(hwndListPInfo, "No job running");
+		else
+		{
+			listAddLine(hwndListPInfo, "Print pct complete: %d %%", st->dPrintPercentComplete);
 
-		listAddLine(hwndListPInfo, "Error: %s", st->errorStatusStr);
-		listAddLine(hwndListPInfo, "Status: (%d:%d) %s", st->printerStatus, st->printerSubStatus, st->printerStatusStr);
+			h = st->dPrintElapsedTime_m / 60;
+			m = st->dPrintElapsedTime_m % 60;
+			listAddLine(hwndListPInfo, "Print elapsed: %d h %d m", h, m);
+
+			h = st->dPrintTimeLeft_m / 60;
+			m = st->dPrintTimeLeft_m % 60;
+			listAddLine(hwndListPInfo, "Print remain: %d h %d m", h, m);
+		}
+
+		if(st->eErrorStatusStr[0] && st->eErrorStatusStr[0] != '0')
+			listAddLine(hwndListPInfo, "Error: %s", st->eErrorStatusStr);
+		listAddLine(hwndListPInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
 
 		ListBox_SetTopIndex(hwndListPInfo, index);
 		// now repaint all at once
@@ -264,11 +318,11 @@ void MainDlgUpdate(HWND hDlg)
 			MainDlgUpdatePStatusList(hDlg, st, inf);
 
 			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
-			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->autoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 
 			SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
 
-			int pct = max(g_printPct, st->printPercentComplete);
+			int pct = max(g_printPct, st->dPrintPercentComplete);
 			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
 		}
 	}
