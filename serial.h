@@ -8,6 +8,8 @@ public:
 		: m_serial(NULL) 
 		, m_port(-1)
 		, m_baudRate(-1)
+		, serBufStart(serBuf)
+		, serBufEnd(serBuf)
 	{}
 	~Serial() { closePort(); }
 
@@ -36,9 +38,9 @@ public:
 	// write a byte
 	int writeSerialByteU8(unsigned char num);
 	// write high and low bytes of short
-	int writeSerialByteU16(unsigned short num);
+	int writeSerialByteU16(unsigned short num, bool isLittle);
 	// write 4 bytes of int
-	int writeSerialByteU32(unsigned int num);
+	int writeSerialByteU32(unsigned int num, bool isLittle);
 
 	static const int m_max_serial_buf = 256;
 
@@ -46,6 +48,12 @@ protected:
 	HANDLE m_serial;
 	int m_port;
 	int m_baudRate;
+
+	// readSerialLine data
+	const static int serBufLen = 4096;
+	char serBuf[serBufLen];
+	char* serBufStart;
+	char* serBufEnd;
 
 	// static helper functions
 public:

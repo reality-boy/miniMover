@@ -274,9 +274,9 @@ protected:
 	const XYZPrinterInfo* modelToInfo(const char *modelNum);
 
 	// serial functions
-	const char* waitForLine(bool waitForEndCom, int timeout_s = 10);
-	bool waitForVal(const char *val, bool waitForEndCom, int timeout_s = 10);
-	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, int timeout_s = 10);
+	const char* waitForLine(bool waitForEndCom, float timeout_s = 0.5f);
+	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = 0.5f);
+	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = 0.5f);
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);

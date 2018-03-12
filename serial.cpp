@@ -35,74 +35,7 @@ bool Serial::verifyPort(int port)
 	return false;
 }
 
-bool setupConnection(HANDLE h, int baud)
-{
-	if(h != INVALID_HANDLE_VALUE)
-	{
-		// setup serial port
-		DCB dcb = {0};
-		if (GetCommState(h, &dcb))
-		{
-			dcb.BaudRate=baud;
-			dcb.ByteSize=8;
-			dcb.StopBits=ONESTOPBIT;
-			dcb.Parity=NOPARITY;
-			//dcb.fParity = 0;
-
-			if(SetCommState(h, &dcb))
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool setupTimeout(HANDLE h, bool blocking)
-{
-	if(h != INVALID_HANDLE_VALUE)
-	{
-		COMMTIMEOUTS cto;
-		if(GetCommTimeouts(h, &cto))
-		{
-			if(blocking)
-			{
-				cto.ReadIntervalTimeout = 0; // wait forever
-				cto.ReadTotalTimeoutConstant = 0;
-				cto.ReadTotalTimeoutMultiplier = 0;
-			} 
-			else 
-			{
-				cto.ReadIntervalTimeout = MAXDWORD; // wait ReadTotalTimeoutConstant
-				cto.ReadTotalTimeoutConstant = 0;
-				cto.ReadTotalTimeoutMultiplier = 0;
-			}
-			//ct0.WriteTotalTimeoutMultiplier = 20000L / baudRate;
-			//ct0.WriteTotalTimeoutConstant = 0;
-
-			if(SetCommTimeouts(h, &cto))
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool setupMask(HANDLE h)
-{
-	if(h != INVALID_HANDLE_VALUE)
-		return TRUE == SetCommMask(h, EV_BREAK|EV_ERR|EV_RXCHAR);
-	return false;
-}
-
-bool setupQueue(HANDLE h, int buf)
-{
-	if(h != INVALID_HANDLE_VALUE)
-		return TRUE == SetupComm (h, buf, buf);
-	return false;
-}
-
+/*
 bool setupConfig(const char *portStr, HANDLE h)
 {
  	COMMCONFIG commConfig = {0};
@@ -118,12 +51,13 @@ bool setupConfig(const char *portStr, HANDLE h)
 	}
 	return false;
 }
-
-//****FixMe, SetCommState, flow control...
-//bool setupHandshaking() {}
+*/
 
 bool Serial::openPort(int port, int baudRate)
 {
+	bool blocking = false; // set to true to block till data arives
+	int timeout_ms = 50;
+
 	// if already connected just return
 	if( (port < 0 || getPort() == port) && 
 		getBaudRate() == baudRate)
@@ -147,21 +81,41 @@ bool Serial::openPort(int port, int baudRate)
 		{
 			//if(setupConfig(portStr, m_serial))
 			{
-				// setup serial port
-				if(setupConnection(m_serial, baudRate))
+				// setup serial port baud rate
+				DCB dcb = {0};
+				if (GetCommState(m_serial, &dcb))
 				{
-					if(setupTimeout(m_serial, false))
+					dcb.BaudRate=baudRate;
+					dcb.ByteSize=8;
+					dcb.StopBits=ONESTOPBIT;
+					dcb.Parity=NOPARITY;
+					//dcb.fParity = 0;
+
+					if(SetCommState(m_serial, &dcb))
 					{
-						if(setupMask(m_serial))
+						COMMTIMEOUTS cto;
+						if(GetCommTimeouts(m_serial, &cto))
 						{
-							if(setupQueue(m_serial, m_max_serial_buf))
+							cto.ReadIntervalTimeout = (blocking) ? 0 : MAXDWORD; // wait forever or wait ReadTotalTimeoutConstant
+							cto.ReadTotalTimeoutConstant = timeout_ms;
+							cto.ReadTotalTimeoutMultiplier = 0;
+							//cto.WriteTotalTimeoutMultiplier = 20000L / baudRate;
+							//cto.WriteTotalTimeoutConstant = 0;
+
+							if(SetCommTimeouts(m_serial, &cto))
 							{
-								clearSerial();
+								if(SetCommMask(m_serial, EV_BREAK|EV_ERR|EV_RXCHAR))
+								{
+									if(SetupComm(m_serial, m_max_serial_buf, m_max_serial_buf))
+									{
+										clearSerial();
 
-								m_port = port;
-								m_baudRate = baudRate;
+										m_port = port;
+										m_baudRate = baudRate;
 
-								return true;
+										return true;
+									}
+								}
 							}
 						}
 					}
@@ -216,6 +170,10 @@ void Serial::clearSerial()
 {
 	if(m_serial)
 		PurgeComm (m_serial, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
+
+	serBuf[0] = '\0';
+	serBufStart = serBuf;
+	serBufEnd = serBuf;
 }
 
 int Serial::readSerial(char *buf, int len)
@@ -224,6 +182,7 @@ int Serial::readSerial(char *buf, int len)
 
 	if(m_serial && buf && len > 0)
 	{
+		//****FixMe, drain readSerialLine buffer first!
 		buf[0] = '\0';
 		//if(serialHasData())
 		{
@@ -242,11 +201,6 @@ int Serial::readSerial(char *buf, int len)
 
 int Serial::readSerialLine(char *lineBuf, int len)
 {
-	const static int serBufLen = 4096;
-	static char serBuf[serBufLen];
-	static char *serBufStart = serBuf;
-	static char *serBufEnd = serBuf;
-
 	if(lineBuf && len > 0)
 	{
 		*lineBuf = '\0';
@@ -372,22 +326,34 @@ int Serial::writeSerialByteU8(unsigned char num)
 }
 
 // write high and low bytes of short
-int Serial::writeSerialByteU16(unsigned short num)
+int Serial::writeSerialByteU16(unsigned short num, bool isLittle)
 {
 	DWORD bytesWritten = 0;
-	bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
-	bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
+	if(isLittle) {
+		bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
+	} else {
+		bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
+	}
 	return bytesWritten;
 }
 
 // write 4 bytes of int
-int Serial::writeSerialByteU32(unsigned int num)
+int Serial::writeSerialByteU32(unsigned int num, bool isLittle)
 {
 	DWORD bytesWritten = 0;
-	bytesWritten += writeSerialByteU8((num >> 24) & 0xFF);
-	bytesWritten += writeSerialByteU8((num >> 16) & 0xFF);
-	bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
-	bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
+	if(isLittle) {
+		bytesWritten += writeSerialByteU8((num >> 0)  & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 8)  & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 16) & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 24) & 0xFF);
+	} else {
+		bytesWritten += writeSerialByteU8((num >> 24) & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 16) & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 8)  & 0xFF);
+		bytesWritten += writeSerialByteU8((num >> 0)  & 0xFF);
+	}
 	return bytesWritten;
 }
 
@@ -558,5 +524,6 @@ void Serial::debugPrint(const char *format, ...)
 	printf("%s\n",msgBuf);
 #else
 	OutputDebugString(msgBuf);
+	OutputDebugString("\n");
 #endif
 }

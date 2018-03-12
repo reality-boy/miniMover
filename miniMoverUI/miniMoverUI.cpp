@@ -76,6 +76,7 @@ void debugPrint(char *format, ...)
 	printf("%s\n",msgBuf);
 #else
 	OutputDebugString(msgBuf);
+	OutputDebugString("\n");
 #endif
 }
 
@@ -370,6 +371,9 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			g_timer = SetTimer(hDlg, NULL, g_timerInterval, NULL);
 
 			SendDlgItemMessage(hDlg, IDC_SPIN_ZOFF, UDM_SETRANGE, 0, MAKELONG( 1000, 1));
+
+			// force a refresh, without waiting for timer
+			MainDlgUpdate(hDlg);
             break;
 
         case WM_DESTROY:

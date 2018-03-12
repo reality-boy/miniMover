@@ -13,6 +13,8 @@
 
 //****FixMe, rather than calling clearSerial() we
 // should check what data was left over and assert!
+//****FixMe, keep track of 'end' messages and fire them
+// if we try to exit in middle of operation, like calibrating bed
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//modelNum,    fileNum,        serialNum, screenName,				fileIsV5, fileIsZip, comIsV3, length, width, height
@@ -137,7 +139,7 @@ bool XYZV3::updateStatus()
 
 		// only try so many times for the answer
 		bool isDone = false;
-		float end = msTime::getTime_s() + 2; // wait a second or two
+		float end = msTime::getTime_s() + 0.5f; // wait a second or two
 		while(msTime::getTime_s() < end && !isDone)
 		{
 			if(m_serial.readSerialLine(buf, len))
@@ -528,12 +530,13 @@ bool XYZV3::updateStatus()
 		}
 
 		// manually pull zOffset, if not set above
+		// use zero wait time, in case command is ignored
 		if(!zOffsetSet)
 		{
 			m_serial.clearSerial();
 
 			m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
-			const char* buf = waitForLine(true);
+			const char* buf = waitForLine(true); 
 			if(*buf)
 				m_status.zOffset = atoi(buf);
 		}
@@ -563,7 +566,7 @@ bool XYZV3::printRawStatus()
 
 		// only try so many times for the answer
 		bool isDone = false;
-		float end = msTime::getTime_s() + 2; // wait a second or two
+		float end = msTime::getTime_s() + 0.5f; // wait a second or two
 		while(msTime::getTime_s() < end && !isDone)
 		{
 			if(m_serial.readSerialLine(buf, len))
@@ -1252,10 +1255,10 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 			{
 				// returns E4 and E7, whatever that is, but ignores the error and continues
 				int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-				m_serial.writeSerialByteU32(i);
-				m_serial.writeSerialByteU32(blockLen);
+				m_serial.writeSerialByteU32(i, false);
+				m_serial.writeSerialByteU32(blockLen, false);
 				m_serial.writeSerialArray(data + i*blockSize, blockLen);
-				m_serial.writeSerialByteU32(0);
+				m_serial.writeSerialByteU32(0, false);
 
 				if(waitForVal("ok", false))
 					success = true;
@@ -1294,7 +1297,7 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 		m_serial.clearSerial();
 
 		m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
-		if(waitForVal("ok", false))
+		if(waitForVal("ok", false, 1.0f))
 		{
 			int blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
 			int blockCount = (len + blockSize - 1) / blockSize; // round up
@@ -1330,7 +1333,7 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 
 					// write out in one shot
 					m_serial.writeSerialArray(bBuf, blockLen + 12);
-					success = waitForVal("ok", false);
+					success = waitForVal("ok", false, 1.0f);
 					if(!success) // bail on error
 						break;
 
@@ -1340,12 +1343,12 @@ bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
 				}
 				delete [] bBuf;
 			}
-		}
 
-		// close out printing
-		m_serial.writeSerial("XYZv3/uploadDidFinish");
-		if(!waitForVal("ok", false))
-			success = false;
+			// close out printing
+			m_serial.writeSerial("XYZv3/uploadDidFinish");
+			if(!waitForVal("ok", false))
+				success = false;
+		}
 	}
 
 	ReleaseMutex(ghMutex);
@@ -1393,10 +1396,10 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 						for(int i=0; i<blockCount; i++)
 						{
 							int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-							m_serial.writeSerialByteU32(i);
-							m_serial.writeSerialByteU32(blockLen);
+							m_serial.writeSerialByteU32(i, false);
+							m_serial.writeSerialByteU32(blockLen, false);
 							m_serial.writeSerialArray(bbuf + i*blockSize, blockLen);
-							m_serial.writeSerialByteU32(0);
+							m_serial.writeSerialByteU32(0, false);
 
 							if(waitForVal("ok", false))
 								success = true;
@@ -1812,58 +1815,58 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 	return success;
 }
 
-
 //------------------------------------------
 
-const char* XYZV3::waitForLine(bool waitForEndCom, int timeout_s)
+// note, errors can be E0\n$\n or E4$\n, success is often just $\n or ok\n$\n
+// need to deal with all variants
+const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 {
 	static const int len = 1024;
 	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
 	*buf = '\0';
+	bool isValid = false;
 
 	if(m_serial.isOpen())
 	{
 		// only try so many times for the answer
 		float end = msTime::getTime_s() + timeout_s;
-		while(msTime::getTime_s() < end)
+		do
 		{
+			// blocking call, no need to sleep
 			if(m_serial.readSerialLine(buf, len))
 			{
-				if(buf[0] == '$')
-					return "";
-				//if(buf[0] == 'E') //****FixMe, test out error detection to speed up communication
-				//	return "";
-
+				isValid = true;
 				break;
 			}
-			Sleep(1);
 		}
-		if(msTime::getTime_s() >= end)
-			debugPrint("waitForLine, timeout triggered %d", timeout_s);
+		while(msTime::getTime_s() < end);
 
-		if(waitForEndCom)
+		if(!isValid)
+			debugPrint("waitForLine, timeout triggered %0.2f", timeout_s);
+		else
 		{
-			// check for '$' indicating end of message
-			char buf2[len];
-			end = msTime::getTime_s() + timeout_s;
-			while(msTime::getTime_s() < end)
+			if(buf[0] == '$')
 			{
-				if(m_serial.readSerialLine(buf2, len))
-				{
-					if(buf2[0] == '$')
-						return buf;
-				}
-				Sleep(1);
+				debugPrint("waitForLine $ failed, got early '$'");
+				return "";
 			}
-			if(msTime::getTime_s() >= end)
-				debugPrint("waitForLine $ timeout triggered %d", timeout_s);
+
+			// check for '$' indicating end of message
+			if(waitForEndCom)
+			{
+				char buf2[len];
+
+				if(!m_serial.readSerialLine(buf2, len) || buf2[0] != '$')
+					debugPrint("waitForLine $ failed, returned %d:'%s'", len, buf2);
+			}
+			return buf;
 		}
 	}
 
-	return buf;
+	return "";
 }
 
-bool XYZV3::waitForVal(const char *val, bool waitForEndCom, int timeout_s)
+bool XYZV3::waitForVal(const char *val, bool waitForEndCom, float timeout_s)
 {
 	if(val)
 	{
@@ -1877,27 +1880,23 @@ bool XYZV3::waitForVal(const char *val, bool waitForEndCom, int timeout_s)
 	return false;
 }
 
-bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, int timeout_s)
+bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, float timeout_s)
 {
 	if(key && val)
 	{
 		static const int len = 1024;
 		char tVal[len];
 
-		float end = msTime::getTime_s() + timeout_s;
-		while(msTime::getTime_s() < end)
+		const char* buf = waitForLine(waitForEndCom, timeout_s);
+		if(*buf && getJsonVal(buf, key, tVal))
 		{
-			const char* buf = waitForLine(waitForEndCom, timeout_s);
-			if(getJsonVal(buf, key, tVal))
-			{
-				// check for exact match
-				if(0 == strcmp(val, tVal))
-					return true;
+			// check for exact match
+			if(0 == strcmp(val, tVal))
+				return true;
 
-				// check for quoted match, probably not an ideal test
-				if(*tVal && 0 == strncmp(val, tVal+1, strlen(val)))
-					return true;
-			}
+			// check for quoted match, probably not an ideal test
+			if(*tVal && 0 == strncmp(val, tVal+1, strlen(val)))
+				return true;
 		}
 	}
 
@@ -2363,5 +2362,6 @@ void XYZV3::debugPrint(char *format, ...)
 	printf("%s\n", msgBuf);
 #else
 	OutputDebugString(msgBuf);
+	OutputDebugString("\n");
 #endif
 }

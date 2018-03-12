@@ -24,7 +24,7 @@ void updateStatus(float pct)
 
 void postHelp()
 {
-	printf("miniMover v0.5\n");
+	printf("miniMover v0.6\n");
 	printf("usage: miniMover <args>\n");
 	printf("  -? - print help message\n");
 	printf("  -a+ - enable auto level\n");
