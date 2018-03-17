@@ -51,6 +51,7 @@ struct data
 	bool doPrint;
 	char in[MAX_PATH];
 	char out[MAX_PATH];
+	int infoIdx;
 };
 
 DWORD __stdcall threadHandler(void *param)
@@ -66,7 +67,7 @@ DWORD __stdcall threadHandler(void *param)
 			g_printPct = 0;
 		}
 		else
-			success = d->xyz->convertFile(d->in, d->out);
+			success = d->xyz->convertFile(d->in, d->out, d->infoIdx);
 	}
 	
 	//SendNotifyMessage
@@ -76,9 +77,14 @@ DWORD __stdcall threadHandler(void *param)
 }
 
 data d;
-bool handleConvertFile(HWND hDlg, XYZV3 &xyz)
+bool handleConvertFile(HWND hDlg, XYZV3 &xyz, int infoIdx)
 {
 	char *s;
+
+	d.hWnd = hDlg;
+	d.xyz = &xyz;
+	d.doPrint = false;
+	d.infoIdx = infoIdx;
 
 	if(getFilePath(hDlg, d.in, sizeof(d.in), true))
 	{
@@ -94,9 +100,6 @@ bool handleConvertFile(HWND hDlg, XYZV3 &xyz)
 
 			if(getFilePath(hDlg, d.out, sizeof(d.out), false))
 			{
-				d.hWnd = hDlg;
-				d.xyz = &xyz;
-				d.doPrint = false;
 				// Create the thread to begin execution on its own.
 				HANDLE bgThreadHandle = CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
 
@@ -110,13 +113,14 @@ bool handleConvertFile(HWND hDlg, XYZV3 &xyz)
 
 bool handlePrintFile(HWND hDlg, XYZV3 &xyz)
 {
+	d.out[0] = '\0';
+	d.hWnd = hDlg;
+	d.xyz = &xyz;
+	d.doPrint = true;
+	d.infoIdx = -1;
+
 	if(getFilePath(hDlg, d.in, sizeof(d.in), true))
 	{
-		d.out[0] = '\0';
-		d.hWnd = hDlg;
-		d.xyz = &xyz;
-		d.doPrint = true;
-
 		// Create the thread to begin execution on its own.
 		HANDLE bgThreadHandle = CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
 

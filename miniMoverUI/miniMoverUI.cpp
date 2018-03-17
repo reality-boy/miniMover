@@ -54,7 +54,6 @@ int g_printPct = 0;
 
 // controls
 HWND hwndListInfo = NULL;
-HWND hwndListPInfo = NULL;
 
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
@@ -218,59 +217,44 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 			listAddLine(hwndListInfo, "Wifi Rssi: %s", st->N4NetRssiValue);
 		}
 
-		ListBox_SetTopIndex(hwndListInfo, index);
-		// now repaint all at once
-		SetWindowRedraw(hwndListInfo, TRUE);
-	}
-}
-
-void MainDlgUpdatePStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrinterInfo *inf)
-{
-	int h, m;
-
-	if(hwndListPInfo && st && inf)
-	{
-		// don't repaint till we are done drawing
-		SetWindowRedraw(hwndListPInfo, FALSE);
-
-		int index = ListBox_GetTopIndex(hwndListPInfo);
-		SendMessage(hwndListPInfo, LB_RESETCONTENT, 0, 0);
+		// print status info
 
 		if(st->bBedActualTemp_C > 20 || st->OBedTargetTemp_C > 0)
-			listAddLine(hwndListPInfo, "Bed temp: %d C, target temp: %d C", st->bBedActualTemp_C, st->OBedTargetTemp_C);
+			listAddLine(hwndListInfo, "Bed temp: %d C, target temp: %d C", st->bBedActualTemp_C, st->OBedTargetTemp_C);
 
 		if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
-			listAddLine(hwndListPInfo, "Extruder temp: %d C, %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
+			listAddLine(hwndListInfo, "Extruder temp: %d C, %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
 		else
-			listAddLine(hwndListPInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
+			listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
 
 		if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
-			listAddLine(hwndListPInfo, "Fillament remain: %0.2f m, %0.2f m", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
+			listAddLine(hwndListInfo, "Fillament remain: %0.2f m, %0.2f m", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
 		else
-			listAddLine(hwndListPInfo, "Fillament remain: %0.2f m", st->fFillimant1Remaining_mm / 1000.0f);
+			listAddLine(hwndListInfo, "Fillament remain: %0.2f m", st->fFillimant1Remaining_mm / 1000.0f);
 
 		if(st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
-				listAddLine(hwndListPInfo, "No job running");
+				listAddLine(hwndListInfo, "No job running");
 		else
 		{
-			listAddLine(hwndListPInfo, "Print pct complete: %d %%", st->dPrintPercentComplete);
+			listAddLine(hwndListInfo, "Print pct complete: %d %%", st->dPrintPercentComplete);
 
 			h = st->dPrintElapsedTime_m / 60;
 			m = st->dPrintElapsedTime_m % 60;
-			listAddLine(hwndListPInfo, "Print elapsed: %d h %d m", h, m);
+			listAddLine(hwndListInfo, "Print elapsed: %d h %d m", h, m);
 
 			h = st->dPrintTimeLeft_m / 60;
 			m = st->dPrintTimeLeft_m % 60;
-			listAddLine(hwndListPInfo, "Print remain: %d h %d m", h, m);
+			listAddLine(hwndListInfo, "Print remain: %d h %d m", h, m);
 		}
 
 		if(st->eErrorStatusStr[0] && st->eErrorStatusStr[0] != '0')
-			listAddLine(hwndListPInfo, "Error: %s", st->eErrorStatusStr);
-		listAddLine(hwndListPInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
+			listAddLine(hwndListInfo, "Error: %s", st->eErrorStatusStr);
+		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
 
-		ListBox_SetTopIndex(hwndListPInfo, index);
+
+		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
-		SetWindowRedraw(hwndListPInfo, TRUE);
+		SetWindowRedraw(hwndListInfo, TRUE);
 	}
 }
 
@@ -305,6 +289,15 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
 }
 
+void MainDlgUpdateModelDropdown(HWND hDlg)
+{
+	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_RESETCONTENT, 0, 0);
+	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_ADDSTRING, 0, (LPARAM)"Auto");
+	for(int i=0; i < XYZV3::getInfoCount(); i++)
+		SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_ADDSTRING, 0, (LPARAM)XYZV3::indexToInfo(i)->screenName);
+	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_SETCURSEL, 0, 0);
+}
+
 void MainDlgUpdate(HWND hDlg)
 {
 	// don't set wait cursor since this triggers 2x a second
@@ -316,7 +309,6 @@ void MainDlgUpdate(HWND hDlg)
 		if(st->isValid)
 		{
 			MainDlgUpdateStatusList(hDlg, st, inf);
-			MainDlgUpdatePStatusList(hDlg, st, inf);
 
 			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -356,6 +348,7 @@ void setZOffset(HWND hDlg)
 
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	int t;
     switch(msg) 
     {
         case WM_INITDIALOG:
@@ -363,10 +356,10 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			waitCursor = LoadCursor(NULL, IDC_WAIT);     // wait cursor
 
 			MainDlgUpdateComDropdown(hDlg);
+			MainDlgUpdateModelDropdown(hDlg);
 			MainDlgConnect(hDlg);
 
 			hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
-			hwndListPInfo = GetDlgItem(hDlg, IDC_LIST_PSTATUS);
 
 			g_timer = SetTimer(hDlg, NULL, g_timerInterval, NULL);
 
@@ -486,7 +479,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				MainDlgSetStatus(hDlg, "converting file");
 				SetCursor(waitCursor);
 
-				g_threadRunning = handleConvertFile(hDlg, xyz);
+				t = SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_GETCURSEL, 0, 0);
+				g_threadRunning = handleConvertFile(hDlg, xyz, t-1);
 				if(!g_threadRunning)
 				{
 					SetCursor(defaultCursor);

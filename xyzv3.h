@@ -155,7 +155,6 @@ struct XYZPrinterInfo
 	const char *modelNum;
 	const char *fileNum;
 	const char *serialNum;
-	const char *screenName;
 
 	bool fileIsV5; // v2 is 'normal' file format, v5 is for 'pro' systems
 	bool fileIsZip; // older file format, zips header
@@ -165,6 +164,8 @@ struct XYZPrinterInfo
 	int length;
 	int width;
 	int height;
+
+	const char *screenName;
 };
 
 typedef void (*XYZCallback)(float pct);
@@ -251,16 +252,21 @@ public:
 	// file i/o
 
 	// convert a gcode file to 3w format
-	//****FixMe, modify encryptFile to take either file bools or machine info or at least override format in some way.
-	bool encryptFile(const char *inPath, const char *outPath = NULL);
+	// infoIdx is the index into the m_infoArray or -1 for auto
+	bool encryptFile(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
 
 	// convert a 3w file to gcode
 	bool decryptFile(const char *inPath, const char *outPath = NULL);
 
 	// convert from gcode to 3w or back depending on file type
-	bool convertFile(const char *inPath, const char *outPath = NULL);
+	// infoIdx is the index into the m_infoArray or -1 for auto
+	bool convertFile(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
 	bool isGcodeFile(const char *path);
 	bool is3wFile(const char *path);
+
+	static int getInfoCount();
+	static const XYZPrinterInfo* indexToInfo(int index);
+	static const XYZPrinterInfo* modelToInfo(const char *modelNum);
 
 protected:
 
@@ -271,7 +277,6 @@ protected:
 	const char* statusCodesToStr(int status, int subStatus);
 	static float nozzleIDToDiameter(int id);
 	bool getJsonVal(const char *str, const char *key, char *val);
-	const XYZPrinterInfo* modelToInfo(const char *modelNum);
 
 	// serial functions
 	const char* waitForLine(bool waitForEndCom, float timeout_s = 0.5f);
@@ -289,7 +294,7 @@ protected:
 	void writeRepeatByte(FILE *f, char byte, int count);
 
 	int roundUpTo16(int in);
-	void pkcs7unpad(char *buf, int len);
+	int pkcs7unpad(char *buf, int len);
 	int pkcs7pad(char *buf, int len);
 
 	unsigned int calcXYZcrc32(char *buf, int len);

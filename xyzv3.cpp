@@ -4,6 +4,16 @@
 #include <stdio.h>
 #include <assert.h>
 
+// prune out unuzed miniz features
+//#define MINIZ_NO_STDIO					// no file I/O support
+//#define MINIZ_NO_TIME						// disable file time routines
+//#define MINIZ_NO_ARCHIVE_APIS				// disable zip archive api's
+//#define MINIZ_NO_ARCHIVE_WRITING_APIS
+//#define MINIZ_NO_ZLIB_APIS				// remove zlip style calls
+//#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES	// avoid name colisions with zlib
+//#define MINIZ_NO_MALLOC					// strip out malloc
+//#include "miniz.h"
+
 #include "timer.h"
 #include "aes.h"
 #include "serial.h"
@@ -17,32 +27,27 @@
 // if we try to exit in middle of operation, like calibrating bed
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
-	//modelNum,    fileNum,        serialNum, screenName,				fileIsV5, fileIsZip, comIsV3, length, width, height
-	//  older communication protocol
-	{"dvF100B000", "daVinciF10",   "3DP01P", "da Vinci 1.0",			false, true, false, 200, 200, 200},
-	{"dvF100A000", "daVinciF10",   "3F10AP", "da Vinci 1.0A",			false, true, false, 200, 200, 200},
-	{"dvF10SA000", "daVinciF10",   "3S10AP", "da Vinci AIO",			false, true, false, 200, 200, 200},
-	{"dvF200B000", "daVinciF20",   "3F20XP", "da Vinci 2.0 Duo",		false, true, false, 200, 150, 200},
-	{"dvF200A000", "daVinciF20",   "3F20AP", "da Vinci 2.0A Duo",		false, true, false, 200, 150, 200},
-
-	// new v3 communication protocol
-	{"dvF110B000", "daVinciF11",   "3F11XP", "da Vinci 1.1 Plus",		false, true, true, 200, 200, 200}, //???? I'm suspicious of this one, think it belongs above
-
-	{"dv1NX0A000", "dv1NX0A000",   "3FN1XP", "da Vinci Nano",			false, false, true, 120, 120, 120},
-	{"dv1MW0A000", "dv1MW0A000",   "3FM1WP", "da Vinci Mini w",			false, false, true, 150, 150, 150},
-	{"dv1MX0A000", "dv1MX0A000",   "3FM1XP", "da Vinci miniMaker",		false, false, true, 150, 150, 150},
-	{"dv1J00A000", "daVinciJR10",  "??????", "da Vinci Jr. 1.0",		false, false, true, 150, 150, 150},
-	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "da Vinci Jr. 1.0 Wireless",false,false, true, 150, 150, 150},
-	{"dv1JS0A000", "dv1JSOA000",   "3F1JSP", "da Vinci Jr. 3in1",		false, false, true, 150, 150, 150},
-	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", "da Vinci Jr. 2.0 Mix",	false, false, true, 150, 150, 150},
-	{"dv1JA0A000", "dv1JA0A000",   "3F1JAP", "da Vinci Jr. 1.0A",		false, false, true, 175, 175, 175},
-
-	// new v5 file format
-	{"dv1JP0A000", "dv1JP0A000",   "3F1JPP", "da Vinci Jr. 1.0 Pro",	true, false, true, 150, 150, 150},
-	{"dv1JSOA000", "daVinciJR10S", "3F1JOP", "da Vinci Jr. 3in1 (Open filament)", true, false, true, 150, 150, 150},
-	{"dvF1W0A000", "daVinciAW10",  "3F1AWP", "da Vinci 1.0 Pro",		true, false, true, 200, 200, 200},
-	{"dvF1WSA000", "daVinciAS10",  "3F1ASP", "da Vinci 1.0 Pro 3in1",	true, false, true, 200, 200, 190},
-	{"dv1SW0A000", "dv1SW0A000",   "3F1SWP", "da Vinci 1.0 Super",		true, false, true, 300, 300, 300},
+	//   modelNum,       fileNum, serialNum, fileIsV5, fileIsZip, comIsV3, length, width, height, screenName
+	{"dvF100B000",   "daVinciF10", "3DP01P", false,  true, false, 200, 200, 200, "da Vinci 1.0"},
+	{"dvF100A000",   "daVinciF10", "3F10AP", false,  true, false, 200, 200, 200, "da Vinci 1.0A"},
+	{"dvF10SA000",   "daVinciF10", "3S10AP", false,  true, false, 200, 200, 200, "da Vinci 1.0 AiO"},
+	{"dvF110B000",   "daVinciF11", "3F11XP", false,  true,  true, 200, 200, 200, "da Vinci 1.1 Plus"}, //???? I'm suspicious of this one, think it belongs above
+	{"dvF200B000",   "daVinciF20", "3F20XP", false,  true, false, 200, 150, 200, "da Vinci 2.0 Duo"},
+	{"dvF200A000",   "daVinciF20", "3F20AP", false,  true, false, 200, 150, 200, "da Vinci 2.0A Duo"},
+	{"dv1J00A000",  "daVinciJR10", "3F1J0X", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0"},
+	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", false, false,  true, 175, 175, 175, "da Vinci Jr. 1.0A"},
+	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0w"},
+	{"dv1JS0A000",   "dv1JSOA000", "3F1JSP", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1"},
+	{"dv1JSOA000", "daVinciJR10S", "3F1JOP",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1 (Open filament)"},
+	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", false, false,  true, 150, 150, 150, "da Vinci Jr. 2.0 Mix"},
+	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", false, false,  true, 150, 150, 150, "da Vinci miniMaker"},
+	{"dv1MW0A000",   "dv1MW0A000", "3FM1WP", false, false,  true, 150, 150, 150, "da Vinci mini w"},
+	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", false, false,  true, 120, 120, 120, "da Vinci nano"},
+	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 Pro"},
+	{"dvF1W0A000",  "daVinciAW10", "3F1AWP",  true, false,  true, 200, 200, 200, "da Vinci 1.0 Pro"},
+	{"dvF1WSA000",  "daVinciAS10", "3F1ASP",  true, false,  true, 200, 200, 190, "da Vinci 1.0 Pro 3in1"},
+	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP",  true, false,  true, 300, 300, 300, "da Vinci Super"},
+};
 
 	//  unknown
 	//{"dv1CP0A000"},
@@ -52,7 +57,6 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//{"dvF210B000"},
 	//{"dvF210A000"},
 	//{"dvF210P000"},
-};
 
 XYZV3::XYZV3() 
 {
@@ -313,7 +317,7 @@ bool XYZV3::updateStatus()
 				case 'p': // printer model number, p:mn - model_num
 					//p:dv1MX0A000
 					sscanf(buf, "p:%s", m_status.pMachineModelNumber);
-					m_info = modelToInfo(m_status.pMachineModelNumber);
+					m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
 					break;
 
 				//case 'q': break; // unused
@@ -1175,7 +1179,7 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 		bool isGcode = isGcodeFile(path);
 		if(isGcode)
 		{
-			if(encryptFile(path, temp))
+			if(encryptFile(path, temp, -1))
 			{
 				tPath = temp;
 			}
@@ -1433,12 +1437,12 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 	return success;
 }
 
-bool XYZV3::convertFile(const char *inPath, const char *outPath)
+bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
 {
-	if(m_info && inPath)
+	if(inPath)
 	{
 		if(isGcodeFile(inPath))
-			return encryptFile(inPath, outPath);
+			return encryptFile(inPath, outPath, infoIdx);
 		else if(is3wFile(inPath))
 			return decryptFile(inPath, outPath);
 	}
@@ -1472,19 +1476,25 @@ bool XYZV3::is3wFile(const char *path)
 	return false;
 }
 
-bool XYZV3::encryptFile(const char *inPath, const char *outPath)
+bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 	const int bodyOffset = 8192;
 
+	// encrypt to currently connected printer
+	const XYZPrinterInfo *info = (m_serial.isOpen()) ? m_info : NULL; 
+	// unless the user requests a particular printer model
+	if(infoIdx > -1)
+		info = XYZV3::indexToInfo(infoIdx);
+
 	// for now encrypt the file for the connected printer
 	// someday we could allow user to specify the target machine
-	if(m_info && inPath && m_serial.isOpen())
+	if(info && inPath)
 	{
-		const char *fileNum = m_info->fileNum;
-		bool fileIsV5 = m_info->fileIsV5;
-		bool fileIsZip = m_info->fileIsZip;
+		const char *fileNum = info->fileNum;
+		bool fileIsV5 = info->fileIsV5;
+		bool fileIsZip = info->fileIsZip;
 
 		// open our source file
 		FILE *fi = fopen(inPath, "rb");
@@ -1657,21 +1667,23 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 				id = buf[0];
 				fv = buf[1];
 
+				bool fileIsV5 = (fv == 5);
+
 				// offset to zip marker
 				int zipOffset = readWord(f);
 				fseek(f, zipOffset, SEEK_CUR);
 
 				// zip format marker
 				fread(buf, 1, 8, f);
-				bool isZip = false;
+				bool fileIsZip = false;
 				if(0 == strncmp("TagEa128", buf, strlen("TagEa128")))
-					isZip = true;
+					fileIsZip = true;
 				else if(0 == strncmp("TagEJ256", buf, strlen("TagEJ256")))
-					isZip = false;
+					fileIsZip = false;
 				//else error
 
 				// optional header len
-				int headerLen = (fv == 5) ? readWord(f) : -1;
+				int headerLen = (fileIsV5) ? readWord(f) : -1;
 
 				// offset to header
 				int headerOffset = readWord(f);
@@ -1679,7 +1691,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 				int offset1 = ftell(f);
 
 				//?? 
-				int id2 = (fv == 5) ? readWord(f) : -1;
+				int id2 = (fileIsV5) ? readWord(f) : -1;
 
 				int crc32 = readWord(f);
 
@@ -1691,6 +1703,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 				// to search for zeros to indicate the end...
 				//****Note, header is duplicated in body, for now just skip it
 				// you can uncomment this if you want to verify this is the case
+//#define PARCE_HEADER
 #ifdef PARCE_HEADER
 				if(headerLen < 1)
 					headerLen = bodyOffset - ftell(f);
@@ -1722,7 +1735,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					}
 
 					// remove any padding from header
-					pkcs7unpad(hbuf, headerLen);
+					headerLen = pkcs7unpad(hbuf, headerLen);
 
 					//****FixMe, do something with it
 					debugPrint(hbuf);
@@ -1737,30 +1750,66 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 				fseek(f, bodyOffset, SEEK_SET);
 				int bodyLen = totalLen - ftell(f);
-				char *bbuf = new char[bodyLen + 1];
+				int bufLen = bodyLen + 1 + 0x2010;
+				char *bbuf = new char[bufLen];
 				if(bbuf)
 				{
+					memset(bbuf, 0, bufLen);
 					fread(bbuf, 1, bodyLen, f);
 					bbuf[bodyLen] = '\0';
 
 					if(crc32 != calcXYZcrc32(bbuf, bodyLen))
 						debugPrint("crc's don't match!!!");
 
-					if(isZip)
+					if(fileIsZip)
 					{
-						//****FixMe
-						// Im not really sure on the order here, need to find a file to look at
-
 						// decrypt body
 					    struct AES_ctx ctx;
 						uint8_t iv[16] = {0}; // 16 zeros
 						char *key = "@xyzprinting.com";
-					    AES_init_ctx_iv(&ctx, key, iv);
-					    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
+						for(int offset = 0; offset < bodyLen; offset += 0x2010)
+						{
+							int len = ((bodyLen - offset) < 0x2010) ? (bodyLen - offset) : 0x2010;
+						    AES_init_ctx_iv(&ctx, key, iv);
+						    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+offset, len);
+						}
 
-						//****FixMe, file was padded out to 8192, remove padding somehow
+						// remove any padding from body
+						bodyLen = pkcs7unpad(bbuf, bodyLen);
 
-						//****FixMe, unzip file
+						/*
+						mz_zip_archive zip;
+						memset(&zip, 0, sizeof(zip));
+						if(mz_zip_reader_init_mem(&zip, bbuf, bodyLen, 0))
+						{
+							int numFiles = mz_zip_reader_get_num_files(&zip);
+							for(int i=0; i<numFiles; i++)
+							{
+								const int tstr_len = 512;
+								char tstr[tstr_len];
+								if(mz_zip_reader_get_filename(&zip, i, tstr, tstr_len))
+									debugPrint("name(%d) : %s", tstr_len, tstr);
+
+								//mz_zip_reader_locate_file();
+								//mz_zip_reader_extract_to_mem(&zip, i, tbuf, tbufSize, 0);
+
+								size_t size = 0;
+								char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, i, &size, 0);
+								if(tbuf)
+								{
+									mz_free(tbuf);
+									tbuf = NULL;
+								}
+								else
+									debugPrint("error %s", zip.m_last_error);
+							}
+
+							mz_zip_reader_end(&zip);
+						}
+						else
+							debugPrint("error %s", zip.m_last_error);
+						*/
+
 					}
 					else
 					{
@@ -1777,7 +1826,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						}
 
 						// remove any padding from body
-						pkcs7unpad(bbuf, bodyLen);
+						bodyLen = pkcs7unpad(bbuf, bodyLen);
 					}
 
 					// and write to disk
@@ -1797,7 +1846,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 					if(fo)
 					{
-						fprintf(fo, bbuf);
+						fwrite(bbuf, 1, bodyLen, fo);
 						fclose(fo);
 						fo = NULL;
 						success = true;
@@ -1988,14 +2037,17 @@ int XYZV3::roundUpTo16(int in)
 	return (in + 15) & 0xFFFFFFF0;
 }
 
-void XYZV3::pkcs7unpad(char *buf, int len)
+int XYZV3::pkcs7unpad(char *buf, int len)
 {
 	if(buf && len > 0)
 	{
 		int count = buf[len-1];
 		if(count > 0 && count < 16)
 			buf[len-count] = '\0';
+		return len - count;
 	}
+
+	return len;
 }
 
 // note, expects buf to have room to be padded out
@@ -2329,6 +2381,19 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 	}
 
 	return false;
+}
+
+int XYZV3::getInfoCount()
+{
+	return m_infoArrayLen;
+}
+
+const XYZPrinterInfo* XYZV3::indexToInfo(int index)
+{
+	if(index >= 0 && index < m_infoArrayLen)
+		return &m_infoArray[index];
+
+	return NULL;
 }
 
 const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
