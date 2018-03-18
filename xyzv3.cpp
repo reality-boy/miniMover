@@ -5,14 +5,14 @@
 #include <assert.h>
 
 // prune out unuzed miniz features
-//#define MINIZ_NO_STDIO					// no file I/O support
+#define MINIZ_NO_STDIO					// no file I/O support
 //#define MINIZ_NO_TIME						// disable file time routines
 //#define MINIZ_NO_ARCHIVE_APIS				// disable zip archive api's
 //#define MINIZ_NO_ARCHIVE_WRITING_APIS
-//#define MINIZ_NO_ZLIB_APIS				// remove zlip style calls
+//#define MINIZ_NO_ZLIB_APIS				// remove zlib style calls
 //#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES	// avoid name colisions with zlib
 //#define MINIZ_NO_MALLOC					// strip out malloc
-//#include "miniz.h"
+#include "miniz.h"
 
 #include "timer.h"
 #include "aes.h"
@@ -1647,214 +1647,238 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 		FILE *f = fopen(inPath, "rb");
 		if(f)
 		{
-			const int bodyOffset = 8192;
-			char buf[64];
-
-			// get file length
-			fseek(f, 0, SEEK_END);
-			int totalLen = ftell(f);
-			fseek(f, 0, SEEK_SET);
-
-			// check if this is even a 3w file
-			fread(buf, 1, 12, f);
-			if(0 == strncmp("3DPFNKG13WTW", buf, strlen("3DPFNKG13WTW")))
+			// and write to disk
+			FILE *fo = NULL;
+			if(outPath)
+				fo = fopen(outPath, "wb");
+			else
 			{
-				// file format id's
-				// id should be 1, what does this mean?
-				// file format version is 2 or 5
-				fread(buf, 1, 4, f);
-				int id, fv;
-				id = buf[0];
-				fv = buf[1];
+				char tPath[MAX_PATH];
+				strcpy(tPath, inPath);
+				char *ptr = strrchr(tPath, '.');
+				if(!ptr)
+					ptr = tPath + strlen(tPath);
+				sprintf(ptr, ".gcode");
+				fo = fopen(tPath, "wb");
+			}
 
-				bool fileIsV5 = (fv == 5);
+			if(fo)
+			{
+				const int bodyOffset = 8192;
+				char buf[64];
 
-				// offset to zip marker
-				int zipOffset = readWord(f);
-				fseek(f, zipOffset, SEEK_CUR);
+				// get file length
+				fseek(f, 0, SEEK_END);
+				int totalLen = ftell(f);
+				fseek(f, 0, SEEK_SET);
 
-				// zip format marker
-				fread(buf, 1, 8, f);
-				bool fileIsZip = false;
-				if(0 == strncmp("TagEa128", buf, strlen("TagEa128")))
-					fileIsZip = true;
-				else if(0 == strncmp("TagEJ256", buf, strlen("TagEJ256")))
-					fileIsZip = false;
-				//else error
-
-				// optional header len
-				int headerLen = (fileIsV5) ? readWord(f) : -1;
-
-				// offset to header
-				int headerOffset = readWord(f);
-
-				int offset1 = ftell(f);
-
-				//?? 
-				int id2 = (fileIsV5) ? readWord(f) : -1;
-
-				int crc32 = readWord(f);
-
-				int offset = headerOffset - (ftell(f) - offset1);
-				fseek(f, offset, SEEK_CUR);
-
-				// header potentially goes from here to 8192
-				// v5 format stores header len, but v2 files you just have
-				// to search for zeros to indicate the end...
-				//****Note, header is duplicated in body, for now just skip it
-				// you can uncomment this if you want to verify this is the case
-//#define PARCE_HEADER
-#ifdef PARCE_HEADER
-				if(headerLen < 1)
-					headerLen = bodyOffset - ftell(f);
-				char *hbuf = new char[headerLen + 1];
-				if(hbuf)
+				// check if this is even a 3w file
+				fread(buf, 1, 12, f);
+				if(0 == strncmp("3DPFNKG13WTW", buf, strlen("3DPFNKG13WTW")))
 				{
-					fread(hbuf, 1, headerLen, f);
-					hbuf[headerLen] = '\0';
+					// file format id's
+					// id should be 1, what does this mean?
+					// file format version is 2 or 5
+					fread(buf, 1, 4, f);
+					int id, fv;
+					id = buf[0];
+					fv = buf[1];
 
-					// search from end to remove zeros
-					while(headerLen > 1)
+					bool fileIsV5 = (fv == 5);
+
+					// offset to zip marker
+					int zipOffset = readWord(f);
+					fseek(f, zipOffset, SEEK_CUR);
+
+					// zip format marker
+					fread(buf, 1, 8, f);
+					bool fileIsZip = false;
+					if(0 == strncmp("TagEa128", buf, strlen("TagEa128")))
+						fileIsZip = true;
+					else if(0 == strncmp("TagEJ256", buf, strlen("TagEJ256")))
+						fileIsZip = false;
+					//else error
+
+					// optional header len
+					int headerLen = (fileIsV5) ? readWord(f) : -1;
+
+					// offset to header
+					int headerOffset = readWord(f);
+
+					int offset1 = ftell(f);
+
+					//?? 
+					int id2 = (fileIsV5) ? readWord(f) : -1;
+
+					int crc32 = readWord(f);
+
+					int offset = headerOffset - (ftell(f) - offset1);
+					fseek(f, offset, SEEK_CUR);
+
+					// header potentially goes from here to 8192
+					// v5 format stores header len, but v2 files you just have
+					// to search for zeros to indicate the end...
+					//****Note, header is duplicated in body, for now just skip it
+					// you can uncomment this if you want to verify this is the case
+	//#define PARCE_HEADER
+	#ifdef PARCE_HEADER
+					if(headerLen < 1)
+						headerLen = bodyOffset - ftell(f);
+					char *hbuf = new char[headerLen + 1];
+					if(hbuf)
 					{
-						if(hbuf[headerLen-1] != 0)
-							break;
-						headerLen--;
-					}
+						fread(hbuf, 1, headerLen, f);
+						hbuf[headerLen] = '\0';
 
-					//****FixMe, V5 files from XYZMaker have unencrypted header
-					// but what marks that as the case and how do we detect it
-					// for now assume a comment indicates we are not encrypted
-					if(hbuf[0] != ';')
-					{
-						// decrypt header
-					    struct AES_ctx ctx;
-						uint8_t iv[16] = {0}; // 16 zeros
-						char *key = "@xyzprinting.com";
-					    AES_init_ctx_iv(&ctx, key, iv);
-					    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)hbuf, headerLen);
-					}
-
-					// remove any padding from header
-					headerLen = pkcs7unpad(hbuf, headerLen);
-
-					//****FixMe, do something with it
-					debugPrint(hbuf);
-
-					delete [] hbuf;
-					hbuf = NULL;
-				}
-#endif
-
-				// body contains duplicate header and body of gcode file
-				// and always starts at 8192 (0x2000)
-
-				fseek(f, bodyOffset, SEEK_SET);
-				int bodyLen = totalLen - ftell(f);
-				int bufLen = bodyLen + 1 + 0x2010;
-				char *bbuf = new char[bufLen];
-				if(bbuf)
-				{
-					memset(bbuf, 0, bufLen);
-					fread(bbuf, 1, bodyLen, f);
-					bbuf[bodyLen] = '\0';
-
-					if(crc32 != calcXYZcrc32(bbuf, bodyLen))
-						debugPrint("crc's don't match!!!");
-
-					if(fileIsZip)
-					{
-						// decrypt body
-					    struct AES_ctx ctx;
-						uint8_t iv[16] = {0}; // 16 zeros
-						char *key = "@xyzprinting.com";
-						for(int offset = 0; offset < bodyLen; offset += 0x2010)
+						// search from end to remove zeros
+						while(headerLen > 1)
 						{
-							int len = ((bodyLen - offset) < 0x2010) ? (bodyLen - offset) : 0x2010;
-						    AES_init_ctx_iv(&ctx, key, iv);
-						    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+offset, len);
+							if(hbuf[headerLen-1] != 0)
+								break;
+							headerLen--;
 						}
 
-						// remove any padding from body
-						bodyLen = pkcs7unpad(bbuf, bodyLen);
-
-						/*
-						mz_zip_archive zip;
-						memset(&zip, 0, sizeof(zip));
-						if(mz_zip_reader_init_mem(&zip, bbuf, bodyLen, 0))
+						//****FixMe, V5 files from XYZMaker have unencrypted header
+						// but what marks that as the case and how do we detect it
+						// for now assume a comment indicates we are not encrypted
+						if(hbuf[0] != ';')
 						{
-							int numFiles = mz_zip_reader_get_num_files(&zip);
-							for(int i=0; i<numFiles; i++)
+							// decrypt header
+						    struct AES_ctx ctx;
+							uint8_t iv[16] = {0}; // 16 zeros
+							char *key = "@xyzprinting.com";
+						    AES_init_ctx_iv(&ctx, key, iv);
+						    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)hbuf, headerLen);
+						}
+
+						// remove any padding from header
+						headerLen = pkcs7unpad(hbuf, headerLen);
+
+						//****FixMe, do something with it
+						debugPrint(hbuf);
+
+						delete [] hbuf;
+						hbuf = NULL;
+					}
+	#endif
+
+					// body contains duplicate header and body of gcode file
+					// and always starts at 8192 (0x2000)
+
+					fseek(f, bodyOffset, SEEK_SET);
+					int bodyLen = totalLen - ftell(f);
+					int bufLen = bodyLen + 1;
+					char *bbuf = new char[bufLen];
+
+					if(bbuf)
+					{
+						memset(bbuf, 0, bufLen);
+						fread(bbuf, 1, bodyLen, f);
+						bbuf[bodyLen] = '\0';
+
+						if(crc32 != calcXYZcrc32(bbuf, bodyLen))
+							debugPrint("crc's don't match!!!");
+
+						if(fileIsZip)
+						{
+							// allocate a buf to hold the zip file
+							char *zbuf = new char[bufLen];
+							if(zbuf)
 							{
-								const int tstr_len = 512;
-								char tstr[tstr_len];
-								if(mz_zip_reader_get_filename(&zip, i, tstr, tstr_len))
-									debugPrint("name(%d) : %s", tstr_len, tstr);
+								// decrypt body
+							    struct AES_ctx ctx;
+								uint8_t iv[16] = {0}; // 16 zeros
+								char *key = "@xyzprinting.com";
 
-								//mz_zip_reader_locate_file();
-								//mz_zip_reader_extract_to_mem(&zip, i, tbuf, tbufSize, 0);
+								int readOffset = 0;
+								int writeOffset = 0;
+								const int blockLen = 0x2010;
 
-								size_t size = 0;
-								char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, i, &size, 0);
-								if(tbuf)
+								// decrypt in blocks
+								for(readOffset = 0; readOffset < bodyLen; readOffset += blockLen)
 								{
-									mz_free(tbuf);
-									tbuf = NULL;
+									// last block is smaller, so account for it
+									int len = ((bodyLen - readOffset) < blockLen) ? (bodyLen - readOffset) : blockLen;
+
+									// reset decrypter every block
+								    AES_init_ctx_iv(&ctx, key, iv);
+								    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+readOffset, len);
+
+									// remove any padding from body
+									len = pkcs7unpad(bbuf+readOffset, len);
+
+									// and stash in new buf
+									memcpy(zbuf+writeOffset, bbuf+readOffset, len);
+									writeOffset += len;
+								}
+
+								mz_zip_archive zip;
+								memset(&zip, 0, sizeof(zip));
+								if(mz_zip_reader_init_mem(&zip, zbuf, writeOffset, 0))
+								{
+									int numFiles = mz_zip_reader_get_num_files(&zip);
+									if(numFiles == 1)
+									{
+#ifdef _DEBUG
+										const int tstr_len = 512;
+										char tstr[tstr_len];
+										if(mz_zip_reader_get_filename(&zip, 0, tstr, tstr_len))
+											debugPrint("zip file name '%s'", tstr);
+#endif
+
+										size_t size = 0;
+										char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, 0, &size, 0);
+										if(tbuf)
+										{
+											fwrite(tbuf, 1, size, fo);
+											success = true;
+
+											mz_free(tbuf);
+											tbuf = NULL;
+										}
+										else
+											debugPrint("error %d", zip.m_last_error);
+									}
+									else
+										debugPrint("error numfiles is %d", numFiles);
+
+									mz_zip_reader_end(&zip);
 								}
 								else
 									debugPrint("error %s", zip.m_last_error);
-							}
 
-							mz_zip_reader_end(&zip);
+								delete [] zbuf;
+								zbuf = NULL;
+							}
 						}
 						else
-							debugPrint("error %s", zip.m_last_error);
-						*/
-
-					}
-					else
-					{
-						// first char in an unencrypted file will be ';'
-						// so check if no encrypted, v5 files sometimes are not encrypted
-						if(bbuf[0] != ';')
 						{
-							// decrypt body
-						    struct AES_ctx ctx;
-							uint8_t iv[16] = {0}; // 16 zeros
-							char *key = "@xyzprinting.com@xyzprinting.com";
-						    AES_init_ctx_iv(&ctx, key, iv);
-						    AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
+							// first char in an unencrypted file will be ';'
+							// so check if no encrypted, v5 files sometimes are not encrypted
+							if(bbuf[0] != ';')
+							{
+								// decrypt body
+							    struct AES_ctx ctx;
+								uint8_t iv[16] = {0}; // 16 zeros
+								char *key = "@xyzprinting.com@xyzprinting.com";
+							    AES_init_ctx_iv(&ctx, key, iv);
+							    AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
+							}
+
+							// remove any padding from body
+							bodyLen = pkcs7unpad(bbuf, bodyLen);
+
+							fwrite(bbuf, 1, bodyLen, fo);
+							success = true;
 						}
 
-						// remove any padding from body
-						bodyLen = pkcs7unpad(bbuf, bodyLen);
+						delete [] bbuf;
+						bbuf = NULL;
 					}
-
-					// and write to disk
-					FILE *fo = NULL;
-					if(outPath)
-						fo = fopen(outPath, "wb");
-					else
-					{
-						char tPath[MAX_PATH];
-						strcpy(tPath, inPath);
-						char *ptr = strrchr(tPath, '.');
-						if(!ptr)
-							ptr = tPath + strlen(tPath);
-						sprintf(ptr, ".gcode");
-						fo = fopen(tPath, "wb");
-					}
-
-					if(fo)
-					{
-						fwrite(bbuf, 1, bodyLen, fo);
-						fclose(fo);
-						fo = NULL;
-						success = true;
-					}
-
-					delete [] bbuf;
-					bbuf = NULL;
 				}
+
+				fclose(fo);
+				fo = NULL;
 			}
 
 			fclose(f);
@@ -2042,7 +2066,7 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 	if(buf && len > 0)
 	{
 		int count = buf[len-1];
-		if(count > 0 && count < 16)
+		if(count > 0 && count <= 16)
 			buf[len-count] = '\0';
 		return len - count;
 	}

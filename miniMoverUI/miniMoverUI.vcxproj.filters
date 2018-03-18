@@ -39,6 +39,9 @@
     <ClInclude Include="XYZV3Thread.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\miniz.h">
+      <Filter>Shared Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp">
@@ -57,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\timer.cpp">
+      <Filter>Shared Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\miniz.c">
       <Filter>Shared Files</Filter>
     </ClCompile>
   </ItemGroup>

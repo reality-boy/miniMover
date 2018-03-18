@@ -79,6 +79,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\aes.h" />
+    <ClInclude Include="..\miniz.h" />
     <ClInclude Include="..\serial.h" />
     <ClInclude Include="..\timer.h" />
     <ClInclude Include="..\xyzv3.h" />
@@ -88,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aes.cpp" />
+    <ClCompile Include="..\miniz.c" />
     <ClCompile Include="..\serial.cpp" />
     <ClCompile Include="..\timer.cpp" />
     <ClCompile Include="..\xyzv3.cpp" />
