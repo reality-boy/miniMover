@@ -1792,7 +1792,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 								int readOffset = 0;
 								int writeOffset = 0;
-								const int blockLen = 0x2010;
+								const int blockLen = 0x2010; // block grows by 16 bytes when pkcs7 padding is applied
 
 								// decrypt in blocks
 								for(readOffset = 0; readOffset < bodyLen; readOffset += blockLen)
@@ -2079,10 +2079,11 @@ int XYZV3::pkcs7pad(char *buf, int len)
 {
 	if(buf && len > 0)
 	{
-		int newLen = roundUpTo16(len);
+		// force padding even if we are on a byte boundary
+		int newLen = roundUpTo16(len+1);
 		int count = newLen - len;
 
-		if(count > 0 && count < 16)
+		if(count > 0 && count <= 16)
 		{
 			for(int i=0; i<count; i++)
 				buf[len+i] = count;
@@ -2214,7 +2215,7 @@ bool XYZV3::checkLineIsHeader(const char* lineBuf)
 
 bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen)
 {
-	
+	bool success = false;
 	const int lineLen = 1024;
 	char lineBuf[lineLen];
 
@@ -2350,26 +2351,69 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 
 				if(fileIsZip)
 				{
-					// not finished, can't count on this code
-					assert(false);
+					mz_zip_archive zip;
+					memset(&zip, 0, sizeof(zip));
+					if(mz_zip_writer_init_heap(&zip, 0, 0))
+					{
+						if(mz_zip_writer_add_mem(&zip, "sample.gcode", bBuf, bbufOffset, MZ_DEFAULT_COMPRESSION))
+						{
+							char *zBuf;
+							size_t zBufLen;
+							if(mz_zip_writer_finalize_heap_archive(&zip, (void**)&zBuf, &zBufLen))
+							{
+								// encryption is handled on a block by block basis and adds 16 bytes to each block
+								const int blockLen = 0x2000;
+								int newLen = zBufLen + (zBufLen / blockLen + 1) * 16;
 
-					int bLen = bbufOffset;
+								// on the off chance our zip file is larger than the asci file then allocate more memory
+								// this should never happen assuming the zip file can be compressed at all
+								if(newLen > bBufMaxLen)
+								{
+									delete [] bBuf;
+									bBuf = new char[newLen];
+								}
 
-					// Im not really sure on the order here, need to find a file to look at
+								// encrypt body
+							    struct AES_ctx ctx;
+								uint8_t iv[16] = {0}; // 16 zeros
+								char *key = "@xyzprinting.com";
 
-					//****FixMe zip file
+								int readOffset = 0;
+								int writeOffset = 0;
 
-					//****FixMe, pad out to 8192
+								// decrypt in blocks
+								for(readOffset = 0; readOffset < (int)zBufLen; readOffset += blockLen)
+								{
+									// last block is smaller, so account for it
+									int len = ((zBufLen - readOffset) < blockLen) ? (zBufLen - readOffset) : blockLen;
 
-					// encrypt body
-				    struct AES_ctx ctx;
-					uint8_t iv[16] = {0}; // 16 zeros
-					char *key = "@xyzprinting.com";
-				    AES_init_ctx_iv(&ctx, key, iv);
-				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
+									// and stash in new buf
+									memcpy(bBuf+writeOffset, zBuf+readOffset, len);
 
-					//****FixMe, set body output
-					*bodyLen = bLen;
+									// add padding to body
+									len = pkcs7pad(bBuf+writeOffset, len);
+
+									// reset decrypter every block
+								    AES_init_ctx_iv(&ctx, key, iv);
+								    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf+writeOffset, len);
+
+									writeOffset += len;
+								}
+
+								// clean up zip memory
+								mz_zip_writer_end(&zip);
+
+								*bodyLen = writeOffset;
+								*headerLen = hLen;
+								*headerBuf = hBuf;
+								*bodyBuf = bBuf;
+
+								return true;
+							}
+						}
+						// clean up zip memory in case of failure
+						mz_zip_writer_end(&zip);
+					}
 				}
 				else
 				{
@@ -2385,13 +2429,12 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					// bBuf already padded out, no need to copy it over
 					// just mark the padding
 					*bodyLen = bLen;
+					*headerLen = hLen;
+					*headerBuf = hBuf;
+					*bodyBuf = bBuf;
+
+					return true;
 				}
-
-				*headerLen = hLen;
-				*headerBuf = hBuf;
-				*bodyBuf = bBuf;
-
-				return true;
 			}
 
 			delete [] bBuf;

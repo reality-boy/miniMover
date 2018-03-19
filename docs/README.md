@@ -9,31 +9,35 @@ http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 This works with the following printers over a USB connection.  There is no wireless support yet, but I could look into it if there is any interest.
 
    da Vinci Nano  
-   da Vinci Mini w  
    da Vinci miniMaker  
+   da Vinci Mini w  
    da Vinci Jr. 1.0  
-   da Vinci Jr. 1.0 Wireless  
+   da Vinci Jr. 1.0W  
    da Vinci Jr. 1.0A  
+   da Vinci Jr. 1.0 3in1  
+   da Vinci Jr. 1.0 3in1 (Open filament)  
    da Vinci Jr. 1.0 Pro  
-   da Vinci Jr. 3in1  
-   da Vinci Jr. 3in1 (Open filament)  
    da Vinci Jr. 2.0 Mix  
    da Vinci 1.0 Pro  
    da Vinci 1.0 Pro 3in1  
    da Vinci 1.0 Super  
 
-It does not work with these printers, they use an older communication protocol that I have not implemented yet. It would not be hard to implement if there is any interest in it.
+With these printers I can only convert from gcode to 3w files and back.  They use an older communication protocol that I have not implemented yet, so I can't send data to them directly. 
 
    da Vinci 1.0  
    da Vinci 1.0A  
-   da Vinci AIO  
+   da Vinci 1.0 AiO  
+   da Vinci 1.1 Plus  
    da Vinci 2.0 Duo  
    da Vinci 2.0A Duo  
-   da Vinci 1.1 Plus  
 
 This uses a modified version of the tiny-AES project by kkoke.
 
 https://github.com/kokke/tiny-AES-c
+
+It also uses a stripped down version of miniz by richgel999
+
+https://github.com/richgel999/miniz
 
 This comes in two flavors, a win32 GUI and a command line utility.
 
