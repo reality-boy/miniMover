@@ -1170,33 +1170,38 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 	if(path && m_serial.isOpen())
 	{
-		//****FixMe, temp file should be placed in temp folder
-		// see GetTempFileName() and GetTempPath()
-		const char *temp = "temp.3w";
-		const char *tPath = NULL;
-
-		// if gcode convert to 3w file
-		bool isGcode = isGcodeFile(path);
-		if(isGcode)
+		char path[MAX_PATH];
+		if(GetTempPath(MAX_PATH, path))
 		{
-			if(encryptFile(path, temp, -1))
+			char tfile[MAX_PATH];
+			if(GetTempFileName(path, NULL, 0, tfile))
 			{
-				tPath = temp;
+				const char *tPath = NULL;
+
+				// if gcode convert to 3w file
+				bool isGcode = isGcodeFile(path);
+				if(isGcode)
+				{
+					if(encryptFile(path, tfile, -1))
+					{
+						tPath = tfile;
+					}
+				}
+				else if(is3wFile(path))
+					tPath = path;
+				// else tPath is null and we fail
+
+				if(tPath)
+				{
+					// send to printer
+					if(print3WFile(tPath, cbStatus))
+						success = true;
+
+					// cleanup temp file
+					if(isGcode)
+						remove(tfile);
+				}
 			}
-		}
-		else if(is3wFile(path))
-			tPath = path;
-		// else tPath is null and we fail
-
-		if(tPath)
-		{
-			// send to printer
-			if(print3WFile(tPath, cbStatus))
-				success = true;
-
-			// cleanup temp file
-			if(isGcode)
-				remove(temp);
 		}
 	}
 
@@ -2467,6 +2472,10 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 {
 	if(modelNum)
 	{
+		// mini w has two model numbers
+		if(0 == strcmp(modelNum, "dv1MW0B000"))
+			modelNum = "dv1MW0A000"; 
+
 		for(int i=0; i<m_infoArrayLen; i++)
 		{
 			if(0 == strcmp(modelNum, m_infoArray[i].modelNum))

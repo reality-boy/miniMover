@@ -2,6 +2,13 @@
 // Serial: 115200 baud, 8 bit, 0 parity, 1 stop, 
 
 //*********************
+// reg keys
+
+Computer\HKEY_CURRENT_USER\Software\XYZmaker
+Computer\HKEY_CURRENT_USER\Software\xyzprinting
+Computer\HKEY_CURRENT_USER\Software\XYZware
+
+//*********************
 // commands
 
 XYZv3/query={}
@@ -372,8 +379,7 @@ XYZv3/query=o
 //	F11,	"dvF110B000",	"daVinciF11",	3F11XP,	0, 2, 1, 3, 200x200x200,	"da Vinci 1.1 Plus" //???? I'm suspicious of this one, think it belongs above
 //
 //	FN1X,	"dv1NX0A000",	"dv1NX0A000",	3FN1XP,	1, 2, 1, 3, 120x120x120,	"da Vinci Nano"
-//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3,
-150x150x150,	"da Vinci Mini w" // may show up as "dv1MW0B000"
+//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3, 150x150x150,	"da Vinci Mini w" // may show up as "dv1MW0B000"
 //	FM1X,	"dv1MX0A000",	"dv1MX0A000",	3FM1XP,	1, 2, 1, 3, 150x150x150,	"da Vinci miniMaker"
 //	FJR10,	"dv1J00A000",	"daVinciJR10",	??????,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0"
 //	FJR10W,	"dv1JW0A000",	"daVinciJR10W",	3F1JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0 Wireless"
@@ -477,6 +483,48 @@ XYZv3/query=v
 //   	MM - Mloc
 //   	TTT - Mdate
 //   	SSSS - serial number, optional
+// examples:
+//	PLA Gold  GBP3OCA64N0017
+//  PLA Green PMP6PTH6840596
+/*
+switch(filamentSN[4])
+{
+case 'A': return "Purple";
+case 'B': return "Blue";
+case 'C': return "Orange Red";
+case 'D': return "Cyan";
+case 'E': return "Dark Sea Green";
+case 'F': return "Yellow";
+case 'G': return "Green";
+case 'H': return "Chartreuse";
+case 'I': return "Dark Gray";
+case 'J': return "Gold";
+case 'K': return "Black";
+case 'L': return "Violet";
+case 'M': return "Medium Purple";
+case 'N': return "Purple";
+case 'O': return "Gold";
+case 'P': return "Sea Green";
+case 'Q': return "Orange";
+case 'R': return "Red";
+case 'S': return "Salmon";
+case 'T': return "Dark Orange";
+case 'U': return "Dark Blue";
+case 'V': return "Silver";
+case 'W': return "White";
+case 'X': return "Magenta";
+case 'Y': return "Yellow";
+case 'Z': return "White";
+case '1': return "Gray";
+case '2': return "Crimson";
+case '3': return "Transparent";
+case '4': return "Forest Green";
+case '5': return "Fuchsia";
+case '6': return "Steel Blue";
+case '7': return "Dark Orange";
+case '8': return "Floral White";
+}
+*/
 XYZv3/query=w
 	w:1,PMP6PTH6840596
 
@@ -619,6 +667,7 @@ XYZv3/config=disconnectap
 XYZv3/config=engrave:placeobject
 
 // where E is energy value (whatever that is, probably lazer engraving energy)
+//****Note, this may be the energy saving level as seen in the jr 3in1, that controls how long the led lights stay on for, in min
 // E seems to range from 0.0 to 0.9
 XYZv3/config=energy:[E] 
 
@@ -925,7 +974,8 @@ Filament used:  // m
 
 XYZ_@3D:2 // test head, send this first
 M84 P // pause print
-M84 R // resume
+M84 R // resume print
+
 M500 Z XX // set z offset
 G91 // relative mode?
 G90 // absolute mode?
@@ -945,3 +995,118 @@ M106 Sxx // fan on xx speed
 M81 // switch power connector?
 M84   // test end or M84 T send this last
 
+//********************
+
+I guess this is what you are after:
+"uploadGCodeText"        = "XYZ_@3D:4";
+"latestBlockSent"        = "XYZ_@3D:90”;
+
+Just need to find out how big each block is.
+
+Ollie.
+
+
+
+"prefix"              = "XYZ_@3D:";
+
+//"disconnect"           = "XYZ_@3D_S10_X";
+//"connect"              = "XYZ_@3D_S10_0";
+//"start print"          = "XYZ_@3D_S10_1";
+//"test case"            = "XYZ_@3D_S10_2";
+//"uploadFirmwareBinary" = "XYZ_@3D_S10_3";
+//"uploadGCodeText"      = "XYZ_@3D_S10_4";
+
+//"extruder Temperature" = "XYZ_@3D_S10_101";
+//"get standard info"    = "XYZ_@3D_S10_102";
+//"get advanced info"    = "XYZ_@3D_S10_103";
+
+
+"disconnect"             = "XYZ_@3D:-1";
+"connect"                = "XYZ_@3D:0";
+"startOnlinePrint"       = "XYZ_@3D:1";
+"test print"             = "XYZ_@3D:2";
+"injectManualCommand"    = "XYZ_@3D:2";
+"uploadFirmwareBinary"   = "XYZ_@3D:3";
+"uploadGCodeText"        = "XYZ_@3D:4";
+"latestBlockSent"        = "XYZ_@3D:90";
+"uploadBinaryDidFinish"  = "XYZ_@3D:91";
+"uploadGCodeDidFinish"   = "XYZ_@3D:92";
+"machineLife"            = "XYZ_@3D:5";
+"read eeprom A"          = "XYZ_@3D:6";
+"read eeprom B"          = "XYZ_@3D:7";
+"machine status"         = "XYZ_@3D:8";
+"printer status"         = "XYZ_@3D:8"; // same as machine status
+
+"get standard info"      = "XYZ_@3D:201";
+"get advanced info"      = "XYZ_@3D:202";
+
+//example "XYZ_@3D:101,1"
+//example "XYZ_@3D:101,2"
+//example "XYZ_@3D:103,2"
+"extruder on"           = "XYZ_@3D:101";
+"extruder off"          = "XYZ_@3D:102";
+"extruder Temperature"  = "XYZ_@3D:103";
+
+/*
+// from https://github.com/jasongao/DaVinci1.0/blob/master/print-to-davinci.py
+
+
+import time, serial, sys
+
+ser = serial.Serial(
+  port=sys.argv[1],
+  baudrate=115200,
+  parity=serial.PARITY_NONE,
+  stopbits=serial.STOPBITS_ONE,
+  bytesize=serial.EIGHTBITS
+)
+ser.isOpen()
+
+def toHexString(text):
+  return ' '.join(x.encode('hex') for x in str(text))
+
+def printOutputIfAvailable():
+  time.sleep(1) # wait one second before attempting to read response
+  out = ""
+  while ser.inWaiting() > 0:
+    out += ser.read(ser.inWaiting())
+  if out != '':
+    print ">> " + toHexString(out)
+    print ">> " + out
+
+### STATUS INFORMATION THAT XYZware polls periodically
+ser.write("XYZ_@3D:" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:6" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:5" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:8" + '\n')
+printOutputIfAvailable()
+
+### Check printer is ready to offline print from SD card?
+ser.write("XYZ_@3D:4" + '\n')
+printOutputIfAvailable()
+
+
+### Send gcode to printer
+with open(sys.argv[2], 'rb') as fin:
+    gcode = fin.read()
+    gcode = str.replace(gcode, '\n', '\r\n') # XYZware includes carriage feed
+    gcode = bytearray(gcode)
+    gcode.append(0x00);
+    gcode.append(0x00);
+    gcode.append(0xB9); # some sort of checksum? how to calculate this?
+    gcode.append('.');
+    m1_gcode = "M1:MyTest,711,0.3.16,EE1_OK,EE2_OK" + gcode
+    print ' '.join(x.encode('hex') for x in str(m1_gcode))
+    
+    ser.write("M1:MyTest,711,0.3.16,EE1_OK,EE2_OK")
+    ser.flush()
+    ser.write(gcode)
+    ser.flush()
+    printOutputIfAvailable()
+
+# while(True):
+#   printOutputIfAvailable()
+*/
