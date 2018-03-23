@@ -659,6 +659,8 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 		sprintf(tstr, "load fillament (%d)", subStatus);
 		return tstr;
 	case STATE_PRINT_UNLOAD_FIALMENT: //  (substatus 22 24)
+		// substate 21 is unload start or heating
+		// substate 22 is unload unloading or done, I think
 		sprintf(tstr, "unload filament (%d)", subStatus);
 		return tstr;
 	case STATE_PRINT_JOG_MODE:
@@ -867,8 +869,10 @@ bool XYZV3::unloadFillament()
 
 		m_serial.writeSerial("XYZv3/action=unload:new");
 		if( waitForJsonVal("stat", "start", true) &&
-			// waitForJsonVal("stat", "heat", true, 120) && // extemp:22
+			// could query temp and status with  XYZv3/query=jt
+			// waitForJsonVal("stat", "heat", true, 120) && // extemp:22 // does not seem to ever be sent
 			waitForJsonVal("stat", "unload", true, 240) &&
+			// could query temp and status with  XYZv3/query=jt
 			waitForJsonVal("stat", "complete", true, 240))
 		{
 			success = true;

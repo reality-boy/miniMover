@@ -309,7 +309,7 @@ XYZv3/query=i
 	30   STATE_PRINTER_BUSY
 	9520 STATE_PRINT_FILE_CHECK
 	9530 STATE_PRINT_LOAD_FIALMENT (substatus 12 14)
-	9531 STATE_PRINT_UNLOAD_FIALMENT (substatus 22 24)
+	9531 STATE_PRINT_UNLOAD_FIALMENT (substatus 21 22 24)
 	9532 STATE_PRINT_JOG_MODE
 	9533 STATE_PRINT_FATAL_ERROR
 	9534 STATE_PRINT_HOMING
@@ -332,6 +332,19 @@ XYZv3/query=j
 // k:xx
 //   xx is material type, in hex?
 //   one of 41 46 47 50 51 54 56
+/*
+switch (FILAMANEE.material)
+{
+case 41: return "ABS";
+case 46: return "TPE";
+case 47: return "PETG";
+case 50: return "PLA";
+case 51: return "PLA";
+case 54: return "Tough PLA";
+case 56: return "PVA";
+default: return "---";
+}
+*/
 XYZv3/query=k
 	// not used on miniMaker
 
@@ -487,42 +500,54 @@ XYZv3/query=v
 //	PLA Gold  GBP3OCA64N0017
 //  PLA Green PMP6PTH6840596
 /*
-switch(filamentSN[4])
+switch (FILAMANEE.serial_number[4])
 {
+case '0': return "Bronze";
+case '1': return "Silver";
+case '2': return "Clear Red";
+case '3': return "Clear";
+case '4': return "Bottle Green";
+case '5': return "Neon Magenta";
+case '6': return "SteelBlue";
+case '7': return "Sun Orange";
+case '8': return "Pearl White";
+case '9': return "Copper";
 case 'A': return "Purple";
 case 'B': return "Blue";
-case 'C': return "Orange Red";
-case 'D': return "Cyan";
-case 'E': return "Dark Sea Green";
-case 'F': return "Yellow";
+case 'C': return "Neon Tangerine";
+case 'D': return "Viridity";
+case 'E': return "Olivine";
+case 'F': return "Gold";
 case 'G': return "Green";
-case 'H': return "Chartreuse";
-case 'I': return "Dark Gray";
-case 'J': return "Gold";
+case 'H': return "Neon Green";
+case 'I': return "Snow White";
+case 'J': return "Neon Yellow";
 case 'K': return "Black";
 case 'L': return "Violet";
-case 'M': return "Medium Purple";
-case 'N': return "Purple";
-case 'O': return "Gold";
-case 'P': return "Sea Green";
-case 'Q': return "Orange";
+case 'M': return "Grape Purple";
+case 'N': return "Purpurine";
+case 'O': return "Clear Yellow";
+case 'P': return "Clear Green";
+case 'Q': return "Clear Tangerine";
 case 'R': return "Red";
-case 'S': return "Salmon";
-case 'T': return "Dark Orange";
-case 'U': return "Dark Blue";
-case 'V': return "Silver";
+case 'S': return "Cyber Yellow";
+case 'T': return "Tangerine";
+case 'U': return "Clear Blue";
+case 'V': return "Clear Purple";
 case 'W': return "White";
-case 'X': return "Magenta";
+case 'X': return "Clear Magenta";
 case 'Y': return "Yellow";
-case 'Z': return "White";
-case '1': return "Gray";
-case '2': return "Crimson";
-case '3': return "Transparent";
-case '4': return "Forest Green";
-case '5': return "Fuchsia";
-case '6': return "Steel Blue";
-case '7': return "Dark Orange";
-case '8': return "Floral White";
+case 'Z': return "Nature";
+
+case ':':
+case ';':
+case '<':
+case '=':
+case '>':
+case '?':
+case '@':
+default:
+	return "--";
 }
 */
 XYZv3/query=w
@@ -652,13 +677,26 @@ XYZv3/query=9
 // XYZv3/config=
 // all return ok or E0
 
-// toggle auto level off/on
-XYZv3/config=autolevel:off
-XYZv3/config=autolevel:on
 
+//-------------------------
+// toggle auto level off/on
+XYZv3/config=autolevel:off			// send
+// or
+XYZv3/config=autolevel:on			// send
+// then
+XYZv3/query=os						// send
+o:p8,t1,c1,a-<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}<nl>$<nl> // recieve, get state of auto level, why s?
+
+
+//----------------------------------
 // toggle print finish buzzer off/on
-XYZv3/config=buzzer:off
-XYZv3/config=buzzer:on
+XYZv3/config=buzzer:off				// send
+// or
+XYZv3/config=buzzer:on				// send
+// then
+XYZv3/query=os						// send to get status
+o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}<nl>$<nl> // recieve, get state of buzzer, why o?
+
 
 //???
 XYZv3/config=disconnectap
@@ -671,8 +709,14 @@ XYZv3/config=engrave:placeobject
 // E seems to range from 0.0 to 0.9
 XYZv3/config=energy:[E] 
 
-// change language where XX is one of en, fr, it, de, es, jp
+//----------------
+// change language 
+// where XX is one of en, fr, it, de, es, jp
 XYZv3/config=lang:[XX] 
+
+XYZv3/config=lang:[en]			// send at startup and when language changes
+ok<nl>$<nl>						// returns immediately
+
 
 // update runtime maintanence counter
 // xx == how many hours since last maintanence?
@@ -690,16 +734,41 @@ XYZv3/config=print[cancel]
 XYZv3/config=print[pause]
 XYZv3/config=print[resume]
 
+
+//-----------------------
 // reset printer settings
-XYZv3/config=restoredefault:on
+XYZv3/config=restoredefault:on			// send
+XYZv3/config=energy:[3]					// send, why send this???
+XYZv3/query=os							// send to get status
+o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}<nl>$<nl>  // returns status
+
+
 
 // connect wifi
 XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
 
-// get/set z offset
+//-----------------
+// get/set z offset or adjusts z offset up or down
+// returns new offset, divide by 100 to get mm, ie
 // where J is offset in mm * 100
-XYZv3/config=zoffset:get
-XYZv3/config=zoffset:set[J] 
+// XYZv3/config=zoffset:set[J]
+
+XYZv3/config=zoffset:get				// send
+321<nl>$<nl>							// return zoffset
+
+// then when adjusting
+XYZv3/action=home						// send, only on first adjustment
+home:{"stat":"start"}<nl>$<nl>			// return start 
+XYZv3/action=zoffset:up					// send, set zoffset up by one
+XYZv3/config=zoffset:get				// send, request new position
+321<nl>$<nl>							// return zoffset
+// also 
+XYZv3/action=zoffset:down				// same as up
+
+// can also set directly with 
+XYZv3/config=zoffset:set[321]			// send 
+ok<nl>$<nl>								// return
+
 
 // UnlockFilament, send in this order
 // does not seem to work wih miniMaker
@@ -716,40 +785,74 @@ XYZv3/config=pde:[8046]
 // Send_Action_command or SendAct()
 // XYZv3/action=
 
+
+//--------------
 // calibrate bed
-XYZv3/action=calibratejr:new
-// on start returns
-calibratejr:{"stat":"start"}
-calibratejr:{"stat":"pressdetector"}
-// then lower detector and send
-XYZv3/action=calibratejr:detectorok
-// on start returns
-calibratejr:{"stat":"processing"}
-calibratejr:{"stat":"ok",456,464,463,456,456,451,437,439,427}
-// then raise detector and send
-XYZv3/action=calibratejr:release
-calibratejr:{"stat":"complete"}
+
+// start
+XYZv3/action=calibratejr:new					// send
+calibratejr:{"stat":"start"}<nl>$<nl>			// recieve immediately
+calibratejr:{"stat":"pressdetector"}<nl>$<nl>	// recieve immediately
+
+// press button to lower detector
+
+XYZv3/action=calibratejr:detectorok				// send
+calibratejr:{"stat":"processing"}<nl>$<nl>		// recieve immediately
+calibratejr:{"stat":"ok",438,453,453,437,445,443,412,420,424}<nl>$<nl>	// recieve when done
+// or
+calibratejr:{"stat":"fail"}<nl>$<nl>			// recieve if button not pressed
+
+// release button to raise detector
+
+XYZv3/action=calibratejr:release				// send to end calibration, xyz sends this before button is released, why?
+
+calibratejr:{"stat":"complete"}<nl>$<nl>		// potentially recieve, but when?
+
 // gets data?  maybe send after ok and before release?
 XYZv3/action=calibratejr:getdata
 
+
+//-------------
 // clean nozzle
 // send to start heating
-XYZv3/action=cleannozzle:new
-// on start returns
-cleannozzle:{"stat":"start"}
-cleannozzle:{"stat":"complete"}
-// send when done
-XYZv3/action=cleannozzle:cancel
-// returns
-cleannozzle:{"stat":"ok"}
 
+XYZv3/action=cleannozzle:new			// send
+cleannozzle:{"stat":"start"}<nl>$<nl>	// recive immediately
+
+// in loop
+XYZv3/query=jt							// send
+j:9536,51<nl>t:1,196,0<nl>$<nl>			// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 51 heating?
+// or
+j:9536,52<nl>t:1,211,210<nl>$<nl>		// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 52 ready?
+
+// wait for 
+cleannozzle:{"stat":"complete"}
+// or
+j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+// or send
+XYZv3/action=cleannozzle:cancel			// send
+//XYZv3/query=a							// xyz queries for this, why?
+cleannozzle:{"stat":"ok"}<nl>$<nl>		// recieve immediately?
+// end loop
+
+
+//-------------
 // home printer
 // send
-XYZv3/action=home
-// on start returns 
-home:{"stat":"start"}
-home:{"stat":"complete"}
+XYZv3/action=home					// send
+home:{"stat":"start"}<nl>$<nl>		// returns immediatley
 
+// loop start
+XYZv3/query=j						// send
+j:9534,5<nl>$<nl>					// returns, state 9534 is 'STATE_PRINT_HOMING', substate 5?
+// or
+j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+
+home:{"stat":"complete"}			// when do we get this? indicates home is finished
+// loop end
+
+
+//--------------------------
 // Jog where LL is step size
 // make sure you have homed first?
 XYZv3/action=jog:{"axis":"x","dir":"-","len":"LL"} 
@@ -758,41 +861,78 @@ XYZv3/action=jog:{"axis":"y","dir":"-","len":"LL"}
 XYZv3/action=jog:{"axis":"y","dir":"+","len":"LL"}
 XYZv3/action=jog:{"axis":"z","dir":"-","len":"LL"}
 XYZv3/action=jog:{"axis":"z","dir":"+","len":"LL"}
-// returns 
-jog:{"stat":"start"}
-jog:{"stat":"complete"}
 
+// start
+XYZv3/action=jog:{"axis":"x","dir":"-","len":"10"}		// send
+jog:{"stat":"start"}<nl>$<nl>		// returns immediately
+
+// loop start
+XYZv3/query=j						// send
+j:9532,30<nl>$<nl>					// returns, state 9532 is 'STATE_PRINT_JOG_MODE' substate 30 
+// or
+j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+// or
+jog:{"stat":"complete"}				// when does this get returned
+// loop end
+
+
+//--------------
 // filament load
-XYZv3/action=load:new
-// on start returns
-load:{"stat":"start"}
-load:{"stat":"heat","extemp":"26"}
-load:{"stat":"load"}
-// send when filament comes out of nozzle
-XYZv3/action=load:cancel
-load:{"stat":"complete"}
-// send these to cancel or retry
-XYZv3/action=load:cancel
-XYZv3/action=load:retry
 
+// send to start
+XYZv3/action=load:new						// send
+load:{"stat":"start"}<nl>$<nl>				// return immediately
+
+// then in loop
+XYZv3/query=jt								// send to get status
+j:9530,11.t:1,205,210<nl>$<nl>				// returns immediately, 
+// or										// state 9531 is 'STATE_PRINT_UNLOAD_FIALMENT', 11 is heating up, 12 is loading
+j:9511,0.t:1,94,0<nl>$<nl>					// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+
+load:{"stat":"load"}<nl>$<nl>				// transition from heating to loading
+
+// indicates end
+load:{"stat":"fail"}<nl>$<nl>				// return, load failed, maybe fillament not detected
+load:{"stat":"complete"}<nl>$<nl>			// return, load succeeded, sent after a long delay, if you don't send cancel
+// or state is 9511
+// end loop
+
+// send when filament comes out of nozzle, or to cancel, after heating
+XYZv3/action=load:cancel
+load:{"stat":"complete"}<nl>$<nl>			// returns immediately, load succeeded
+
+// send to retry load, can only be sent after load finishes or fails
+XYZv3/action=load:retry						// send
+load:{"stat":"start"}<nl>$<nl>				// returns immediately
+load:{"stat":"heat","extemp":"24"}<nl>$<nl>	// returns immediately, only sent once after a retry
+
+
+//----------------
 // filament unload
-// send
-XYZv3/action=unload:new
-// on start returns
-unload:{"stat":"start"}
-unload:{"stat":"heat","extemp":"22"}
-unload:{"stat":"unload"}
-unload:{"stat":"complete"}
-// send these to cancel or retry
-XYZv3/action=unload:cancel
-XYZv3/action=unload:retry
 
-// adjusts z offset up or down
-// see config zoffset commands
-XYZv3/action=zoffset:down
-XYZv3/action=zoffset:up
-// returns new offset, divide by 100 to get mm, ie
-332
+// to start unload
+XYZv3/action=unload:new							// send
+unload:{"stat":"start"}<nl>$<nl>				// return immediate
+
+// then in loop
+XYZv3/query=jt									// send
+j:9531,21.t:1,22,155<nl>$<nl>					// return immediately
+// or											// state 9531 is 'STATE_PRINT_UNLOAD_FIALMENT', substate is 21 when heating and 22 when unloading?
+j:9511,0.t:1,94,0<nl>$<nl>						// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+
+// and look for one of these
+unload:{"stat":"unload"}<nl>$<nl>				// indicates fillament is unloading, sent when substate goes from 21 to 22
+unload:{"stat":"complete"}<nl>$<nl>				// break after recieving this, or when state goes to 9511
+// end loop
+
+// send this to cancel
+XYZv3/action=unload:cancel						// cancels unload, available as soon as stat goes to unload
+// returns nothing
+
+// send this to retry
+XYZv3/action=unload:retry						// restarts unload, available when stat goes to complete, or 9511
+unload:{"stat":"start"}<nl>$<nl>				// return immediatly
+unload:{"stat":"heat","extemp":"33"}<nl$<nl>	// and return immediatly, but only once, is current temp of extruder
 
 
 //***************************
