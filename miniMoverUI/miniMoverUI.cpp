@@ -35,6 +35,7 @@
 
 #include "timer.h"
 #include "serial.h"
+#include "debug.h"
 #include "xyzv3.h"
 #include "XYZV3Thread.h"
 
@@ -58,33 +59,13 @@ HWND hwndListInfo = NULL;
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
 
-// source
-
-#define ERR_C_BUFFER_SIZE 2048
-void debugPrint(char *format, ...)
-{
-	char msgBuf[ERR_C_BUFFER_SIZE];
-	va_list arglist;
-
-	va_start(arglist, format);
-	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
-	msgBuf[sizeof(msgBuf)-1] = '\0';
-	va_end(arglist);
-
-#ifdef _CONSOLE
-	printf("%s\n",msgBuf);
-#else
-	OutputDebugString(msgBuf);
-	OutputDebugString("\n");
-#endif
-}
-
 //-------------------------------------------
 // main dialog
 
 void listAddLine(HWND hList, const char *format, ...)
 {
-	char msgBuf[ERR_C_BUFFER_SIZE];
+	const static int BUFF_SIZE = 2048;
+	char msgBuf[BUFF_SIZE];
 	va_list arglist;
 
 	if(hList)
@@ -666,6 +647,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT)
 {
+	debugInit();
+
     // Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -700,6 +683,8 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT)
     }
 
 	timeEndPeriod(1); // release 1 millisecond timer
+
+	debugFinalize();
 
 	return 0;
 }

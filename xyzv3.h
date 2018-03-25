@@ -198,7 +198,8 @@ public:
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
 	// dump what is returned from the serial port to console
-	bool printRawStatus(); 
+	void debugPrintAllLines();
+	void printRawStatus(); 
 
 	// run auto bed leveling routine
 	// call to start
@@ -301,8 +302,6 @@ protected:
 	const char* readLineFromBuf(const char* buf, char *lineBuf, int lineLen);
 	bool checkLineIsHeader(const char* lineBuf);
 	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
-
-	void debugPrint(char *format, ...);
 
 	Serial m_serial;
 	XYZPrinterState m_status;

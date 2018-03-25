@@ -6,6 +6,7 @@
 
 #include "timer.h"
 #include "serial.h"
+#include "debug.h"
 #include "xyzv3.h"
 
 #pragma warning(disable:4996) // live on the edge!
@@ -308,15 +309,19 @@ bool handlePrintFile(const char *path)
 	return false;
 }
 
+//#define DUMP_STATUS
+
 int main(int argc, char **argv)
 {
+	debugInit();
+
 	if(argc <= 1)
 	{
-		postHelp();
-
-#ifdef _DEBUG
+#ifdef DUMP_STATUS
 		if(checkCon())
 			xyz.printRawStatus();
+#else
+		postHelp();
 #endif
 	}
 	else
@@ -604,10 +609,12 @@ int main(int argc, char **argv)
 	// disconnect just in case
 	xyz.disconnect();
 
-#ifdef _DEBUG
+#if defined(_DEBUG) |  defined(DUMP_STATUS)
 	printf("\nhit any key to continue.\n");
 	getch();
 #endif
+
+	debugFinalize();
 
 	return 0;
 }

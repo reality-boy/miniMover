@@ -65,21 +65,16 @@ public:
 	static int getPortNumber(int id) { return (id >= 0 && id < portCount) ? portNumbers[id] : NULL; }
 	static const char* getPortName(int id) { return (id >= 0 && id < portCount) ? portNames[id] : NULL; }
 
-	// set to true to dump debug info to console
-	void setVerbose(bool verbose) { isVerbose = verbose; }
-
 protected:
 	const static int maxPortName = 512;
 	const static int maxPortCount = 24;
 
 	static int portCount;
 	static int defaultPortNum;
+	static int defaultPortID;
 
 	static int portNumbers[maxPortCount];
 	static char portNames[maxPortCount][maxPortName];
-
-	static bool isVerbose;
-	void debugPrint(const char *format, ...);
 };
 
 #endif //SERIAL_H

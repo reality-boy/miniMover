@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "debug.h"
+
 // prune out unuzed miniz features
 #define MINIZ_NO_STDIO					// no file I/O support
 //#define MINIZ_NO_TIME						// disable file time routines
@@ -523,11 +525,11 @@ bool XYZV3::updateStatus()
 				case 'E': // error string like E4$\n
 					isDone = true;
 					m_status.isValid = false;
-					debugPrint("recieved error: %s", buf);
+					debugPrint(DBG_WARN, "recieved error: %s", buf);
 					break;
 
 				default:
-					debugPrint("unknown string: %s", buf);
+					debugPrint(DBG_WARN, "unknown string: %s", buf);
 					break;
 				}
 			}
@@ -552,21 +554,12 @@ bool XYZV3::updateStatus()
 	return success;
 }
 
-bool XYZV3::printRawStatus()
+void XYZV3::debugPrintAllLines()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
 	if(m_serial.isOpen())
 	{
-		m_serial.clearSerial();
-
 		static const int len = 1024;
 		char buf[len];
-		const char *strPtr = NULL;
-
-		m_serial.writeSerial("XYZv3/query=a");
-		debugPrint("\nXYZv3/query=a\n");
 
 		// only try so many times for the answer
 		bool isDone = false;
@@ -575,17 +568,38 @@ bool XYZV3::printRawStatus()
 		{
 			if(m_serial.readSerialLine(buf, len))
 			{
-				debugPrint(buf);
+				debugPrint(DBG_REPORT, buf);
 				if(buf[0] == '$' || buf[0] == 'E')
 					isDone = true;
 			}
 		}
+	}
+}
 
-		success = true;
+void XYZV3::printRawStatus()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+
+	if(m_serial.isOpen())
+	{
+		//-----------
+		// get status
+
+		m_serial.clearSerial();
+		m_serial.writeSerial("XYZv3/query=a");
+		debugPrint(DBG_REPORT, "XYZv3/query=a");
+		debugPrintAllLines();
+
+		//------------
+		// get z-offset
+
+		m_serial.clearSerial();
+		m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
+		debugPrint(DBG_REPORT, "XYZv3/config=zoffset:get");
+		debugPrintAllLines();
 	}
 
 	ReleaseMutex(ghMutex);
-	return success;
 }
 
 float XYZV3::nozzleIDToDiameter(int id)
@@ -1764,7 +1778,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						headerLen = pkcs7unpad(hbuf, headerLen);
 
 						//****FixMe, do something with it
-						debugPrint(hbuf);
+						debugPrint(DBG_VERBOSE, hbuf);
 
 						delete [] hbuf;
 						hbuf = NULL;
@@ -1786,7 +1800,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						bbuf[bodyLen] = '\0';
 
 						if(crc32 != calcXYZcrc32(bbuf, bodyLen))
-							debugPrint("crc's don't match!!!");
+							debugPrint(DBG_WARN, "crc's don't match!!!");
 
 						if(fileIsZip)
 						{
@@ -1828,12 +1842,10 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 									int numFiles = mz_zip_reader_get_num_files(&zip);
 									if(numFiles == 1)
 									{
-#ifdef _DEBUG
 										const int tstr_len = 512;
 										char tstr[tstr_len];
 										if(mz_zip_reader_get_filename(&zip, 0, tstr, tstr_len))
-											debugPrint("zip file name '%s'", tstr);
-#endif
+											debugPrint(DBG_LOG, "zip file name '%s'", tstr);
 
 										size_t size = 0;
 										char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, 0, &size, 0);
@@ -1846,15 +1858,15 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 											tbuf = NULL;
 										}
 										else
-											debugPrint("error %d", zip.m_last_error);
+											debugPrint(DBG_WARN, "error %d", zip.m_last_error);
 									}
 									else
-										debugPrint("error numfiles is %d", numFiles);
+										debugPrint(DBG_WARN, "error numfiles is %d", numFiles);
 
 									mz_zip_reader_end(&zip);
 								}
 								else
-									debugPrint("error %s", zip.m_last_error);
+									debugPrint(DBG_WARN, "error %s", zip.m_last_error);
 
 								delete [] zbuf;
 								zbuf = NULL;
@@ -1924,12 +1936,12 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 		while(msTime::getTime_s() < end);
 
 		if(!isValid)
-			debugPrint("waitForLine, timeout triggered %0.2f", timeout_s);
+			debugPrint(DBG_WARN, "waitForLine, timeout triggered %0.2f", timeout_s);
 		else
 		{
 			if(buf[0] == '$')
 			{
-				debugPrint("waitForLine $ failed, got early '$'");
+				debugPrint(DBG_WARN, "waitForLine $ failed, got early '$'");
 				return "";
 			}
 
@@ -1939,7 +1951,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 				char buf2[len];
 
 				if(!m_serial.readSerialLine(buf2, len) || buf2[0] != '$')
-					debugPrint("waitForLine $ failed, returned %d:'%s'", len, buf2);
+					debugPrint(DBG_WARN, "waitForLine $ failed, returned %d:'%s'", len, buf2);
 			}
 			return buf;
 		}
@@ -2492,21 +2504,3 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 	return NULL;
 }
 
-#define ERR_C_BUFFER_SIZE 2048
-void XYZV3::debugPrint(char *format, ...)
-{
-	char msgBuf[ERR_C_BUFFER_SIZE];
-	va_list arglist;
-
-	va_start(arglist, format);
-	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
-	msgBuf[sizeof(msgBuf)-1] = '\0';
-	va_end(arglist);
-
-#ifdef _CONSOLE
-	printf("%s\n", msgBuf);
-#else
-	OutputDebugString(msgBuf);
-	OutputDebugString("\n");
-#endif
-}

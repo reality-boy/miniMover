@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "serial.h"
+#include "debug.h"
 
 #pragma comment(lib, "Setupapi.lib")
 #pragma warning(disable:4996)
@@ -13,11 +14,10 @@
 
 int Serial::portCount = 0;
 int Serial::defaultPortNum = -1;
+int Serial::defaultPortID = -1;
 
 int Serial::portNumbers[maxPortCount] = {-1};
 char Serial::portNames[maxPortCount][maxPortName] = {""};
-
-bool Serial::isVerbose = false;
 
 bool Serial::verifyPort(int port)
 {
@@ -171,6 +171,8 @@ void Serial::clearSerial()
 	if(m_serial)
 		PurgeComm (m_serial, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
 
+	//****FixMe, drain buffer and log to error log
+
 	serBuf[0] = '\0';
 	serBufStart = serBuf;
 	serBufEnd = serBuf;
@@ -184,15 +186,12 @@ int Serial::readSerial(char *buf, int len)
 	{
 		//****FixMe, drain readSerialLine buffer first!
 		buf[0] = '\0';
-		//if(serialHasData())
+		if(ReadFile(m_serial, buf, len-1, &bytesRead, NULL) && bytesRead > 0)
 		{
-			if(ReadFile(m_serial, buf, len-1, &bytesRead, NULL) && bytesRead > 0)
-			{
-				if(bytesRead > (DWORD)(len-1))
-					bytesRead = len-1;
+			if(bytesRead > (DWORD)(len-1))
+				bytesRead = len-1;
 
-				buf[bytesRead] = '\0';
-			}
+			buf[bytesRead] = '\0';
 		}
 	}
 
@@ -237,8 +236,8 @@ int Serial::readSerialLine(char *lineBuf, int len)
 					{
 						int len = lineBufStart - lineBuf;
 
-						if(isVerbose && len > 0)
-							debugPrint("recieved: %s", lineBuf);
+						if(len > 0)
+							debugPrint(DBG_LOG, "recieved: %s", lineBuf);
 
 						return len;
 					}
@@ -249,8 +248,8 @@ int Serial::readSerialLine(char *lineBuf, int len)
 		*lineBufStart = '\0';
 		int len = lineBufStart - lineBuf;
 
-		if(isVerbose && len > 0)
-			debugPrint("recieved partial: %s", lineBuf);
+		if(len > 0)
+			debugPrint(DBG_LOG, "recieved partial: %s", lineBuf);
 
 		return len;
 	}
@@ -266,12 +265,14 @@ int Serial::writeSerial(const char *buf)
 	{
 		int len = strlen(buf);
 
-		if(isVerbose && buf > 0)
-			debugPrint("sent: %s", buf);
+		if(buf > 0)
+			debugPrint(DBG_LOG, "sent: %s", buf);
 
 		if(WriteFile(m_serial, buf, len, &bytesWritten, NULL))
 		{
 			// success
+
+			debugPrint(DBG_LOG, "write string: %s", buf);
 		}
 	}
 
@@ -304,12 +305,19 @@ int Serial::writeSerialArray(const char *buf, int len)
 {
 	DWORD bytesWritten = 0;
 
-	if(m_serial && buf)
+	if(m_serial && buf && len > 0)
 	{
 		if(WriteFile(m_serial, buf, len, &bytesWritten, NULL))
 		{
 			// success
+
+			debugPrint(DBG_LOG, "write array: %d bytes", len);
+			//****FixMe, replace with debugPrintArray() that can abbort if not verbose
+			for(int i=0; i<len; i++)
+				debugPrint(DBG_VERBOSE, " %02x", buf[i]);
 		}
+		else
+			debugPrint(DBG_ERR, "failed to write bytes");
 	}
 
 	return bytesWritten;
@@ -320,7 +328,14 @@ int Serial::writeSerialByteU8(unsigned char num)
 {
 	DWORD bytesWritten = 0;
 	if(m_serial)
-		WriteFile(m_serial, &num, sizeof(num), &bytesWritten, NULL);
+	{
+		if(WriteFile(m_serial, &num, sizeof(num), &bytesWritten, NULL))
+		{
+			debugPrint(DBG_LOG, "write byte: %d", num);
+		}
+		else
+			debugPrint(DBG_ERR, "failed to write byte");
+	}
 
 	return bytesWritten;
 }
@@ -364,6 +379,7 @@ int Serial::queryForPorts(const char *hint)
 {
 	portCount = 0;
 	defaultPortNum = -1;
+	defaultPortID = -1;
 	bool hintFound = false;
 
 	HDEVINFO hDevInfoSet = SetupDiGetClassDevsA( &GUID_DEVINTERFACE_COMPORT, 
@@ -409,7 +425,10 @@ int Serial::queryForPorts(const char *hint)
 
 								// pick highest port by default, unless already found by hint
 								if(!hintFound && defaultPortNum < nPort)
+								{
 									defaultPortNum = nPort;
+									defaultPortID = portCount;
+								}
 
 								DWORD dwType = 0;
 								DWORD dwSize = maxPortName;
@@ -422,6 +441,7 @@ int Serial::queryForPorts(const char *hint)
 									{
 										hintFound = true;
 										defaultPortNum = nPort;
+										defaultPortID = portCount;
 									}
 								}
 								else
@@ -437,6 +457,10 @@ int Serial::queryForPorts(const char *hint)
 
 			++nIndex;
 		}
+
+		debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortNum, Serial::getPortName(defaultPortID));
+		for(int i=0; i<Serial::getPortCount(); i++)
+			debugPrint(DBG_LOG, "  %d:%s", Serial::getPortNumber(i), Serial::getPortName(i));
 
 		SetupDiDestroyDeviceInfoList(hDevInfoSet);
 	}
@@ -469,7 +493,7 @@ int Serial::enumeratePorts(int list[], int *count)
 	{
 		DWORD dwError = GetLastError();
 		if (dwError == ERROR_INSUFFICIENT_BUFFER)
-			debugPrint("needs more room!");
+			debugPrint(DBG_ERR, "needs more room!");
 	}
 	else
 	{
@@ -507,23 +531,3 @@ int Serial::enumeratePorts(int list[], int *count)
 	return bestGuess;
 }
 */
-
-
-#define ERR_C_BUFFER_SIZE 2048
-void Serial::debugPrint(const char *format, ...)
-{
-	char msgBuf[ERR_C_BUFFER_SIZE];
-	va_list arglist;
-
-	va_start(arglist, format);
-	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
-	msgBuf[sizeof(msgBuf)-1] = '\0';
-	va_end(arglist);
-
-#ifdef _CONSOLE
-	printf("%s\n",msgBuf);
-#else
-	OutputDebugString(msgBuf);
-	OutputDebugString("\n");
-#endif
-}
