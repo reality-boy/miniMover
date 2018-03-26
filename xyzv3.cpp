@@ -737,66 +737,52 @@ const char* XYZV3::errorCodeToStr(int code)
 {
 	switch(code)
 	{
-	case 0: return "no error";
-	case 2: return "no error";
-	case 3: return "M_MACHINE_BUSY";
-	case 258: return "M_THERMAL_BED_OUT_TIMER";
-	case 259: return "no error";
-	case 262: return "no error";
-	case 263: return "no error";
-	case 268: return "no error";
-	case 260: return "M_THERMAL_BED_OUT_CONTROL";
-	case 261: return "L_ERROR_SD_CARD"; // flash disk corrupt this.gsettExport.Format_SD(2);
-	case 264: return "M_MACHINE_ERROR_X_AXIS";
-	case 265: return "M_MACHINE_ERROR_Y_AXIS";
-	case 266: return "M_MACHINE_ERROR_Z_AXIS";
-	case 267: return "M_FLASHMEMORY_ERROR";
-	case 269: return "L_ERROR_FLASH_RAM";
-	case 270: return "L_ERROR_NOZZLE_EEPROM";
-	case 271: return "L_40W35W_NOZZLE_EEPROM";
-	case 513: return "M_PC_COMMUNICATION_ERROR";
-	case 514: return "M_FW_UPDATE_ERROR";
-	case 523: return "L_ERROR_SD_CARD";
-	case 524: return "L_ERROR_SD_CARD";
-	case 1025: return "M_TOP_DOOR_OPEN";
-	case 1026: return "M_FRONT_DOOR_OPEN";
-	case 536871169: return "M_THERMAL_HEATER_OUT_TIMER1";
-	case 536871171: return "M_THERMAL_HEATER_OUT_CONTROL1";
-	case 536871427: return "M_FILAMENT_JAM1";
-	case 536871428: return "no error";
-	case 536871435: return "no error";
-	case 536871436: return "no error";
-	case 536871437: return "no error";
-	case 536871438: return "no error";
-	case 536871429: return "M_FILAMENT_WRONG1";
-	case 536871430: return "M_NO_CASSETTE1";
-	case 536871431: return "M_CASSETTE_EMPTY1";
-	case 536871432: return "M_EEPROM_WRITE_ERROR1";
-	case 536871433: return "M_EEPROM_READ_ERROR1";
-	case 536871434: return "no error";
-	case 536871439: return "L_FILAMENT_NO_INSTALL1";
-	case 536871939: return "M_FILAMENT_LOW1";
-	case 536871940: return "M_FILAMENT_LOW_TO_EMPTY1";
-	case 536871941: return "M_FILAMENT_END1";
-	case 1073742081: return "M_THERMAL_HEATER_OUT_TIMER";
-	case 1073742082: return "no error";
-	case 1073742083: return "M_THERMAL_HEATER_OUT_CONTROL";
-	case 1073742339: return "M_FILAMENT_JAM";
-	case 1073742340: return "no error";
-	case 1073742347: return "no error";
-	case 1073742348: return "no error";
-	case 1073742349: return "no error";
-	case 1073742350: return "no error";
-	case 1073742341: return "M_FILAMENT_WRONG";
-	case 1073742342: return "M_NO_CASSETTE";
-	case 1073742343: return "M_CASSETTE_EMPTY";
-	case 1073742344: return "M_EEPROM_WRITE_ERROR";
-	case 1073742345: return "M_EEPROM_READ_ERROR";
-	case 1073742346: return "no error";
-	case 1073742351: return "L_FILAMENT_NO_INSTALL";
-	case 1073742851: return "M_FILAMENT_LOW";
-	case 1073742852: return "M_FILAMENT_LOW_TO_EMPTY";
-	case 1073742853: return "M_FILAMENT_END";
+	case 0x00000000: return "no error";
+
+	case 0x00000003: return "M_MACHINE_BUSY";
+
+	case 0x00000102: return "M_THERMAL_BED_OUT_TIMER";
+	case 0x00000104: return "M_THERMAL_BED_OUT_CONTROL";
+	case 0x00000105: return "L_ERROR_SD_CARD"; // flash disk corrupt this.gsettExport.Format_SD(2);
+	case 0x00000108: return "M_MACHINE_ERROR_X_AXIS";
+	case 0x00000109: return "M_MACHINE_ERROR_Y_AXIS";
+	case 0x0000010A: return "M_MACHINE_ERROR_Z_AXIS";
+	case 0x0000010B: return "M_FLASHMEMORY_ERROR";
+	case 0x0000010D: return "L_ERROR_FLASH_RAM";
+	case 0x0000010E: return "L_ERROR_NOZZLE_EEPROM";
+	case 0x0000010F: return "L_40W35W_NOZZLE_EEPROM";
+	case 0x00000201: return "M_PC_COMMUNICATION_ERROR";
+	case 0x00000202: return "M_FW_UPDATE_ERROR";
+	case 0x0000020B: return "L_ERROR_SD_CARD";
+	case 0x0000020C: return "L_ERROR_SD_CARD";
+	case 0x00000401: return "M_TOP_DOOR_OPEN";
+	case 0x00000402: return "M_FRONT_DOOR_OPEN";
+
+	// why are there two sets of these, are they for dual extruder setups?
+	case 0x20000101: return "M_THERMAL_HEATER_OUT_TIMER";
+	case 0x40000101: return "M_THERMAL_HEATER_OUT_TIMER";
+	case 0x20000103: return "M_THERMAL_HEATER_OUT_CONTROL";
+	case 0x40000103: return "M_THERMAL_HEATER_OUT_CONTROL";
+	case 0x20000203: return "M_FILAMENT_JAM";
+	case 0x40000203: return "M_FILAMENT_JAM";
+	case 0x20000205: return "M_FILAMENT_WRONG";
+	case 0x40000205: return "M_FILAMENT_WRONG";
+	case 0x20000206: return "M_NO_CASSETTE";
+	case 0x40000206: return "M_NO_CASSETTE";
+	case 0x20000207: return "M_CASSETTE_EMPTY";
+	case 0x40000207: return "M_CASSETTE_EMPTY";
+	case 0x20000208: return "M_EEPROM_WRITE_ERROR";
+	case 0x40000208: return "M_EEPROM_WRITE_ERROR";
+	case 0x40000209: return "M_EEPROM_READ_ERROR";
+	case 0x2000020F: return "L_FILAMENT_NO_INSTALL";
+	case 0x4000020F: return "L_FILAMENT_NO_INSTALL";
+	case 0x20000403: return "M_FILAMENT_LOW";
+	case 0x40000403: return "M_FILAMENT_LOW";
+	case 0x20000404: return "M_FILAMENT_LOW_TO_EMPTY";
+	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY";
+	case 0x20000405: return "M_FILAMENT_END";
+	case 0x40000405: return "M_FILAMENT_END";
+
 	default: return "unknown";
 	}
 }

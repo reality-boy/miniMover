@@ -237,7 +237,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		}
 
 		if(st->eErrorStatus != 0)
-			listAddLine(hwndListInfo, "Error: %d : %s", st->eErrorStatus, st->eErrorStatusStr);
+			listAddLine(hwndListInfo, "Error: (0x%08x)%s", st->eErrorStatus, st->eErrorStatusStr);
 		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
 
 

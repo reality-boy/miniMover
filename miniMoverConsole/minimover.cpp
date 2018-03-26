@@ -93,7 +93,7 @@ bool printStatus()
 				printf("Printer status: %d %% %d m %d m\n", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
 			if(st->eErrorStatus != 0)
-				printf("Error: %d : %s\n", st->eErrorStatus, st->eErrorStatusStr);
+				printf("Error: (0x%08x)%s\n", st->eErrorStatus, st->eErrorStatusStr);
 
 			if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
 				printf("Filament length: %0.3f m, %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
@@ -237,7 +237,7 @@ bool monitorPrintJob()
 				printf(" Job: %d %% %d m %d m", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
 			if(st->eErrorStatus != 0)
-				printf(" Error: %d : %s", st->eErrorStatus, st->eErrorStatusStr);
+				printf(" Error: (0x%08x)%s", st->eErrorStatus, st->eErrorStatusStr);
 
 			printf("\n");
 		}
