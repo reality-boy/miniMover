@@ -186,7 +186,12 @@ bool XYZV3::updateStatus()
 					break;
 
 				case 'e': // error status, e:ec - some sort of string?
-					sscanf(buf, "e:%s", m_status.eErrorStatusStr);
+					sscanf(buf, "e:%d", &m_status.eErrorStatus);
+					strPtr = errorCodeToStr(m_status.eErrorStatus);
+					if(strPtr)
+						strcpy(m_status.eErrorStatusStr, strPtr);
+					else
+						m_status.eErrorStatusStr[0] = '\0';
 					break;
 
 				case 'f': // filament remaining, f:ct,len,len2
@@ -726,6 +731,75 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 	}
 }
 
+
+const char* XYZV3::errorCodeToStr(int code)
+{
+	switch(code)
+	{
+	case 0: return "no error";
+	case 2: return "no error";
+	case 3: return "M_MACHINE_BUSY";
+	case 258: return "M_THERMAL_BED_OUT_TIMER";
+	case 259: return "no error";
+	case 262: return "no error";
+	case 263: return "no error";
+	case 268: return "no error";
+	case 260: return "M_THERMAL_BED_OUT_CONTROL";
+	case 261: return "L_ERROR_SD_CARD"; // flash disk corrupt this.gsettExport.Format_SD(2);
+	case 264: return "M_MACHINE_ERROR_X_AXIS";
+	case 265: return "M_MACHINE_ERROR_Y_AXIS";
+	case 266: return "M_MACHINE_ERROR_Z_AXIS";
+	case 267: return "M_FLASHMEMORY_ERROR";
+	case 269: return "L_ERROR_FLASH_RAM";
+	case 270: return "L_ERROR_NOZZLE_EEPROM";
+	case 271: return "L_40W35W_NOZZLE_EEPROM";
+	case 513: return "M_PC_COMMUNICATION_ERROR";
+	case 514: return "M_FW_UPDATE_ERROR";
+	case 523: return "L_ERROR_SD_CARD";
+	case 524: return "L_ERROR_SD_CARD";
+	case 1025: return "M_TOP_DOOR_OPEN";
+	case 1026: return "M_FRONT_DOOR_OPEN";
+	case 536871169: return "M_THERMAL_HEATER_OUT_TIMER1";
+	case 536871171: return "M_THERMAL_HEATER_OUT_CONTROL1";
+	case 536871427: return "M_FILAMENT_JAM1";
+	case 536871428: return "no error";
+	case 536871435: return "no error";
+	case 536871436: return "no error";
+	case 536871437: return "no error";
+	case 536871438: return "no error";
+	case 536871429: return "M_FILAMENT_WRONG1";
+	case 536871430: return "M_NO_CASSETTE1";
+	case 536871431: return "M_CASSETTE_EMPTY1";
+	case 536871432: return "M_EEPROM_WRITE_ERROR1";
+	case 536871433: return "M_EEPROM_READ_ERROR1";
+	case 536871434: return "no error";
+	case 536871439: return "L_FILAMENT_NO_INSTALL1";
+	case 536871939: return "M_FILAMENT_LOW1";
+	case 536871940: return "M_FILAMENT_LOW_TO_EMPTY1";
+	case 536871941: return "M_FILAMENT_END1";
+	case 1073742081: return "M_THERMAL_HEATER_OUT_TIMER";
+	case 1073742082: return "no error";
+	case 1073742083: return "M_THERMAL_HEATER_OUT_CONTROL";
+	case 1073742339: return "M_FILAMENT_JAM";
+	case 1073742340: return "no error";
+	case 1073742347: return "no error";
+	case 1073742348: return "no error";
+	case 1073742349: return "no error";
+	case 1073742350: return "no error";
+	case 1073742341: return "M_FILAMENT_WRONG";
+	case 1073742342: return "M_NO_CASSETTE";
+	case 1073742343: return "M_CASSETTE_EMPTY";
+	case 1073742344: return "M_EEPROM_WRITE_ERROR";
+	case 1073742345: return "M_EEPROM_READ_ERROR";
+	case 1073742346: return "no error";
+	case 1073742351: return "L_FILAMENT_NO_INSTALL";
+	case 1073742851: return "M_FILAMENT_LOW";
+	case 1073742852: return "M_FILAMENT_LOW_TO_EMPTY";
+	case 1073742853: return "M_FILAMENT_END";
+	default: return "unknown";
+	}
+}
+
 // call to start calibration
 bool XYZV3::calibrateBedStart()
 {
@@ -1188,39 +1262,35 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 	if(path && m_serial.isOpen())
 	{
-		char path[MAX_PATH];
-		if(GetTempPath(MAX_PATH, path))
+		// if gcode convert to 3w file
+		bool isGcode = isGcodeFile(path);
+		if(isGcode)
 		{
-			char tfile[MAX_PATH];
-			if(GetTempFileName(path, NULL, 0, tfile))
+			char tpath[MAX_PATH] = "";
+			if(GetTempPath(MAX_PATH, tpath))
 			{
-				const char *tPath = NULL;
-
-				// if gcode convert to 3w file
-				bool isGcode = isGcodeFile(path);
-				if(isGcode)
+				char tfile[MAX_PATH] = "";
+				if(GetTempFileName(tpath, NULL, 0, tfile))
 				{
 					if(encryptFile(path, tfile, -1))
 					{
-						tPath = tfile;
-					}
-				}
-				else if(is3wFile(path))
-					tPath = path;
-				// else tPath is null and we fail
+						// send to printer
+						if(print3WFile(tfile, cbStatus))
+							success = true;
 
-				if(tPath)
-				{
-					// send to printer
-					if(print3WFile(tPath, cbStatus))
-						success = true;
-
-					// cleanup temp file
-					if(isGcode)
+						// cleanup temp file
 						remove(tfile);
+					}
 				}
 			}
 		}
+		else if(is3wFile(path))
+		{
+			// send to printer
+			if(print3WFile(path, cbStatus))
+				success = true;
+		}
+		// else tPath is null and we fail
 	}
 
 	ReleaseMutex(ghMutex);

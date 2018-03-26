@@ -25,7 +25,7 @@ void updateStatus(float pct)
 
 void postHelp()
 {
-	printf("miniMover v0.7\n");
+	printf("miniMover v0.8\n");
 	printf("usage: miniMover <args>\n");
 	printf("  -? - print help message\n");
 	printf("  -a+ - enable auto level\n");
@@ -92,8 +92,8 @@ bool printStatus()
 			else
 				printf("Printer status: %d %% %d m %d m\n", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
-			if(st->eErrorStatusStr[0] && st->eErrorStatusStr[0] != '0')
-				printf("Error: %s\n", st->eErrorStatusStr);
+			if(st->eErrorStatus != 0)
+				printf("Error: %d : %s\n", st->eErrorStatus, st->eErrorStatusStr);
 
 			if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
 				printf("Filament length: %0.3f m, %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
@@ -236,8 +236,8 @@ bool monitorPrintJob()
 			if(st->dPrintPercentComplete != 0 || st->dPrintElapsedTime_m != 0 || st->dPrintTimeLeft_m != 0)
 				printf(" Job: %d %% %d m %d m", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
-			if(st->eErrorStatusStr[0] != '\0')
-				printf(" Error: %s", st->eErrorStatusStr);
+			if(st->eErrorStatus != 0)
+				printf(" Error: %d : %s", st->eErrorStatus, st->eErrorStatusStr);
 
 			printf("\n");
 		}

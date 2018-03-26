@@ -66,6 +66,7 @@ struct XYZPrinterState
 	int dPrintTimeLeft_m;
 
 	char eErrorStatusStr[64];
+	int eErrorStatus;
 
 	int fFillimantSpoolCount;
 	int fFillimant1Remaining_mm;
@@ -277,6 +278,7 @@ protected:
 
 	const char* statusCodesToStr(int status, int subStatus);
 	static float nozzleIDToDiameter(int id);
+	const char* errorCodeToStr(int code);
 	bool getJsonVal(const char *str, const char *key, char *val);
 
 	// serial functions

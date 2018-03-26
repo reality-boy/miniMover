@@ -213,8 +213,11 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		else
 			listAddLine(hwndListInfo, "Fillament remain: %0.2f m", st->fFillimant1Remaining_mm / 1000.0f);
 
-		if(st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
-				listAddLine(hwndListInfo, "No job running");
+		bool isPrinting = st->jPrinterStatus >= PRINT_INITIAL && st->jPrinterStatus <= PRINT_PRINTING;
+		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
+		{
+				//listAddLine(hwndListInfo, "No job running");
+		}
 		else
 		{
 			listAddLine(hwndListInfo, "Print pct complete: %d %%", st->dPrintPercentComplete);
@@ -223,13 +226,18 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 			m = st->dPrintElapsedTime_m % 60;
 			listAddLine(hwndListInfo, "Print elapsed: %d h %d m", h, m);
 
-			h = st->dPrintTimeLeft_m / 60;
-			m = st->dPrintTimeLeft_m % 60;
-			listAddLine(hwndListInfo, "Print remain: %d h %d m", h, m);
+			if(st->dPrintTimeLeft_m >= 0)
+			{
+				h = st->dPrintTimeLeft_m / 60;
+				m = st->dPrintTimeLeft_m % 60;
+				listAddLine(hwndListInfo, "Print remain: %d h %d m", h, m);
+			}
+			else
+				listAddLine(hwndListInfo, "Print remain: unknown");
 		}
 
-		if(st->eErrorStatusStr[0] && st->eErrorStatusStr[0] != '0')
-			listAddLine(hwndListInfo, "Error: %s", st->eErrorStatusStr);
+		if(st->eErrorStatus != 0)
+			listAddLine(hwndListInfo, "Error: %d : %s", st->eErrorStatus, st->eErrorStatusStr);
 		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
 
 
