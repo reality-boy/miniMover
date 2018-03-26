@@ -198,7 +198,7 @@ public:
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
 	// dump what is returned from the serial port to console
-	void debugPrintAllLines();
+	void printAllLines();
 	void printRawStatus(); 
 
 	// run auto bed leveling routine

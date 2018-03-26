@@ -265,15 +265,13 @@ int Serial::writeSerial(const char *buf)
 	{
 		int len = strlen(buf);
 
-		if(buf > 0)
-			debugPrint(DBG_LOG, "sent: %s", buf);
-
 		if(WriteFile(m_serial, buf, len, &bytesWritten, NULL))
 		{
 			// success
-
-			debugPrint(DBG_LOG, "write string: %s", buf);
+			debugPrint(DBG_LOG, "sent: %s", buf);
 		}
+		else
+			debugPrint(DBG_WARN, "wirteSerial failed to write");
 	}
 
 	return bytesWritten;
@@ -458,7 +456,10 @@ int Serial::queryForPorts(const char *hint)
 			++nIndex;
 		}
 
-		debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortNum, Serial::getPortName(defaultPortID));
+		if(Serial::getPortName(defaultPortID))
+			debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortNum, Serial::getPortName(defaultPortID));
+		else
+			debugPrint(DBG_LOG, "detected port: %d:NULL", defaultPortNum);
 		for(int i=0; i<Serial::getPortCount(); i++)
 			debugPrint(DBG_LOG, "  %d:%s", Serial::getPortNumber(i), Serial::getPortName(i));
 

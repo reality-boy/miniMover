@@ -18,6 +18,7 @@ enum debugLevel
 
 void debugInit();
 void debugFinalize();
+void debugReduceNoise(bool doReduce);
 void debugPrint(debugLevel l, char *format, ...);
 
 #endif //DEBUG_H

@@ -554,7 +554,7 @@ bool XYZV3::updateStatus()
 	return success;
 }
 
-void XYZV3::debugPrintAllLines()
+void XYZV3::printAllLines()
 {
 	if(m_serial.isOpen())
 	{
@@ -568,7 +568,7 @@ void XYZV3::debugPrintAllLines()
 		{
 			if(m_serial.readSerialLine(buf, len))
 			{
-				debugPrint(DBG_REPORT, buf);
+				printf("%s\n", buf);
 				if(buf[0] == '$' || buf[0] == 'E')
 					isDone = true;
 			}
@@ -587,16 +587,16 @@ void XYZV3::printRawStatus()
 
 		m_serial.clearSerial();
 		m_serial.writeSerial("XYZv3/query=a");
-		debugPrint(DBG_REPORT, "XYZv3/query=a");
-		debugPrintAllLines();
+		printf("XYZv3/query=a\n");
+		printAllLines();
 
 		//------------
 		// get z-offset
 
 		m_serial.clearSerial();
 		m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
-		debugPrint(DBG_REPORT, "XYZv3/config=zoffset:get");
-		debugPrintAllLines();
+		printf("XYZv3/config=zoffset:get\n");
+		printAllLines();
 	}
 
 	ReleaseMutex(ghMutex);

@@ -9,6 +9,7 @@
 
 FILE *g_debugLog = NULL;
 debugLevel g_debugLevel = DBG_REPORT;
+bool g_doReduceNoise = false;
 
 void debugInit()
 {
@@ -44,6 +45,11 @@ void debugFinalize()
 	}
 }
 
+void debugReduceNoise(bool doReduce)
+{
+	g_doReduceNoise = doReduce;
+}
+
 void debugPrint(debugLevel l, char *format, ...)
 {
 	const static int BUF_SIZE  = 2048;
@@ -68,6 +74,6 @@ void debugPrint(debugLevel l, char *format, ...)
 
 	// log to disk if error log is open
 	// log at DBG_LOG level unless g_debugLevel is set to DBG_VERBOSE
-	if(g_debugLog && l <= g_debugLevel || l <= DBG_LOG)
+	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= DBG_LOG)))
 		fprintf(g_debugLog, "%s\n", msgBuf);
 }

@@ -281,6 +281,7 @@ void MainDlgUpdateModelDropdown(HWND hDlg)
 
 void MainDlgUpdate(HWND hDlg)
 {
+	debugReduceNoise(true);
 	// don't set wait cursor since this triggers 2x a second
 	if(!g_threadRunning && xyz.updateStatus())
 	{
@@ -302,6 +303,7 @@ void MainDlgUpdate(HWND hDlg)
 	}
 	else
 		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+	debugReduceNoise(false);
 }
 
 void MainDlgConnect(HWND hDlg)
