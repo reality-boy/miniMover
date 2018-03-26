@@ -8,12 +8,9 @@
 
 // prune out unuzed miniz features
 #define MINIZ_NO_STDIO					// no file I/O support
-//#define MINIZ_NO_TIME						// disable file time routines
-//#define MINIZ_NO_ARCHIVE_APIS				// disable zip archive api's
-//#define MINIZ_NO_ARCHIVE_WRITING_APIS
-//#define MINIZ_NO_ZLIB_APIS				// remove zlib style calls
-//#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES	// avoid name colisions with zlib
-//#define MINIZ_NO_MALLOC					// strip out malloc
+#define MINIZ_NO_TIME					// disable file time routines
+#define MINIZ_NO_ZLIB_APIS				// remove zlib style calls
+#define MINIZ_NO_MALLOC					// strip out malloc
 #include "miniz.h"
 
 #include "timer.h"
@@ -27,6 +24,10 @@
 // should check what data was left over and assert!
 //****FixMe, keep track of 'end' messages and fire them
 // if we try to exit in middle of operation, like calibrating bed
+//****FixMe, rewrite message loop to be state driven
+// right now we assume a linear progression of events and can only
+// wait or fail if things come out of order.  The real 
+// protocol is more varied!
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//   modelNum,       fileNum, serialNum, fileIsV5, fileIsZip, comIsV3, length, width, height, screenName

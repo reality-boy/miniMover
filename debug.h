@@ -1,24 +1,34 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-//****FixMe, 
-// look for debug.txt file at startup and if found then bump debug priority up to high and log to file
-// implement debug priority 
-// log all serial reads/writes other than printing, only log the transitions and not the raw (megabytes worth of) data
-// possibly avoid logging of status as well, look into it.
+/*
+Debug logging tools
+
+The function debugPrint() logs the provided message to either the
+console or the windows debug log if the indicated priority is report
+or higher.
+
+It also logs into the debug.txt file if found next to the exe
+and the log level is one of log or higher.
+*/
 
 enum debugLevel
 {
 	DBG_ERR,
 	DBG_WARN,
-	DBG_REPORT,
+	DBG_REPORT,		
 	DBG_LOG,
 	DBG_VERBOSE,
 };
 
 void debugInit();
 void debugFinalize();
+
+// set to true to drop debug log level when logging to the debug.txt file
+// usefull when trying to supress a noisy message
 void debugReduceNoise(bool doReduce);
+
+// print the message to the debug console if priority is set right
 void debugPrint(debugLevel l, char *format, ...);
 
 #endif //DEBUG_H

@@ -1,7 +1,18 @@
 #ifndef XYZV3_H
 #define XYZV3_H
 
-// forward declerations
+/*
+Class that allows you to control any XYZ da Vinci printer 
+that uses the version 3 communication protocol.  This includes
+the jr mini and micro lines and most of the new pro printers as
+well, ecept for possibly the color.
+
+This fully replicates the XYZMaker software allowing you to
+set all features on the printer, allong with converting from
+a gcode file to a 3w file and back. The only thing it can't do 
+that XYZMaker does do is slice a model for you.  You will need
+to use a third party slicing tool to generate the gcode.
+*/
 
 class Serial; // from serial.h
 

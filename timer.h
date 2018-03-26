@@ -3,26 +3,14 @@
 
 #include <Windows.h>
 
+// get time using high resolution clock
 class msTime
 {
 public:
-	static float getTime_micro()
-	{
-		if(!init)
-		{
-			QueryPerformanceFrequency(&Frequency);  // get conversion rate
-			QueryPerformanceCounter(&StartingTime); // start a timer
-			init = true;
-		}
-
-		LARGE_INTEGER CurrentTime;
-		QueryPerformanceCounter(&CurrentTime);
-
-		return (float) ((CurrentTime.QuadPart - StartingTime.QuadPart) * 1000000 / Frequency.QuadPart);
-	}
-
-	static float getTime_s() { return getTime_micro() / 1000000.0f; }
-	static float getTime_ms() { return getTime_micro() / 1000.0f; }
+	// get current time as a float
+	static float getTime_s();		// seconds
+	static float getTime_ms();		// milliseconds
+	static float getTime_micro();	// microseconds
 
 protected:
 	static LARGE_INTEGER StartingTime;
@@ -30,24 +18,19 @@ protected:
 	static bool init;
 };
 
+// track elapsed time at the millisecond level
+// more of a stop watch than a timer...
 class msTimer
 {
 public:
-	msTimer() 
-		: startTime(0)
-		, elapsedTime(0)
-	{}
+	msTimer();
 
-	void startTimer() { startTime = msTime::getTime_micro(); }
-	float stopTimer() 
-	{ 
-		elapsedTime = msTime::getTime_micro() - startTime;
-		return elapsedTime;
-	}
+	void startTimer();
+	float stopTimer();
 
-	float getLastTime_s()     { return elapsedTime / 1000000.0f; }
-	float getLastTime_ms()    { return elapsedTime /    1000.0f; }
-	float getLastTime_micro() { return elapsedTime; }
+	float getLastTime_s();
+	float getLastTime_ms();
+	float getLastTime_micro();
 
 protected:
 	float startTime;

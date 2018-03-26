@@ -147,25 +147,6 @@ int Serial::getBaudRate()
 	return (m_serial) ? m_baudRate : -1;
 }
  
-//****FixMe, dubious!  Seems to only be true if buffer is full....
-/*
-bool Serial::serialHasData()
-{
-	if(m_serial)
-	{
-		COMSTAT status;
-		DWORD errors;
-
-		//Find out how much data is available to be read.
-		ClearCommError(m_serial, &errors, &status);
-		if(status.cbInQue)
-			return true;
-	}
-
-	return false;
-}
-*/
- 
 void Serial::clearSerial()
 {
 	if(m_serial)

@@ -1,6 +1,11 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+/*
+Serial class that hides win32 serial api in a nicely 
+wrapped package.
+*/
+
 class Serial
 {
 public:
@@ -23,7 +28,6 @@ public:
 	bool isOpen() { return m_serial != NULL; }
 
 	void clearSerial();
-	//bool serialHasData();
 
 	// read a string
 	int readSerial(char *buf, int len);
