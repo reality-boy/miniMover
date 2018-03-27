@@ -776,13 +776,13 @@ const char* XYZV3::errorCodeToStr(int code)
 	case 0x00000003: return "M_MACHINE_BUSY";
 
 	// codes from 1.0 machines?
-	case 0x00000002: return "M_THERMAL_HEATER_OUT_TIMER_1";	// (0011) nozzle heater timeout
+	case 0x00000002: return "M_THERMAL_HEATER_OUT_TIMER";	// (0011) nozzle heater timeout
 //	case 0x00000003: return "M_THERMAL_BED_OUT_TIMER";		// (0003) print bed heater timeout
-	case 0x00000004: return "M_THERMAL_HEATER_OUT_CONTROL_1"; // (0014) nozzle heat controll error
+	case 0x00000004: return "M_THERMAL_HEATER_OUT_CONTROL"; // (0014) nozzle heat controll error
 	case 0x00000005: return "M_THERMAL_BED_OUT_CONTROL";	// (0013) print bed heat controll error
 	case 0x00000006: return "L_ERROR_SD_CARD";				//        corrupt flash drive call Format_SD(1)
-	case 0x00000007: return "M_EEPROM_WRITE_ERROR_1";		// (0007) eeprom write error
-	case 0x00000008: return "M_EEPROM_READ_ERROR_1";		// (0008) eeprom read error
+	case 0x00000007: return "M_EEPROM_WRITE_ERROR";			// (0007) eeprom write error
+	case 0x00000008: return "M_EEPROM_READ_ERROR";			// (0008) eeprom read error
 	case 0x00000009: return "M_MACHINE_ERROR_X_AXIS";		// (0030) x axis move error
 	case 0x0000000A: return "M_MACHINE_ERROR_Y_AXIS";		// (0031) y axis move error
 	case 0x0000000B: return "M_MACHINE_ERROR_Z_AXIS";		// (0032) z axis move error
@@ -796,7 +796,7 @@ const char* XYZV3::errorCodeToStr(int code)
 	case 0x00000017: return "M_FILAMENT_LOW_TO_EMPTY";		//        filament low or out
 	case 0x00000018: return "M_FILAMENT_END";				//        filament out
 	case 0x0000001B: return "M_MACHINE_BUSY";				//        machine buisy
-	case 0x0000001C: return "M_NO_CASSETTE_1";				// (0028) no filament cassette
+	case 0x0000001C: return "M_NO_CASSETTE";				// (0028) no filament cassette
 	case 0x0000001D: return "M_CASSETTE_EMPTY";				// (0029) filament cassette empty
 	case 0x0000001F: return "scanner error";				//        scanner error
 	case 0x00000020: return "scanner buisy";				//        scanner buisy
@@ -834,18 +834,18 @@ const char* XYZV3::errorCodeToStr(int code)
 	case 0x20000405: return "M_FILAMENT_END_2";
 
 	// extruder 1
-	case 0x40000101: return "M_THERMAL_HEATER_OUT_TIMER_1";	// (0011)
-	case 0x40000103: return "M_THERMAL_HEATER_OUT_CONTROL_1"; // (0014)
-	case 0x40000203: return "M_FILAMENT_JAM_1";
-	case 0x40000205: return "M_FILAMENT_WRONG_1";
-	case 0x40000206: return "M_NO_CASSETTE_1";
-	case 0x40000207: return "M_CASSETTE_EMPTY_1";			// (0028)
-	case 0x40000208: return "M_EEPROM_WRITE_ERROR_1";		// (0029)
-	case 0x40000209: return "M_EEPROM_READ_ERROR_1";		// (0007)
-	case 0x4000020F: return "L_FILAMENT_NO_INSTALL_1";		// (0008)
-	case 0x40000403: return "M_FILAMENT_LOW_1";
-	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY_1";
-	case 0x40000405: return "M_FILAMENT_END_1";
+	case 0x40000101: return "M_THERMAL_HEATER_OUT_TIMER";	// (0011)
+	case 0x40000103: return "M_THERMAL_HEATER_OUT_CONTROL";	// (0014)
+	case 0x40000203: return "M_FILAMENT_JAM";
+	case 0x40000205: return "M_FILAMENT_WRONG";
+	case 0x40000206: return "M_NO_CASSETTE";
+	case 0x40000207: return "M_CASSETTE_EMPTY";				// (0028)
+	case 0x40000208: return "M_EEPROM_WRITE_ERROR";			// (0029)
+	case 0x40000209: return "M_EEPROM_READ_ERROR";			// (0007)
+	case 0x4000020F: return "L_FILAMENT_NO_INSTALL";		// (0008)
+	case 0x40000403: return "M_FILAMENT_LOW";
+	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY";
+	case 0x40000405: return "M_FILAMENT_END";
 
 	default: return "unknown";
 	}
