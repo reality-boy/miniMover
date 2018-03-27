@@ -1,0 +1,245 @@
+-- combined --
+0003 Print bed heating problem
+0007 Cartrige 1 chip error
+0008 Cartrige 1 chip error
+0010 Print bed heating problem, temp out of range
+0011 Extruder 1 heating problem, cant heat to target temp
+0013 Print bed heating problem, temp too high
+0014 Extruder 1 heating problem, temp too high
+0015 Extruder 2 heating problem, temp too high
+0016 Cartridge 1 not installed properly. 
+0028 Cartridge 1 not installed
+0029 Cartrige 1 empty
+0030 X-axis movement abnormalities or bad endstop
+0031 Y-axis movement abnormalities or bad endstop
+0032 Z-axis movement abnormalities or bad endstop
+0033 Turntable movement abnormalities
+0040 Internal storage error, can not read/write sd card
+0050 Memory error
+0051 Internal communication error, Reboot the printer.
+0052 Extruder storage error, Replace the extruder.
+0054 Incompatible Nozzle
+0055 inkjet head error 
+0056 inkjet data error
+0057 Unable to detect extruder, Please reinstall the extruder and reconnect the flat cable, then restart the printer.
+0060 Cartrige 1 empty
+0201 Connection error between PC and printer
+5001 Calibration failure
+5011 Right camera error
+5013 Left camera error
+5021 Right scanning laser error
+5022 Left scanning laser error
+5023 Turntable error during calibration
+5031 Storage error during calibration
+
+-- 1.0 --
+0010 Extruder or heat bed higher/lower than maximum/minimum temperature during printing.
+0011 Extruder or heated bed cannot heat to the specified temperature
+0013 The temperature of heated bed reach to warning range limited
+0014 The temperature of extruder reach to warning range limited
+0030 X axis motor failed results moving failed or X axis home sensor failed results home detect failed
+0031 Y axis motor failed results moving failed or Y axis home sensor failed results home detect failed
+0032 Z axis motor failed results moving failed or Z axis home sensor failed results home detect failed
+0040 Memory storage cannot read/write
+0050 Flashrom cannot read/write
+
+-- 1.0 AiO --
+0003 Print bed heating problem
+0007 Cartrige 1 chip error
+0008 Cartrige 1 chip error
+0010 Print bed heating problem
+0011 Extruder 1 heating problem
+0013 Print bed heating problem 
+0014 Extruder 1 heating problem
+0028 Cartridge 1 not installed
+0029 Cartrige 1 empty
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0033 Turntable movement abnormalities
+0040 Internal storage error
+0050 Memory error
+0060 Cartrige 1 empty
+0201 Connection error between PC and printer
+5001 Calibration failure
+5011 Right camera error
+5013 Left camera error
+5021 Right scanning laser error
+5022 Left scanning laser error
+5023 Turntable error during calibration
+5031 Storage error during calibration
+
+-- 1.0 Pro --
+0003 Print bed heating problem
+0007 UNIDENTIFIED CARTRIDGE shown on the printer screen indicates filament chip anomaly.
+0008 UNIDENTIFIED CARTRIDGE shown on the printer screen indicates filament chip anomaly.
+0010 Print bed heating problem
+0011 Extruder heating problem
+0013 Print bed heating problem
+0014 Extruder heating problem
+0028 NO CARTRIDGE
+0029 CARTRIDGE EMPTY
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0050 Internal storage error
+0051 flash ram access error
+0052 Nozzle internal memory error 
+
+-- 1.0 Pro 3in1 --
+0003 Print bed heating problem
+0007 UNIDENTIFIED CARTRIDGE shown on the printer screen indicates filament chip anomaly.
+0008 UNIDENTIFIED CARTRIDGE shown on the printer screen indicates filament chip anomaly.
+0010 Print bed heating problem
+0011 Extruder heating problem
+0013 Print bed heating problem
+0014 Extruder heating problem
+0028 NO CARTRIDGE
+0029 CARTRIDGE EMPTY
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0033 Turntable Operating Abnormal
+0050 Internal storage error
+0051 flash ram access error
+0052 Nozzle internal memory error 
+
+
+-- 1.1 plus --
+0010 Print bed heating problem
+0011 Extruder 1 heating problem 
+0013 Print bed heating problem
+0014 Extruder 1 heating problem
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities 
+0032 Z-axis movement abnormalities
+0040 Internal storage error
+0050 Memory error
+0060 Internal communication error
+0201 Connection error between PC and printer
+
+-- 2.0 Duo --
+0010 Extruder or heated bed higher/lower than maximum/minimum temperature during printing
+0011 Extruder cannot heat to the specified temperature
+0013 Print bed heating error; critical temperature detected
+0014 Extruder(1) heating error; critical temperature detected
+0015 Extruder(2) heating error; critical temperature detected
+0030 X axis motor failed results moving failed or X axis home sensor failed results home detect failed
+0031 Y axis motor failed results moving failed or Y axis home sensor failed results home detect failed
+0032 Z axis motor failed results moving failed or Z axis home sensor failed results home detect failed
+0040 Memory storage cannot read/write
+0050 Flashrom cannot read/write
+
+-- Jr 1.0 -- 
+0007 Cartridge 1 chip error
+0008 Cartridge 1 chip error
+0014 Extruder 1 heating problem
+0028 Cartridge 1 not installed
+0029 Cartridge 1 chip error
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0050 Internal communication error
+0051 Internal communication error
+0052 Extruder storage error
+0057 Unable to detect extruder
+
+-- Jr 1.0w --
+0007 Cartridge 1 chip error
+0008 Cartridge 1 chip error
+0014 Extruder 1 heating problem
+0028 Cartridge 1 not installed
+0029 Cartridge 1 chip error
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0050 Internal communication error
+0051 Internal communication error
+0052 Extruder storage error
+0057 Unable to detect extruder
+
+-- Jr 3in1 --
+0007 Cartridge 1 chip error
+0008 Cartridge 1 chip error
+0014 Extruder 1 heating problem
+0028 Cartridge 1 not installed
+0029 Cartridge 1 chip error
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0050 Internal communication error
+0051 Internal communication error
+0052 Extruder storage error
+0057 Unable to detect extruder
+5001 Calibration failure
+5011 Right camera error
+5013 Left camera error
+5021 Right scanning laser error
+5022 Left scanning laser error
+5023 Turntable error during calibration
+5031 Storage error during calibration
+0201 Connection error between PC and printer
+
+-- Jr 1.0 Pro --
+0007 Cartridge 1 chip error, Reinstall the cartridge or change a new cartridge.
+0008 Cartridge 1 chip error, Reinstall the cartridge or change a new cartridge.
+0014 Extruder 1 heating problem, Check connections, reboot the printer.
+0028 Cartridge 1 not installed, Install/reinstall cartridge.
+0029 Cartridge 1 chip error, Replace cartridge 1 before printing.
+0030 X-axis movement abnormalities, Check motor/sensor connections.Check sensor position.
+0031 Y-axis movement abnormalities, Check motor/sensor connections.Check sensor position.
+0032 Z-axis movement abnormalities, Check motor/sensor connections.Check sensor position.
+0050 Internal communication error, Reboot the printer.
+0051 Internal communication error, Reboot the printer.
+0052 Extruder storage error, Replace the extruder.
+0057 Unable to detect extruder, Please reinstall the extruder and reconnect the flat cable, then restart the printer.
+
+-- Jr 2.0 --
+0014 Extruder 1 heating problem
+0030 X-axis movement abnormalities
+0031 Y-axis movement abnormalities
+0032 Z-axis movement abnormalities
+0050 Internal communication error
+0051 Internal communication error
+0052 Extruder storage error
+0054 Extruder not support
+0057 Unable to detect extruder
+
+-- mini w and miniMaker --
+0007 Cartridge 1 Error.
+0008 Cartridge 1 Error
+0011 Heating Error
+0014 Heating Error. 
+0016 Cartridge 1 not installed properly. 
+0028 Cartridge 1 can not be found
+0029 There is no filament left in Cartridge 1.
+0030 Printer motor Error(X-Axis)
+0031 Printer motor Error(Y-Axis)
+0032 Printer motor Error(Z-Axis)
+0051 Flash ram cannot be read/written
+0052 Memory in the extruder cannot be read/written
+0054 Incompatible Nozzle
+0201 Computer and printer connection issues.
+020D Unsuported file version
+
+-- Super --
+0010 Print bed heated for too long
+0011 Print head heated for too long
+0013 Print bed heated issue-- temperature exceed
+0014 Print bed heated issue-- temperature exceed
+0030 Abnormal--X axis
+0031 Abnormal--Y axis
+0032 Abnormal--Z axis
+0050 Internal communication error -- memory error
+0052 Print head memory error
+
+-- color --
+0011 Print head heated for too long
+0014 Print head heated issue -- temperature exceed
+0030 Abnormal--X axis
+0031 Abnormal--Y axis
+0032 Abnormal--Z axis
+0050 Internal communication error -- memory error
+0052 Print head memory error
+0055 inkjet head error 
+0056 inkjet data error

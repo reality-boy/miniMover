@@ -732,56 +732,120 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 	}
 }
 
+/*
+// printer error codes as displayed on LCD
+0003 Print bed heating problem
+0007 Cartrige 1 chip error
+0008 Cartrige 1 chip error
+0010 Print bed heating problem, temp out of range
+0011 Extruder 1 heating problem, cant heat to target temp
+0013 Print bed heating problem, temp too high
+0014 Extruder 1 heating problem, temp too high
+0015 Extruder 2 heating problem, temp too high
+0016 Cartridge 1 not installed properly. 
+0028 Cartridge 1 not installed
+0029 Cartrige 1 empty
+0030 X-axis movement abnormalities or bad endstop
+0031 Y-axis movement abnormalities or bad endstop
+0032 Z-axis movement abnormalities or bad endstop
+0033 Turntable movement abnormalities
+0040 Internal storage error, can not read/write sd card
+0050 Memory error
+0051 Internal communication error, Reboot the printer.
+0052 Extruder storage error, Replace the extruder.
+0054 Incompatible Nozzle
+0055 inkjet head error 
+0056 inkjet data error
+0057 Unable to detect extruder, Please reinstall the extruder and reconnect the flat cable, then restart the printer.
+0060 Cartrige 1 empty
+0201 Connection error between PC and printer
+5001 Calibration failure
+5011 Right camera error
+5013 Left camera error
+5021 Right scanning laser error
+5022 Left scanning laser error
+5023 Turntable error during calibration
+5031 Storage error during calibration
+*/
 
 const char* XYZV3::errorCodeToStr(int code)
 {
 	switch(code)
 	{
 	case 0x00000000: return "no error";
-
 	case 0x00000003: return "M_MACHINE_BUSY";
 
-	case 0x00000102: return "M_THERMAL_BED_OUT_TIMER";
-	case 0x00000104: return "M_THERMAL_BED_OUT_CONTROL";
-	case 0x00000105: return "L_ERROR_SD_CARD"; // flash disk corrupt this.gsettExport.Format_SD(2);
-	case 0x00000108: return "M_MACHINE_ERROR_X_AXIS";
-	case 0x00000109: return "M_MACHINE_ERROR_Y_AXIS";
-	case 0x0000010A: return "M_MACHINE_ERROR_Z_AXIS";
-	case 0x0000010B: return "M_FLASHMEMORY_ERROR";
-	case 0x0000010D: return "L_ERROR_FLASH_RAM";
-	case 0x0000010E: return "L_ERROR_NOZZLE_EEPROM";
-	case 0x0000010F: return "L_40W35W_NOZZLE_EEPROM";
-	case 0x00000201: return "M_PC_COMMUNICATION_ERROR";
+	// codes from 1.0 machines?
+	case 0x00000002: return "M_THERMAL_HEATER_OUT_TIMER_1";	// (0011) nozzle heater timeout
+//	case 0x00000003: return "M_THERMAL_BED_OUT_TIMER";		// (0003) print bed heater timeout
+	case 0x00000004: return "M_THERMAL_HEATER_OUT_CONTROL_1"; // (0014) nozzle heat controll error
+	case 0x00000005: return "M_THERMAL_BED_OUT_CONTROL";	// (0013) print bed heat controll error
+	case 0x00000006: return "L_ERROR_SD_CARD";				//        corrupt flash drive call Format_SD(1)
+	case 0x00000007: return "M_EEPROM_WRITE_ERROR_1";		// (0007) eeprom write error
+	case 0x00000008: return "M_EEPROM_READ_ERROR_1";		// (0008) eeprom read error
+	case 0x00000009: return "M_MACHINE_ERROR_X_AXIS";		// (0030) x axis move error
+	case 0x0000000A: return "M_MACHINE_ERROR_Y_AXIS";		// (0031) y axis move error
+	case 0x0000000B: return "M_MACHINE_ERROR_Z_AXIS";		// (0032) z axis move error
+	case 0x0000000E: return "M_FW_UPDATE_ERROR";			//        firmware update error
+	case 0x0000000F: return "M_FILAMENT_JAM";				//        filament jam
+	case 0x00000010: return "M_FILAMENT_END";				//        filament out
+	case 0x00000011: return "M_FILAMENT_WRONG";				//        wrong filament
+	case 0x00000012: return "M_FLASHMEMORY_ERROR";			// (0050) flash memory error
+	case 0x00000014: return "M_TOP_DOOR_OPEN";				//        top door open
+	case 0x00000015: return "M_FRONT_DOOR_OPEN";			//        front door open
+	case 0x00000017: return "M_FILAMENT_LOW_TO_EMPTY";		//        filament low or out
+	case 0x00000018: return "M_FILAMENT_END";				//        filament out
+	case 0x0000001B: return "M_MACHINE_BUSY";				//        machine buisy
+	case 0x0000001C: return "M_NO_CASSETTE_1";				// (0028) no filament cassette
+	case 0x0000001D: return "M_CASSETTE_EMPTY";				// (0029) filament cassette empty
+	case 0x0000001F: return "scanner error";				//        scanner error
+	case 0x00000020: return "scanner buisy";				//        scanner buisy
+
+	// codes from all newer machines?
+	case 0x00000102: return "M_THERMAL_BED_OUT_TIMER";		// (0003)
+	case 0x00000104: return "M_THERMAL_BED_OUT_CONTROL";	// (0013)
+	case 0x00000105: return "L_ERROR_SD_CARD";				//        flash disk corrupt this.gsettExport.Format_SD(2);
+	case 0x00000108: return "M_MACHINE_ERROR_X_AXIS";		// (0030)
+	case 0x00000109: return "M_MACHINE_ERROR_Y_AXIS";		// (0031)
+	case 0x0000010A: return "M_MACHINE_ERROR_Z_AXIS";		// (0032)
+	case 0x0000010B: return "M_FLASHMEMORY_ERROR";			// (0050)
+	case 0x0000010D: return "L_ERROR_FLASH_RAM";			// (0051)
+	case 0x0000010E: return "L_ERROR_NOZZLE_EEPROM";		// (0052)
+	case 0x0000010F: return "L_40W35W_NOZZLE_EEPROM";		// (0054)
+	case 0x00000201: return "M_PC_COMMUNICATION_ERROR";		// (0201)
 	case 0x00000202: return "M_FW_UPDATE_ERROR";
 	case 0x0000020B: return "L_ERROR_SD_CARD";
 	case 0x0000020C: return "L_ERROR_SD_CARD";
 	case 0x00000401: return "M_TOP_DOOR_OPEN";
 	case 0x00000402: return "M_FRONT_DOOR_OPEN";
 
-	// why are there two sets of these, are they for dual extruder setups?
-	case 0x20000101: return "M_THERMAL_HEATER_OUT_TIMER";
-	case 0x40000101: return "M_THERMAL_HEATER_OUT_TIMER";
-	case 0x20000103: return "M_THERMAL_HEATER_OUT_CONTROL";
-	case 0x40000103: return "M_THERMAL_HEATER_OUT_CONTROL";
-	case 0x20000203: return "M_FILAMENT_JAM";
-	case 0x40000203: return "M_FILAMENT_JAM";
-	case 0x20000205: return "M_FILAMENT_WRONG";
-	case 0x40000205: return "M_FILAMENT_WRONG";
-	case 0x20000206: return "M_NO_CASSETTE";
-	case 0x40000206: return "M_NO_CASSETTE";
-	case 0x20000207: return "M_CASSETTE_EMPTY";
-	case 0x40000207: return "M_CASSETTE_EMPTY";
-	case 0x20000208: return "M_EEPROM_WRITE_ERROR";
-	case 0x40000208: return "M_EEPROM_WRITE_ERROR";
-	case 0x40000209: return "M_EEPROM_READ_ERROR";
-	case 0x2000020F: return "L_FILAMENT_NO_INSTALL";
-	case 0x4000020F: return "L_FILAMENT_NO_INSTALL";
-	case 0x20000403: return "M_FILAMENT_LOW";
-	case 0x40000403: return "M_FILAMENT_LOW";
-	case 0x20000404: return "M_FILAMENT_LOW_TO_EMPTY";
-	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY";
-	case 0x20000405: return "M_FILAMENT_END";
-	case 0x40000405: return "M_FILAMENT_END";
+	// exruder 2
+	case 0x20000101: return "M_THERMAL_HEATER_OUT_TIMER_2";	// (0012)
+	case 0x20000103: return "M_THERMAL_HEATER_OUT_CONTROL_2";// (0015)
+	case 0x20000203: return "M_FILAMENT_JAM_2";
+	case 0x20000205: return "M_FILAMENT_WRONG_2";
+	case 0x20000206: return "M_NO_CASSETTE_2";				// (0028)
+	case 0x20000207: return "M_CASSETTE_EMPTY_2";			// (0029)
+	case 0x20000208: return "M_EEPROM_WRITE_ERROR_2";		// (0007)
+	case 0x20000209: return "M_EEPROM_READ_ERROR_2";		// (0008)
+	case 0x2000020F: return "L_FILAMENT_NO_INSTALL_2";
+	case 0x20000403: return "M_FILAMENT_LOW_2";
+	case 0x20000404: return "M_FILAMENT_LOW_TO_EMPTY_2";
+	case 0x20000405: return "M_FILAMENT_END_2";
+
+	// extruder 1
+	case 0x40000101: return "M_THERMAL_HEATER_OUT_TIMER_1";	// (0011)
+	case 0x40000103: return "M_THERMAL_HEATER_OUT_CONTROL_1"; // (0014)
+	case 0x40000203: return "M_FILAMENT_JAM_1";
+	case 0x40000205: return "M_FILAMENT_WRONG_1";
+	case 0x40000206: return "M_NO_CASSETTE_1";
+	case 0x40000207: return "M_CASSETTE_EMPTY_1";			// (0028)
+	case 0x40000208: return "M_EEPROM_WRITE_ERROR_1";		// (0029)
+	case 0x40000209: return "M_EEPROM_READ_ERROR_1";		// (0007)
+	case 0x4000020F: return "L_FILAMENT_NO_INSTALL_1";		// (0008)
+	case 0x40000403: return "M_FILAMENT_LOW_1";
+	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY_1";
+	case 0x40000405: return "M_FILAMENT_END_1";
 
 	default: return "unknown";
 	}
