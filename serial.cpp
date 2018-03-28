@@ -179,6 +179,10 @@ int Serial::readSerial(char *buf, int len)
 	return bytesRead;
 }
 
+//****FixMe, this does not work right at all.  If we ever recieved a
+// partial line we would never fill it in properly and recieve the rest of 
+// the line.  It only works if we recieve one or more full lines at a time.
+// yuck!
 int Serial::readSerialLine(char *lineBuf, int len)
 {
 	if(lineBuf && len > 0)

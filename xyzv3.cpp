@@ -210,7 +210,7 @@ bool XYZV3::updateStatus()
 					break;
 
 				case 'i': // machine serial number, i:sn - serial number
-					//   note, convert ? characters to - characters when parsing sn
+					//****Note, convert ? characters to - characters when parsing sn
 					sscanf(buf, "i:%s", &m_status.iMachineSerialNum);
 					break;
 
@@ -1864,8 +1864,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					// to search for zeros to indicate the end...
 					//****Note, header is duplicated in body, for now just skip it
 					// you can uncomment this if you want to verify this is the case
-	//#define PARCE_HEADER
-	#ifdef PARCE_HEADER
+//#define PARCE_HEADER
+#ifdef PARCE_HEADER
 					if(headerLen < 1)
 						headerLen = bodyOffset - ftell(f);
 					char *hbuf = new char[headerLen + 1];
@@ -1904,7 +1904,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						delete [] hbuf;
 						hbuf = NULL;
 					}
-	#endif
+#endif
 
 					// body contains duplicate header and body of gcode file
 					// and always starts at 8192 (0x2000)
@@ -2032,7 +2032,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 //------------------------------------------
 
-// note, errors can be E0\n$\n or E4$\n, success is often just $\n or ok\n$\n
+//****Note, errors can be E0\n$\n or E4$\n, success is often just $\n or ok\n$\n
 // need to deal with all variants
 const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 {
@@ -2216,7 +2216,7 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 	return len;
 }
 
-// note, expects buf to have room to be padded out
+//****Note, expects buf to have room to be padded out
 int XYZV3::pkcs7pad(char *buf, int len)
 {
 	if(buf && len > 0)
