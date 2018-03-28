@@ -29,6 +29,7 @@ void debugFinalize();
 void debugReduceNoise(bool doReduce);
 
 // print the message to the debug console if priority is set right
-void debugPrint(debugLevel l, char *format, ...);
+void debugPrint(debugLevel l, const char *format, ...);
+void debugPrintArray(debugLevel l, const char* data, int len);
 
 #endif //DEBUG_H

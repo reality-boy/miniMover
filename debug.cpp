@@ -50,7 +50,7 @@ void debugReduceNoise(bool doReduce)
 	g_doReduceNoise = doReduce;
 }
 
-void debugPrint(debugLevel l, char *format, ...)
+void debugPrint(debugLevel l, const char *format, ...)
 {
 	const static int BUF_SIZE  = 2048;
 	char msgBuf[BUF_SIZE];
@@ -76,4 +76,37 @@ void debugPrint(debugLevel l, char *format, ...)
 	// log at DBG_LOG level unless g_debugLevel is set to DBG_VERBOSE
 	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= DBG_LOG)))
 		fprintf(g_debugLog, "%s\n", msgBuf);
+}
+
+void debugPrintArray(debugLevel l, const char* data, int len)
+{
+	if(data && len > 0)
+	{
+		// regular debug print
+		if(l <= g_debugLevel)
+		{
+#ifdef _CONSOLE
+			for(int i=0; i<len; i++)
+				printf(" %02x", data[i]);
+			printf("\n");
+#else
+			char tstr[25];
+			for(int i=0; i<len; i++)
+			{
+				sprintf(tstr, " %02x", data[i]);
+				OutputDebugString(tstr);
+			}
+			OutputDebugString("\n");
+#endif
+		}
+
+		// log to disk if error log is open
+		// log at DBG_LOG level unless g_debugLevel is set to DBG_VERBOSE
+		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= DBG_LOG)))
+		{
+			for(int i=0; i<len; i++)
+				fprintf(g_debugLog, " %02x", data[i]);
+			fprintf(g_debugLog, "\n");
+		}
+	}
 }

@@ -291,9 +291,7 @@ int Serial::writeSerialArray(const char *buf, int len)
 			// success
 
 			debugPrint(DBG_LOG, "write array: %d bytes", len);
-			//****FixMe, replace with debugPrintArray() that can abbort if not verbose
-			for(int i=0; i<len; i++)
-				debugPrint(DBG_VERBOSE, " %02x", buf[i]);
+			debugPrintArray(DBG_VERBOSE, buf, len);
 		}
 		else
 			debugPrint(DBG_ERR, "failed to write bytes");
