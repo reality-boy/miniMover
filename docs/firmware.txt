@@ -1,0 +1,65 @@
+//check xyz for latest firmware
+
+http://www.xyzprinting.com/api2/CheckForUpdates?
+
+?app=
+com.xyzprinting.daVinci
+com.xyzprinting.daVinciPro
+
+&os=w,10.0
+// presumably there is a mac version of this url
+
+0&region=us
+// iso regions, probably fr, gr, jp, etc
+
+// same as file3w_model but with _V2 appended
+&model=
+davincif10_V2,
+davincif20_V2,
+davincif11_V2,
+dvF110B000_V2,
+dvF100A000_V2,
+dvF200A000_V2,
+dvF10SA000_V2,
+dv1J00A000_V2,
+dv1JW0A000_V2,
+dv1JS0A000_V2,
+dvF1W0A000_V2,
+dvF1WSA000_V2,
+dv1SW0A000_V2,
+dv2JW0A000_V2,
+dv1MW0A000_V2,
+dv1MX0A000_V2,
+dv1JP0A000_V2,
+dv1JA0A000_V2,
+dv1JS0A000_V2,
+dv1MW0B000_V2
+
+// optional, does not seem to make a difference
+&sn=
+3FM1XPUS5CA68P0591
+
+//example
+
+http://www.xyzprinting.com/api2/CheckForUpdates?app=com.xyzprinting.daVinci&os=w,10.0&region=us&model=dv1MX0A000_V2&sn=3FM1XPUS5CA68P0591
+
+//returns
+
+{"dv1MX0A000":{"latest_version":"1.1.1","download_url":"http://www.xyzprinting.com/api/Download?url\u003dhttps%3A%2F%2Fxyzprod.blob.core.windows.net%2Ffirmware%2F8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin\u0026filename\u003d8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin\u0026product\u003ddv1MX0A000_V2\u0026version\u003d1.1.1","fingerprint":"ae92a0b275ce5bae0b2281a585e140d3ae9f324f8143db67899764666824a402"},"com.xyzprinting.daVinci":{"latest_version":"2.1.28.1","download_url":"http://www.xyzprinting.com/api/Download?url\u003dhttps%3A%2F%2Fxyzprod.blob.core.windows.net%2Fxyzware%2FXYZware-2.1.28.1.exe\u0026filename\u003dXYZware-2.1.28.1.exe\u0026product\u003dcom.xyzprinting.daVinci\u0026version\u003d2.1.28.1","fingerprint":"ef6280e8996fedf87b2973f58506aff3d964f8364898947943ad495ec02efb3d","description":"Version:2.1.28.1\r\nNew features and improvements:\r\n   1.Change new .stl/.3w/.nkg icon.\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg??\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg ??\r\n§§\r\n?????:2.1.28.1\r\n??????:\r\n   1. .stl / .3w/ .nkg ???????????\r\n§§"}}
+
+//or
+
+http://www.xyzprinting.com/api/CheckForUpdates
+?app=com.xyzprinting.daVinci
+&os=w,10.0
+&model=dv1MX0A000_V2
+
+//example
+
+http://www.xyzprinting.com/api/CheckForUpdates?app=com.xyzprinting.daVinci&os=w,10.0&model=dv1MX0A000_V2
+
+//returns, where ??? is in chineese
+
+{"dv1MX0A000":{"latest_version":"1.1.1","download_url":"https://xyzprod.blob.core.windows.net/firmware/8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin","fingerprint":"ae92a0b275ce5bae0b2281a585e140d3ae9f324f8143db67899764666824a402"},"com.xyzprinting.daVinci":{"latest_version":"2.1.28.1","download_url":"https://xyzprod.blob.core.windows.net/xyzware/XYZware-2.1.28.1.exe","fingerprint":"ef6280e8996fedf87b2973f58506aff3d964f8364898947943ad495ec02efb3d","description":"Version:2.1.28.1\r\nNew features and improvements:\r\n   1.Change new .stl/.3w/.nkg icon.\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg??\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg ??\r\n§§\r\n?????:2.1.28.1\r\n??????:\r\n   1. .stl / .3w/ .nkg ???????????\r\n§§"}}
+
+
