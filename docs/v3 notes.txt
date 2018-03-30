@@ -1143,55 +1143,83 @@ M84   // test end or M84 T send this last
 
 //********************
 
-I guess this is what you are after:
-"uploadGCodeText"        = "XYZ_@3D:4";
-"latestBlockSent"        = "XYZ_@3D:90”;
-
-Just need to find out how big each block is.
-
-Ollie.
 
 
+//------------------------------------
+// version 1 communication protocol
+// used with 1.0, 1.1 and 2.0 printers
 
-"prefix"              = "XYZ_@3D:";
+// baudRate = 250000
 
-//"disconnect"           = "XYZ_@3D_S10_X";
-//"connect"              = "XYZ_@3D_S10_0";
-//"start print"          = "XYZ_@3D_S10_1";
-//"test case"            = "XYZ_@3D_S10_2";
-//"uploadFirmwareBinary" = "XYZ_@3D_S10_3";
-//"uploadGCodeText"      = "XYZ_@3D_S10_4";
+XYZ_@3D:<nl>
+ XYZ_@3D:start<nl>
+ MDU:daVinciF10<nl>
+ FW_V:1.1.G<nl>
+ MCH_ID:3DP01PUS5TH41D0145<nl>
 
-//"extruder Temperature" = "XYZ_@3D_S10_101";
-//"get standard info"    = "XYZ_@3D_S10_102";
-//"get advanced info"    = "XYZ_@3D_S10_103";
+XYZ_@3D:-1<nl>		// disconnect
 
+XYZ_@3D:0<nl>		// connect
 
-"disconnect"             = "XYZ_@3D:-1";
-"connect"                = "XYZ_@3D:0";
-"startOnlinePrint"       = "XYZ_@3D:1";
-"test print"             = "XYZ_@3D:2";
-"injectManualCommand"    = "XYZ_@3D:2";
-"uploadFirmwareBinary"   = "XYZ_@3D:3";
-"uploadGCodeText"        = "XYZ_@3D:4";
-"latestBlockSent"        = "XYZ_@3D:90";
-"uploadBinaryDidFinish"  = "XYZ_@3D:91";
-"uploadGCodeDidFinish"   = "XYZ_@3D:92";
-"machineLife"            = "XYZ_@3D:5";
-"read eeprom A"          = "XYZ_@3D:6";
-"read eeprom B"          = "XYZ_@3D:7";
-"machine status"         = "XYZ_@3D:8";
-"printer status"         = "XYZ_@3D:8"; // same as machine status
+XYZ_@3D:1<nl>		//  startOnlinePrint
 
-"get standard info"      = "XYZ_@3D:201";
-"get advanced info"      = "XYZ_@3D:202";
+XYZ_@3D:2<nl>		// test print or inject manual command, end on M84
 
-//example "XYZ_@3D:101,1"
-//example "XYZ_@3D:101,2"
-//example "XYZ_@3D:103,2"
-"extruder on"           = "XYZ_@3D:101";
-"extruder off"          = "XYZ_@3D:102";
-"extruder Temperature"  = "XYZ_@3D:103";
+XYZ_@3D:3<nl>		// uploadFirmwareBinary
+
+XYZ_@3D:4<nl>		// uploadGCodeText
+XYZ_@3D:4OFFLINE_OK<nl>M1:MyTest,52274<gcode file in plain text><nl>CheckSumOK
+
+XYZ_@3D:5<nl>		// machineLife
+ MCHLIFE:18582<nl>
+ MCHEXDUR_LIFE:18606<nl>
+
+XYZ_@3D:6<nl>		// read eeprom A
+ EE1:5a,41,570000,343144,120000,725448,210,90,5448,5553,30313132,52<nl>
+
+XYZ_@3D:7<nl>		// read eeprom B
+
+XYZ_@3D:8<nl>		// machine status or printer status
+ WORK_PARSENT:0<nl>
+ WORK_TIME:0<nl>
+ EST_TIME:0<nl>
+ ET0:22<nl>
+ BT:28<nl>
+ MCH_STATE:26<nl>
+
+XYZ_@3D:9<nl>		// send build sample?
+
+XYZ_@3D:21<nl>		// set language?
+
+XYZ_@3D:20<nl>
+
+XYZ_@3D:90<nl>		// latestBlockSent
+
+XYZ_@3D:91<nl>		// uploadBinaryDidFinish
+
+XYZ_@3D:92<nl>		// uploadGCodeDidFinish
+
+XYZ_@3D:101<nl>		// extruder on
+
+XYZ_@3D:102<nl>		// extruder off
+
+XYZ_@3D:103<nl>		// extruder Temperature
+
+XYZ_@3D:201<nl>		// get standard info
+
+XYZ_@3D:202<nl>		// get advanced info
+
+// unlock filament F10, F11
+XYZ_@3D:9376<nl>
+XYZ_@3D:1423<nl>
+XYZ_@3D:5192<nl>
+XYZ_@3D:6810<nl>
+
+// unlock filament F20
+DAVCFW_82895_203811@
+
+DAVUSB_1@		// model set?
+
 
 /*
 // from https://github.com/jasongao/DaVinci1.0/blob/master/print-to-davinci.py
