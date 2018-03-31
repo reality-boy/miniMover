@@ -634,9 +634,9 @@ XYZv3/query=V
 XYZv3/query=W
 	W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
 
-// Nozzel Info
+// Nozzle Info
 // X:nt,sn,sn2
-//   nt is nozzel type one of 
+//   nt is nozzle type one of 
 //     3, 84
 //       nozzle diameter 0.3 mm
 //     1, 77, 82

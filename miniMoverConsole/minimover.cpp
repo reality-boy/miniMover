@@ -32,7 +32,7 @@ void postHelp()
 	printf("  -a- - disable auto level\n");
 	printf("  -b+ - enable buzzer\n");
 	printf("  -b- - disable buzzer\n");
-	printf("  -cl - clean nozzel\n");
+	printf("  -cl - clean nozzle\n");
 	printf("  -ca - calibrate bed\n");
 	printf("  -c file - convert file\n");
 	printf("  -f file - upload firmware, experimental!\n");
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
 					{
 						if(checkCon())
 						{
-							printf("starting clean nozzel\n");
+							printf("starting clean nozzle\n");
 							if(xyz.cleanNozzleStart())
 							{
 								printf("clean nozzle with a wire and press enter when finished\n");

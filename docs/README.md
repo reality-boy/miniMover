@@ -52,7 +52,7 @@ usage: miniMover <args>
   -a- - disable auto level
   -b+ - enable buzzer
   -b- - disable buzzer
-  -cl - clean nozzel
+  -cl - clean nozzle
   -ca - calibrate bed
   -c file - convert file
   -f file - upload firmware, experimental!

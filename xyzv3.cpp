@@ -515,8 +515,8 @@ bool XYZV3::updateStatus()
 					getJsonVal(buf, "security", m_status.WSecurity);
 					break;
 
-				case 'X': // Nozzel Info, X:nt,sn,sn2
-					//   nt is nozzel type one of 
+				case 'X': // Nozzle Info, X:nt,sn,sn2
+					//   nt is nozzle type one of 
 					//     3, 84
 					//       nozzle diameter 0.3 mm
 					//     1, 77, 82 
