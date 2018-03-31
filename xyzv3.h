@@ -164,13 +164,14 @@ struct XYZPrinterState
 struct XYZPrinterInfo
 {
 	// string constants
-	const char *modelNum;
-	const char *fileNum;
-	const char *serialNum;
+	const char *modelNum;	// how machine identifies itself over serial port
+	const char *fileNum;	// used when creating .3w file for this printer
+	const char *serialNum;	// first part of serial number
+	const char *webNum;		// used when querying website for firmware
 
-	bool fileIsV5; // v2 is 'normal' file format, v5 is for 'pro' systems
-	bool fileIsZip; // older file format, zips header
-	bool comIsV3; // old or new serial protocol, v3 is new
+	bool fileIsV5;			// v2 is 'normal' file format, v5 is for 'pro' systems
+	bool fileIsZip;			// older file format, zips header
+	bool comIsV3;			// old or new serial protocol, v3 is new
 
 	// build volume
 	int length;
@@ -320,7 +321,7 @@ protected:
 	XYZPrinterState m_status;
 	const XYZPrinterInfo *m_info;
 
-	static const int m_infoArrayLen = 19;
+	static const int m_infoArrayLen = 21;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
 	HANDLE ghMutex;

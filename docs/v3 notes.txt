@@ -1149,8 +1149,6 @@ M84   // test end or M84 T send this last
 // version 1 communication protocol
 // used with 1.0, 1.1 and 2.0 printers
 
-// baudRate = 250000
-
 XYZ_@3D:<nl>
  XYZ_@3D:start<nl>
  MDU:daVinciF10<nl>

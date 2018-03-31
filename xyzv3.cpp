@@ -30,30 +30,32 @@
 // protocol is more varied!
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
-	//   modelNum,       fileNum, serialNum, fileIsV5, fileIsZip, comIsV3, length, width, height, screenName
-	{"dvF100B000",   "daVinciF10", "3DP01P", false,  true, false, 200, 200, 200, "da Vinci 1.0"},
-	{"dvF100A000",   "daVinciF10", "3F10AP", false,  true, false, 200, 200, 200, "da Vinci 1.0A"},
-	{"dvF10SA000",   "daVinciF10", "3S10AP", false,  true, false, 200, 200, 200, "da Vinci 1.0 AiO"},
-	{"dvF110B000",   "daVinciF11", "3F11XP", false,  true,  true, 200, 200, 200, "da Vinci 1.1 Plus"}, //???? I'm suspicious of this one, think it belongs above
-	{"dvF200B000",   "daVinciF20", "3F20XP", false,  true, false, 200, 150, 200, "da Vinci 2.0 Duo"},
-	{"dvF200A000",   "daVinciF20", "3F20AP", false,  true, false, 200, 150, 200, "da Vinci 2.0A Duo"},
-	{"dv1J00A000",  "daVinciJR10", "3F1J0X", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0"},
-	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", false, false,  true, 175, 175, 175, "da Vinci Jr. 1.0A"},
-	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0w"},
-	{"dv1JS0A000",   "dv1JSOA000", "3F1JSP", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1"},
-	{"dv1JSOA000", "daVinciJR10S", "3F1JOP",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1 (Open filament)"},
-	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", false, false,  true, 150, 150, 150, "da Vinci Jr. 2.0 Mix"},
-	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", false, false,  true, 150, 150, 150, "da Vinci miniMaker"},
-	{"dv1MW0A000",   "dv1MW0A000", "3FM1WP", false, false,  true, 150, 150, 150, "da Vinci mini w"},
-	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", false, false,  true, 120, 120, 120, "da Vinci nano"},
-	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 Pro"},
-	{"dvF1W0A000",  "daVinciAW10", "3F1AWP",  true, false,  true, 200, 200, 200, "da Vinci 1.0 Pro"},
-	{"dvF1WSA000",  "daVinciAS10", "3F1ASP",  true, false,  true, 200, 200, 190, "da Vinci 1.0 Pro 3in1"},
-	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP",  true, false,  true, 300, 300, 300, "da Vinci Super"},
+	//   modelNum,       fileNum, serialNum,          webNum,  IsV5, IsZip, comV3, len, wid, hgt, screenName
+	{"dvF100B000",   "daVinciF10", "3DP01P", "davincif10_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0"},
+	{"dvF100A000",   "daVinciF10", "3F10AP", "dvF100A000_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0A"},
+	{"dvF10SA000",   "daVinciF10", "3S10AP", "dvF10SA000_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0 AiO"},
+	{"dvF110B000",   "daVinciF11", "3F11XP", "dvF110B000_V2", false,  true,  true, 200, 200, 200, "da Vinci 1.1 Plus"}, //???? I'm suspicious of this one, think it is v1 file
+	{"dvF200B000",   "daVinciF20", "3F20XP", "davincif20_V2", false,  true, false, 200, 150, 200, "da Vinci 2.0 Duo"},
+	{"dvF200A000",   "daVinciF20", "3F20AP", "dvF200A000_V2", false,  true, false, 200, 150, 200, "da Vinci 2.0A Duo"},
+	{"dv1J00A000",  "daVinciJR10", "3F1J0X", "dv1J00A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0"},
+	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", "dv1JA0A000_V2", false, false,  true, 175, 175, 175, "da Vinci Jr. 1.0A"},
+	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "dv1JW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0w"},
+	{"dv1JS0A000",   "dv1JSOA000", "3F1JSP", "dv1JS0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1"},
+	{"dv1JSOA000", "daVinciJR10S", "3F1JOP", "?????????????",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1 (Open filament)"}, // not sure this is right, file num is suspicioud
+	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", "dv2JW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 2.0 Mix"},
+	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", "dv1MX0A000_V2", false, false,  true, 150, 150, 150, "da Vinci miniMaker"},
+	{"dv1MW0A000",   "dv1MW0A000", "3FM1WP", "dv1MW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci mini w"},
+	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2", false, false,  true, 150, 150, 150, "da Vinci mini wA"},
+	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2", false, false,  true, 150, 150, 150, "da Vinci mini w+"},
+	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2", false, false,  true, 120, 120, 120, "da Vinci nano"},
+	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 Pro"},
+	{"dvF1W0A000",  "daVinciAW10", "3F1AWP", "dvF1W0A000_V2",  true, false,  true, 200, 200, 200, "da Vinci 1.0 Pro"},
+	{"dvF1WSA000",  "daVinciAS10", "3F1ASP", "dvF1WSA000_V2",  true, false,  true, 200, 200, 190, "da Vinci 1.0 Pro 3in1"},
+	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",  true, false,  true, 300, 300, 300, "da Vinci Super"},
+//	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",  true,  false, true, 200, 200, 150, "da Vinci Color"},
 };
 
 	//  unknown
-	//{"dv1CP0A000"},
 	//{"dvF110A000"},
 	//{"dvF110P000"},
 	//{"dvF11SA000"},
@@ -2610,8 +2612,9 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 	if(modelNum)
 	{
 		// mini w has two model numbers
-		if(0 == strcmp(modelNum, "dv1MW0B000"))
-			modelNum = "dv1MW0A000"; 
+		//****FixMe, shoule we do this?
+		//if(0 == strcmp(modelNum, "dv1MW0B000"))
+		//	modelNum = "dv1MW0A000"; 
 
 		for(int i=0; i<m_infoArrayLen; i++)
 		{
