@@ -1218,6 +1218,62 @@ DAVCFW_82895_203811@
 
 DAVUSB_1@		// model set?
 
+/*
+BT
+WORK_TIME
+MCHLIFE
+WORK_PARSENT
+MCH_STATE
+EST_TIME
+MCHEXDUR_LIFE
+MDU:%s
+FW_V:%s
+MCH_ID:%s%s
+
+PRN_STATE
+JOB_TEST_OK
+LANG
+ET
+_EER
+_ACK
+_END
+BS:
+CHK:
+PKT:
+M1:OK,BS:%d,CHK:%d,PKT:%d
+EE1_
+EE1_NG
+ERR
+LAST JOB ERROR
+LAST JOB OK
+JOB NUMBER
+ERROR TOTAL
+IDLE
+AV
+XYZ_@3D:%s
+PROTOCOL:2
+start
+XYZ_@3D:
+XYZv3/
+firmware=
+upload=
+config=
+query=
+uploadDidFinish
+EE%d:
+en
+jp
+fr
+it
+es
+OFFLINE_
+FW
+pause
+NG
+L
+NO
+cancel
+*/
 
 /*
 // from https://github.com/jasongao/DaVinci1.0/blob/master/print-to-davinci.py

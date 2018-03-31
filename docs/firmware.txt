@@ -17,18 +17,19 @@ com.xyzprinting.daVinciPro
 davincif10_V2 // 1.0, dvF100B000
 dvF100A000_V2 // 1.0a
 dvF10SA000_V2
-dvF110B000_V2 // davincif11_V2
+dvF110B000_V2 // davincif11_V2, firmware does not match rest of them
 davincif20_V2 // 2.0, dvF200B000
 dvF200A000_V2 // 2.0A
 dv1J00A000_V2
 dv1JA0A000_V2
 dv1JW0A000_V2
 dv1JS0A000_V2
-//dv1JSOA000_V2
+//dv1JSOA000_V2 or daVinciJR10S_V2
 dv2JW0A000_V2
 dv1MX0A000_V2
 dv1MW0A000_V2
 dv1MW0B000_V2
+//dv1MW0C000_V2
 dv1NX0A000_V2
 dv1JP0A000_V2
 dvF1W0A000_V2

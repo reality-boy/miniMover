@@ -33,10 +33,10 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//   modelNum,       fileNum, serialNum,          webNum,  IsV5, IsZip, comV3, len, wid, hgt, screenName
 	{"dvF100B000",   "daVinciF10", "3DP01P", "davincif10_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0"},
 	{"dvF100A000",   "daVinciF10", "3F10AP", "dvF100A000_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0A"},
-	{"dvF10SA000",   "daVinciF10", "3S10AP", "dvF10SA000_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0 AiO"},
+	{"dvF10SA000",   "daVinciF10", "3S10AP", "dvF10SA000_V2", false,  true, false, 200, 200, 200, "da Vinci 1.0 AiO"}, // possibly v3?
 	{"dvF110B000",   "daVinciF11", "3F11XP", "dvF110B000_V2", false,  true,  true, 200, 200, 200, "da Vinci 1.1 Plus"}, //???? I'm suspicious of this one, think it is v1 file
 	{"dvF200B000",   "daVinciF20", "3F20XP", "davincif20_V2", false,  true, false, 200, 150, 200, "da Vinci 2.0 Duo"},
-	{"dvF200A000",   "daVinciF20", "3F20AP", "dvF200A000_V2", false,  true, false, 200, 150, 200, "da Vinci 2.0A Duo"},
+	{"dvF200A000",   "daVinciF20", "3F20AP", "dvF200A000_V2", false,  true, false, 200, 150, 200, "da Vinci 2.0A Duo"}, // possibly v3
 	{"dv1J00A000",  "daVinciJR10", "3F1J0X", "dv1J00A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0"},
 	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", "dv1JA0A000_V2", false, false,  true, 175, 175, 175, "da Vinci Jr. 1.0A"},
 	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "dv1JW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0w"},
@@ -54,7 +54,6 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",  true, false,  true, 300, 300, 300, "da Vinci Super"},
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",  true,  false, true, 200, 200, 150, "da Vinci Color"},
 };
-
 	//  unknown
 	//{"dvF110A000"},
 	//{"dvF110P000"},
