@@ -99,9 +99,33 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		//listAddLine(hwndListInfo, "Serial num: %s", inf->serialNum);
 		listAddLine(hwndListInfo, "Serial num: %s", st->iMachineSerialNum);
 
-		listAddLine(hwndListInfo, "Fillament serial: %s", st->wFilament1SerialNumber);
-		if(st->wFilamentCount > 1 && st->wFilament2SerialNumber[0])
-			listAddLine(hwndListInfo, "Fillament 2 serial: %s", st->wFilament2SerialNumber);
+		listAddLine(hwndListInfo, "Filament serial: %s", st->wFilament1SerialNumber);
+
+		if(st->wFilament1Color[0])
+			listAddLine(hwndListInfo, "Filament color: %s", st->wFilament1Color);
+
+		if(st->wFilamentCount > 1)
+		{
+			if(st->wFilament2SerialNumber[0])
+				listAddLine(hwndListInfo, "Filament 2 serial: %s", st->wFilament2SerialNumber);
+
+			if(st->wFilament2Color[0])
+				listAddLine(hwndListInfo, "Filament 2 color: %s", st->wFilament2Color);
+		}
+
+		if(st->sOpenFilament)
+			listAddLine(hwndListInfo, "Uses Open Filamen");
+
+		if(st->fFilamentSpoolCount > 1 && st->fFilament2Remaining_mm > 0)
+			listAddLine(hwndListInfo, "Filament remain: %0.2f m, %0.2f m", st->fFilament1Remaining_mm / 1000.0f, st->fFilament2Remaining_mm / 1000.0f);
+		else
+			listAddLine(hwndListInfo, "Filament remain: %0.2f m", st->fFilament1Remaining_mm / 1000.0f);
+
+		if(st->hIsFilamentPLA)
+			listAddLine(hwndListInfo, "Is PLA");
+
+		if(st->kFilamentMaterialType > 0)
+			listAddLine(hwndListInfo, "Filament Material Type: (%d) %s", st->kFilamentMaterialType, st->kFilamentMaterialTypeStr);
 
 		listAddLine(hwndListInfo, "Nozzle serial: %s", st->XNozzle1SerialNumber);
 		if(st->XNozzle2SerialNumber[0])
@@ -116,8 +140,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 			listAddLine(hwndListInfo, "File is zip");
 		//if(inf->comIsV3)
 		//	listAddLine(hwndListInfo, "Com is v3");
-		if(st->hIsFillamentPLA)
-			listAddLine(hwndListInfo, "Is PLA");
 
 		listAddLine(hwndListInfo, "Packet size: %d", st->oPacketSize);
 
@@ -140,8 +162,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 			listAddLine(hwndListInfo, "Has Lazer");
 		if(st->sButton)
 			listAddLine(hwndListInfo, "Has button");
-		if(st->sOpenFilament)
-			listAddLine(hwndListInfo, "Uses Open Filamen");
 		if(st->sSDCard)
 			listAddLine(hwndListInfo, "Has SD card");
 
@@ -164,9 +184,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		h = (st->LExtruderLifetimePowerOnTime_min / 60) % 24;
 		m =  st->LExtruderLifetimePowerOnTime_min % 60;
 		listAddLine(hwndListInfo, "Extruder total time: %d d %d h %d m", d, h, m);
-
-		if(st->kMaterialType > 0)
-			listAddLine(hwndListInfo, "kMaterialType: %d", st->kMaterialType);
 
 		listAddLine(hwndListInfo, "Lang: %s", st->lLang);
 
@@ -207,11 +224,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 			listAddLine(hwndListInfo, "Extruder temp: %d C, %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
 		else
 			listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
-
-		if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
-			listAddLine(hwndListInfo, "Fillament remain: %0.2f m, %0.2f m", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
-		else
-			listAddLine(hwndListInfo, "Fillament remain: %0.2f m", st->fFillimant1Remaining_mm / 1000.0f);
 
 		bool isPrinting = st->jPrinterStatus >= PRINT_INITIAL && st->jPrinterStatus <= PRINT_PRINTING;
 		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
@@ -481,27 +493,27 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			case IDC_BUTTON_LOAD:
 				SetCursor(waitCursor);
-				MainDlgSetStatus(hDlg, "loading fillament");
-				if(xyz.loadFillamentStart())
+				MainDlgSetStatus(hDlg, "loading filament");
+				if(xyz.loadFilamentStart())
 				{
-					MessageBox(NULL, "Hit ok when filliment comes out of nozzle.", "Load Fillament", MB_OK);
-					if(xyz.loadFillamentFinish())
-						MainDlgSetStatus(hDlg, "loading fillament complete");
+					MessageBox(NULL, "Hit ok when filliment comes out of nozzle.", "Load Filament", MB_OK);
+					if(xyz.loadFilamentFinish())
+						MainDlgSetStatus(hDlg, "loading filament complete");
 					else
-						MainDlgSetStatus(hDlg, "loading fillament failed");
+						MainDlgSetStatus(hDlg, "loading filament failed");
 				}
 				else
-					MainDlgSetStatus(hDlg, "loading fillament failed");
+					MainDlgSetStatus(hDlg, "loading filament failed");
 				SetCursor(defaultCursor);
 				break;
 
 			case IDC_BUTTON_UNLOAD: 
 				SetCursor(waitCursor);
-				MainDlgSetStatus(hDlg, "unloading fillament");
-				if(xyz.unloadFillament())
-					MainDlgSetStatus(hDlg, "unloading fillament complete");
+				MainDlgSetStatus(hDlg, "unloading filament");
+				if(xyz.unloadFilament())
+					MainDlgSetStatus(hDlg, "unloading filament complete");
 				else
-					MainDlgSetStatus(hDlg, "unloading fillament failed");
+					MainDlgSetStatus(hDlg, "unloading filament failed");
 				SetCursor(defaultCursor);
 				break;
 

@@ -79,11 +79,11 @@ struct XYZPrinterState
 	char eErrorStatusStr[64];
 	int eErrorStatus;
 
-	int fFillimantSpoolCount;
-	int fFillimant1Remaining_mm;
-	int fFillimant2Remaining_mm;
+	int fFilamentSpoolCount;
+	int fFilament1Remaining_mm;
+	int fFilament2Remaining_mm;
 
-	int hIsFillamentPLA;
+	int hIsFilamentPLA;
 
 	char iMachineSerialNum[64]; //20
 
@@ -91,7 +91,8 @@ struct XYZPrinterState
 	int jPrinterSubStatus;
 	char jPrinterStatusStr[256];
 
-	int kMaterialType;
+	int kFilamentMaterialType;
+	char kFilamentMaterialTypeStr[32];
 
 	char lLang[32]; //4
 
@@ -125,7 +126,9 @@ struct XYZPrinterState
 
 	int wFilamentCount;
 	char wFilament1SerialNumber[64]; //16
+	char wFilament1Color[32];
 	char wFilament2SerialNumber[64]; //16
+	char wFilament2Color[32];
 
 	int zOffset; // from getZOffset()
 
@@ -232,13 +235,13 @@ public:
 	// move head in given direction, axis is one of x,y,z
 	bool jogPrinter(char axis, int dist_mm);
 
-	// unloads fillament without any user interaction
-	bool unloadFillament();
+	// unloads filament without any user interaction
+	bool unloadFilament();
 
-	// loads fillament
-	bool loadFillamentStart();
-	// call when fillament comes out of extruder!!!
-	bool loadFillamentFinish();
+	// loads filament
+	bool loadFilamentStart();
+	// call when filament comes out of extruder!!!
+	bool loadFilamentFinish();
 
 	// increment/decrement z offset by one step (1/100th of  a mm?)
 	int incrementZOffset(bool up);
@@ -291,6 +294,8 @@ protected:
 	const char* statusCodesToStr(int status, int subStatus);
 	static float nozzleIDToDiameter(int id);
 	const char* errorCodeToStr(int code);
+	const char* filamentMaterialTypeToStr(int materialType);
+	const char* filamentColorIdToStr(int colorId);
 	bool getJsonVal(const char *str, const char *key, char *val);
 
 	// serial functions

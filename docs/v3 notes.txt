@@ -576,8 +576,8 @@ XYZv3/query=D
 XYZv3/query=E
 XYZv3/query=F
 
-// info on last print and fillament used?
-// len is length of fillament used in last print
+// info on last print and filament used?
+// len is length of filament used in last print
 //**** need to see this from a real printer
 XYZv3/query=G
 	G:{"LastUsed":"len"} 
@@ -898,7 +898,7 @@ j:9511,0.t:1,94,0<nl>$<nl>					// state 9511 is 'PRINT_NONE' or the idle state, 
 load:{"stat":"load"}<nl>$<nl>				// transition from heating to loading
 
 // indicates end
-load:{"stat":"fail"}<nl>$<nl>				// return, load failed, maybe fillament not detected
+load:{"stat":"fail"}<nl>$<nl>				// return, load failed, maybe filament not detected
 load:{"stat":"complete"}<nl>$<nl>			// return, load succeeded, sent after a long delay, if you don't send cancel
 // or state is 9511
 // end loop
@@ -927,7 +927,7 @@ j:9531,21.t:1,22,155<nl>$<nl>					// return immediately
 j:9511,0.t:1,94,0<nl>$<nl>						// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
 
 // and look for one of these
-unload:{"stat":"unload"}<nl>$<nl>				// indicates fillament is unloading, sent when substate goes from 21 to 22
+unload:{"stat":"unload"}<nl>$<nl>				// indicates filament is unloading, sent when substate goes from 21 to 22
 unload:{"stat":"complete"}<nl>$<nl>				// break after recieving this, or when state goes to 9511
 // end loop
 

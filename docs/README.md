@@ -57,12 +57,12 @@ usage: miniMover <args>
   -c file - convert file
   -f file - upload firmware, experimental!
   -h - home printer
-  -l - load fillament
+  -l - load filament
   -o num - increment/decrement z offset by num
   -po num - set serial port number, -1 auto detects port
   -p file - print file
   -s - print status
-  -u - unload fillament
+  -u - unload filament
   -x num - jog x axis by num, or 10 if num not provided
   -y num - jog y axis by num, or 10 if num not provided
   -z num - jog z axis by num, or 10 if num not provided

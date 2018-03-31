@@ -37,13 +37,13 @@ void postHelp()
 	printf("  -c file - convert file\n");
 	printf("  -f file - upload firmware, experimental!\n");
 	printf("  -h - home printer\n");
-	printf("  -l - load fillament\n");
+	printf("  -l - load filament\n");
 	printf("  -o num - increment/decrement z offset by num\n");
 	printf("  -po num - set serial port number, -1 auto detects port\n");
 	printf("  -p file - print file\n");
 	printf("  -r - print raw status\n");
 	printf("  -s - print status\n");
-	printf("  -u - unload fillament\n");
+	printf("  -u - unload filament\n");
 	printf("  -x num - jog x axis by num, or 10 if num not provided\n");
 	printf("  -y num - jog y axis by num, or 10 if num not provided\n");
 	printf("  -z num - jog z axis by num, or 10 if num not provided\n");
@@ -95,19 +95,9 @@ bool printStatus()
 			if(st->eErrorStatus != 0)
 				printf("Error: (0x%08x)%s\n", st->eErrorStatus, st->eErrorStatusStr);
 
-			if(st->fFillimantSpoolCount > 1 && st->fFillimant2Remaining_mm > 0)
-				printf("Filament length: %0.3f m, %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f, st->fFillimant2Remaining_mm / 1000.0f);
-			else 
-				printf("Filament length: %0.3f m\n", st->fFillimant1Remaining_mm / 1000.0f);
-
-			printf("PLA filament: %d\n", st->hIsFillamentPLA);
-
 			printf("Serial number: %s\n", st->iMachineSerialNum);
 
 			printf("Status: (%d, %d) %s\n", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
-
-			if(st->kMaterialType > 0)
-				printf("material type: %d\n", st->kMaterialType);
 
 			printf("language: %s\n", st->lLang);
 
@@ -134,8 +124,6 @@ bool printStatus()
 				printf("Top door open\n");
 			if(st->sHasLazer)
 				printf("Has lazer\n");
-			if(st->sOpenFilament)
-				printf("Uses open filament\n");
 			if(st->sSDCard)
 				printf("Has sd card\n");
 
@@ -147,13 +135,33 @@ bool printStatus()
 			printf("Firmware version: %s\n", st->vFirmwareVersion);
 
 			printf("Filament SN: %s\n", st->wFilament1SerialNumber);
+
+			if(st->wFilament1Color[0])
+				printf("Filament color: %s\n", st->wFilament1Color);
+
 			if(st->wFilamentCount > 1 && st->wFilament2SerialNumber[0])
 				printf("Filament 2 SN: %s\n", st->wFilament2SerialNumber);
 
-			printf("Z-Offset %d\n", st->zOffset);
+			if(st->wFilamentCount > 1 && st->wFilament2Color[0])
+				printf("Filament 2 color: %s\n", st->wFilament2Color);
+
+			if(st->sOpenFilament)
+				printf("Uses open filament\n");
+
+			if(st->fFilamentSpoolCount > 1 && st->fFilament2Remaining_mm > 0)
+				printf("Filament length: %0.3f m, %0.3f m\n", st->fFilament1Remaining_mm / 1000.0f, st->fFilament2Remaining_mm / 1000.0f);
+			else 
+				printf("Filament length: %0.3f m\n", st->fFilament1Remaining_mm / 1000.0f);
+
+			printf("PLA filament: %d\n", st->hIsFilamentPLA);
+
+			if(st->kFilamentMaterialType > 0)
+				printf("Filament material type: (%d) %s\n", st->kFilamentMaterialType, st->kFilamentMaterialTypeStr);
 
 			if(st->GLastUsed[0])
-				printf("Fillament last used: %s m\n", st->GLastUsed);
+				printf("Filament last used: %s m\n", st->GLastUsed);
+
+			printf("Z-Offset %d\n", st->zOffset);
 
 			printf("Lifetime power on time: %d min\n", st->LPrinterLifetimePowerOnTime_min);
 			if(st->LPrinterLastPowerOnTime_min > 0)
@@ -460,21 +468,21 @@ int main(int argc, char **argv)
 				case 'l':
 					if(checkCon())
 					{
-						printf("starting load fillament\n");
-						if(xyz.loadFillamentStart())
+						printf("starting load filament\n");
+						if(xyz.loadFilamentStart())
 						{
-							printf("wait for fillament to come out of nozzle then hit enter\n");
+							printf("wait for filament to come out of nozzle then hit enter\n");
 							getch();
 
-							if(xyz.loadFillamentFinish())
+							if(xyz.loadFilamentFinish())
 							{
-								printf("load fillament succeeded\n");
+								printf("load filament succeeded\n");
 							}
 							else
-								printf("load fillament failed\n");
+								printf("load filament failed\n");
 						}
 						else
-							printf("load fillament failed\n");
+							printf("load filament failed\n");
 					}
 					break;
 				case 'o':
@@ -531,11 +539,11 @@ int main(int argc, char **argv)
 				case 'u':
 					if(checkCon())
 					{
-						printf("start unload fillament\n");
-						if(xyz.unloadFillament())
-							printf("unload fillament succeeded\n");
+						printf("start unload filament\n");
+						if(xyz.unloadFilament())
+							printf("unload filament succeeded\n");
 						else
-							printf("unload fillament failed\n");
+							printf("unload filament failed\n");
 					}
 					break;
 				case 'x':

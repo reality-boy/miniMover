@@ -200,14 +200,14 @@ bool XYZV3::updateStatus()
 					//   ct - how many spools of filiment, 1 for normal printer
 					//   len - filament 1 left in millimeters
 					//   len2 - filament 2 left in millimeters, optional
-					sscanf(buf, "f:%d,%d,%d", &m_status.fFillimantSpoolCount, &m_status.fFillimant1Remaining_mm, &m_status.fFillimant2Remaining_mm);
+					sscanf(buf, "f:%d,%d,%d", &m_status.fFilamentSpoolCount, &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
 					break;
 
 				//case 'g': break; // unused
 
 				case 'h': // pla filament loaded, h:x > 0 if pla filament in printer
 					// not used with miniMaker
-					sscanf(buf, "h:%d", &m_status.hIsFillamentPLA);
+					sscanf(buf, "h:%d", &m_status.hIsFilamentPLA);
 					break;
 
 				case 'i': // machine serial number, i:sn - serial number
@@ -292,7 +292,14 @@ bool XYZV3::updateStatus()
 					//   xx is material type?
 					//   one of 41 46 47 50 51 54 56
 					//not used on miniMaker
-					sscanf(buf, "k:%d", &m_status.kMaterialType);
+					sscanf(buf, "k:%d", &m_status.kFilamentMaterialType);
+
+					strPtr = filamentMaterialTypeToStr(m_status.kFilamentMaterialType);
+					if(strPtr)
+						strcpy(m_status.kFilamentMaterialTypeStr, strPtr);
+					else 
+						m_status.kFilamentMaterialTypeStr[0] = '\0';
+
 					break;
 
 				case 'l': // language, l:ln - one of en, fr, it, de, es, jp
@@ -416,6 +423,29 @@ bool XYZV3::updateStatus()
 					//   	SSSS - serial number
 					//w:1,PMP6PTH6840596
 					sscanf(buf, "w:%d,%s,%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+
+					if(strlen(m_status.wFilament1SerialNumber) > 4)
+					{
+						strPtr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
+						if(strPtr)
+							strcpy(m_status.wFilament1Color, strPtr);
+						else
+							m_status.wFilament1Color[0] = '\0';
+					}
+					else
+						m_status.wFilament1Color[0] = '\0';
+
+					if(strlen(m_status.wFilament2SerialNumber) > 4)
+					{
+						strPtr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
+						if(strPtr)
+							strcpy(m_status.wFilament2Color, strPtr);
+						else
+							m_status.wFilament2Color[0] = '\0';
+					}
+					else
+						m_status.wFilament2Color[0] = '\0';
+
 					break;
 
 				//case 'x': break; // unused
@@ -429,7 +459,7 @@ bool XYZV3::updateStatus()
 				// case 'A' to 'F' unused
 
 				case 'G':
-					// info on last print and fillament used?
+					// info on last print and filament used?
 					getJsonVal(buf, "LastUsed", m_status.GLastUsed);
 					break;
 
@@ -663,9 +693,9 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 	case PRINT_STOP:
 		return "stop print";
 	case PRINT_LOAD_FILAMENT:
-		return "loading fillament";
+		return "loading filament";
 	case PRINT_UNLOAD_FILAMENT:
-		return "unloading fillament";
+		return "unloading filament";
 	case PRINT_AUTO_CALIBRATION:
 		return "auto calibrating";
 	case PRINT_JOG_MODE:
@@ -677,7 +707,7 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 		sprintf(tstr, "file check (%d)", subStatus);
 		return tstr;
 	case STATE_PRINT_LOAD_FIALMENT: //  (substatus 12 14)
-		sprintf(tstr, "load fillament (%d)", subStatus);
+		sprintf(tstr, "load filament (%d)", subStatus);
 		return tstr;
 	case STATE_PRINT_UNLOAD_FIALMENT: //  (substatus 22 24)
 		// substate 21 is unload start or heating
@@ -848,7 +878,66 @@ const char* XYZV3::errorCodeToStr(int code)
 	case 0x40000404: return "M_FILAMENT_LOW_TO_EMPTY";
 	case 0x40000405: return "M_FILAMENT_END";
 
-	default: return "unknown";
+	default: return "---";
+	}
+}
+
+const char* XYZV3::filamentMaterialTypeToStr(int materialType)
+{
+	switch(materialType)
+	{
+	case 41: return "ABS";
+	case 46: return "TPE";
+	case 47: return "PETG";
+	case 50: return "PLA";
+	case 51: return "PLA";
+	case 54: return "Tough PLA";
+	case 56: return "PVA";
+	default: return "---";
+	}
+}
+
+const char* XYZV3::filamentColorIdToStr(int colorId)
+{
+	switch(colorId)
+	{
+	case '0': return "Bronze";
+	case '1': return "Silver";
+	case '2': return "Clear Red";
+	case '3': return "Clear";
+	case '4': return "Bottle Green";
+	case '5': return "Neon Magenta";
+	case '6': return "SteelBlue";
+	case '7': return "Sun Orange";
+	case '8': return "Pearl White";
+	case '9': return "Copper";
+	case 'A': return "Purple";
+	case 'B': return "Blue";
+	case 'C': return "Neon Tangerine";
+	case 'D': return "Viridity";
+	case 'E': return "Olivine";
+	case 'F': return "Gold";
+	case 'G': return "Green";
+	case 'H': return "Neon Green";
+	case 'I': return "Snow White";
+	case 'J': return "Neon Yellow";
+	case 'K': return "Black";
+	case 'L': return "Violet";
+	case 'M': return "Grape Purple";
+	case 'N': return "Purpurine";
+	case 'O': return "Clear Yellow";
+	case 'P': return "Clear Green";
+	case 'Q': return "Clear Tangerine";
+	case 'R': return "Red";
+	case 'S': return "Cyber Yellow";
+	case 'T': return "Tangerine";
+	case 'U': return "Clear Blue";
+	case 'V': return "Clear Purple";
+	case 'W': return "White";
+	case 'X': return "Clear Magenta";
+	case 'Y': return "Yellow";
+	case 'Z': return "Nature";
+	default: return "---";
 	}
 }
 
@@ -998,7 +1087,7 @@ bool XYZV3::jogPrinter(char axis, int dist_mm)
 	return success;
 }
 
-bool XYZV3::unloadFillament()
+bool XYZV3::unloadFilament()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
@@ -1027,7 +1116,7 @@ bool XYZV3::unloadFillament()
 	return success;
 }
 
-bool XYZV3::loadFillamentStart()
+bool XYZV3::loadFilamentStart()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
@@ -1049,7 +1138,7 @@ bool XYZV3::loadFillamentStart()
 	return success;
 }
 
-bool XYZV3::loadFillamentFinish()
+bool XYZV3::loadFilamentFinish()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
@@ -2389,7 +2478,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				else if(NULL != (s = strstr(lineBuf, "TIME:")))
 					printTime = atoi(s + strlen("TIME:"));
 
-				// fillament used
+				// filament used
 				else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
 					totalFilamen = (float)atof(s + strlen("total_filament = "));
 				else if(NULL != (s = strstr(lineBuf, "filament_used = ")))
