@@ -33,7 +33,8 @@ float msTime::getTime_ms()
 msTimer::msTimer() 
 	: startTime(0)
 	, elapsedTime(0)
-{}
+{
+}
 
 void msTimer::startTimer() 
 { 

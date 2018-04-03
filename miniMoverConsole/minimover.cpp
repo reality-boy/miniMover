@@ -322,6 +322,8 @@ bool handlePrintFile(const char *path)
 int main(int argc, char **argv)
 {
 	debugInit();
+	msTimer runTime;
+	runTime.startTimer();
 
 	if(argc <= 1)
 	{
@@ -617,12 +619,14 @@ int main(int argc, char **argv)
 	// disconnect just in case
 	xyz.disconnect();
 
+	runTime.stopTimer();
+	debugFinalize();
+
 #if defined(_DEBUG) |  defined(DUMP_STATUS)
+	printf("run took %0.4f seconds\n", runTime.getLastTime_s());
 	printf("\nhit any key to continue.\n");
 	getch();
 #endif
-
-	debugFinalize();
 
 	return 0;
 }
