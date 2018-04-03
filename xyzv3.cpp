@@ -1431,7 +1431,7 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 		// else tPath is null and we fail
 
 		if(filePath)
-		if(print3WFileInit(filePath))
+		if(sendFileInit(filePath, true))
 		{
 			while(sendFileProcess())
 			{
@@ -1453,14 +1453,44 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 	return success;
 }
 
-bool XYZV3::print3WFileInit(const char *path)
+bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
+{
+	return false; // probably don't want to run this!
+
+	WaitForSingleObject(ghMutex, INFINITE);
+
+	bool success = false;
+	if(sendFileInit(path, false)) // false is firmware
+	{
+		while(sendFileProcess())
+		{
+			if(cbStatus)
+				cbStatus(getFileUploadPct());
+		}
+		if(cbStatus)
+			cbStatus(getFileUploadPct());
+
+		if(sendFileFinalize())
+			success = true;
+	}
+	ReleaseMutex(ghMutex);
+
+	return success;
+}
+
+
+
+bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
 	//****Note, assume parrent has locked the mutex for us
 	assert(!pDat.isPrintActive);
 
 	memset(&pDat, 0, sizeof(pDat));
 
-	bool saveToSD = false; // set to true to save to internal SD card
+	// internal options, expose these at some point
+	bool saveToSD = false; // set to true to permanently save 3w file to internal SD card
+	bool downgrade = false; // set to true to remove version check on firmware?
+
 	bool success = false;
 
 	if(m_serial.isOpen() && path)
@@ -1473,6 +1503,8 @@ bool XYZV3::print3WFileInit(const char *path)
 			// get file length
 			fseek(f, 0, SEEK_END);
 			int len = ftell(f);
+			if(!isPrint)
+				len -= 16; // skip header on firmware
 			fseek(f, 0, SEEK_SET);
 
 			if(len > 0)
@@ -1480,8 +1512,15 @@ bool XYZV3::print3WFileInit(const char *path)
 				buf = new char[len];
 				if(buf)
 				{
-					if(len == fread(buf, 1, len, f))
+					// firmware has 16 byte header as a string
+					char header[17];
+					if((isPrint || 16 == fread(header, 1, 16, f)) &&
+						len == fread(buf, 1, len, f)) // read whole file into bufer
 					{
+						// zero terminate header string
+						//****Note, only valid if !isPrint
+						header[16] = '\0';
+
 						// now we have a buffer, go ahead and start to print it
 						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
 						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
@@ -1493,7 +1532,12 @@ bool XYZV3::print3WFileInit(const char *path)
 						if(pDat.blockBuf)
 						{
 							m_serial.clearSerial();
-							m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+
+							if(isPrint)
+								m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+							else
+								m_serial.writeSerialPrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+
 							if(waitForVal("ok", false, 1.0f))
 							{
 								pDat.isPrintActive = true;
@@ -1601,114 +1645,6 @@ bool XYZV3::sendFileFinalize()
 
 	return success;
 }
-
-bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
-{
-	return false; // probably don't want to run this!
-
-	WaitForSingleObject(ghMutex, INFINITE);
-
-	bool success = false;
-	if(writeFirmwareInit(path))
-	{
-		while(sendFileProcess())
-		{
-			if(cbStatus)
-				cbStatus(getFileUploadPct());
-		}
-		if(cbStatus)
-			cbStatus(getFileUploadPct());
-
-		if(sendFileFinalize())
-			success = true;
-	}
-	ReleaseMutex(ghMutex);
-
-	return success;
-}
-
-//****FixMe, this is almost identical to print3WFileInit() combine together
-bool XYZV3::writeFirmwareInit(const char *path)
-{
-	//****Note, assume parrent has locked the mutex for us
-	assert(!pDat.isPrintActive);
-
-	memset(&pDat, 0, sizeof(pDat));
-
-	bool downgrade = false;
-	bool success = false;
-
-	if(m_serial.isOpen() && path)
-	{
-		// try to load file from disk
-		char *buf = NULL;
-		FILE *f = fopen(path, "rb");
-		if(f)
-		{
-			// get file length
-			fseek(f, 0, SEEK_END);
-			//****Note, different than print3WFileInit()
-			// shrink len by size of header
-			int len = ftell(f) - 16;
-			fseek(f, 0, SEEK_SET);
-
-			if(len > 0)
-			{
-				buf = new char[len];
-				if(buf)
-				{
-					//****Note, different than print3WFileInit()
-					// first 16 bytes are header don't send that
-					char header[17];
-					if( 16 == fread(header, 1, 16, f) &&
-						len == fread(buf, 1, len, f) )
-					{
-						// zero terminate header string
-						header[16] = '\0';
-
-						// now we have a buffer, go ahead and start to print it
-						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
-						pDat.lastBlockSize = len % pDat.blockSize;
-						pDat.curBlock = 0;
-						pDat.data = buf;
-						pDat.blockBuf = new char[pDat.blockSize + 12];
-
-						if(pDat.blockBuf)
-						{
-							m_serial.clearSerial();
-							//****Note, use different init string than with print3WFileInit()
-							m_serial.writeSerialPrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
-							if(waitForVal("ok", false, 1.0f))
-							{
-								pDat.isPrintActive = true;
-								success = true;
-							}
-						}
-					}
-
-					if(!success)
-					{
-						if(buf)
-							delete [] buf;
-						buf = NULL;
-						pDat.data = NULL;
-
-						if(pDat.blockBuf)
-							delete [] pDat.blockBuf;
-						pDat.blockBuf = NULL;
-					}
-				}
-			}
-			// close file if open
-			fclose(f);
-			f = NULL;
-		}
-	}
-
-	return success;
-}
-
 
 bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
 {

@@ -287,12 +287,8 @@ public:
 
 protected:
 
-	// start to send a .3w file to printer
-	bool print3WFileInit(const char *path);
-	// start to send a new firmware to printer
-	bool writeFirmwareInit(const char *path);
-
-	// helper functions that finish uploading the firmware or 3w file
+	// helper functions that upload a firmware or 3w file
+	bool sendFileInit(const char *path, bool isPrint);
 	bool sendFileProcess();
 	bool sendFileFinalize();
 	// how far allong the upload is
