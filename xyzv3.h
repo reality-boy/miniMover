@@ -287,9 +287,30 @@ public:
 
 protected:
 
-	// send a .3w file to printer
-	bool print3WFile(const char *path, XYZCallback cbStatus);
-	bool print3WString(const char *data, int len, XYZCallback cbStatus);
+	// start to send a .3w file to printer
+	bool print3WFileInit(const char *path);
+	// start to send a new firmware to printer
+	bool writeFirmwareInit(const char *path);
+
+	// helper functions that finish uploading the firmware or 3w file
+	bool sendFileProcess();
+	bool sendFileFinalize();
+	// how far allong the upload is
+	float getFileUploadPct();
+
+	struct sendFileData
+	{
+		bool isPrintActive;
+
+		// helper variables
+		int blockSize;
+		int blockCount;
+		int lastBlockSize;
+		int curBlock;
+
+		const char* data;	// data to be printed
+		char *blockBuf;		// buffer to hold one block of data to be sent
+	} pDat;
 
 	const char* statusCodesToStr(int status, int subStatus);
 	static float nozzleIDToDiameter(int id);

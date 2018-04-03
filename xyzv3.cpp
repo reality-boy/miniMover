@@ -65,6 +65,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 XYZV3::XYZV3() 
 {
 	memset(&m_status, 0, sizeof(m_status));
+	memset(&pDat, 0, sizeof(pDat));
 	ghMutex = CreateMutex(NULL, FALSE, NULL);
 } 
 
@@ -1403,46 +1404,69 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 	if(path && m_serial.isOpen())
 	{
+		char tpath[MAX_PATH] = "";
+		char tfile[MAX_PATH] = "";
+		const char *filePath = NULL;
+
 		// if gcode convert to 3w file
-		bool isGcode = isGcodeFile(path);
-		if(isGcode)
+		if(isGcodeFile(path))
 		{
-			char tpath[MAX_PATH] = "";
 			if(GetTempPath(MAX_PATH, tpath))
 			{
-				char tfile[MAX_PATH] = "";
 				if(GetTempFileName(tpath, NULL, 0, tfile))
 				{
 					if(encryptFile(path, tfile, -1))
 					{
-						// send to printer
-						if(print3WFile(tfile, cbStatus))
-							success = true;
+						filePath = tfile;
 
-						// cleanup temp file
-						remove(tfile);
 					}
 				}
 			}
 		}
+		// else if  3w just use file directly
 		else if(is3wFile(path))
 		{
-			// send to printer
-			if(print3WFile(path, cbStatus))
-				success = true;
+			filePath = path;
 		}
 		// else tPath is null and we fail
+
+		if(filePath)
+		if(print3WFileInit(filePath))
+		{
+			while(sendFileProcess())
+			{
+				if(cbStatus)
+					cbStatus(getFileUploadPct());
+			}
+			if(cbStatus)
+				cbStatus(getFileUploadPct());
+
+			if(sendFileFinalize())
+				success = true;
+		}
+
+		// cleanup temp file, if used
+		if(tfile[0])
+			remove(tfile);
 	}
 
-	ReleaseMutex(ghMutex);
 	return success;
 }
 
-bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
+bool XYZV3::print3WFileInit(const char *path)
 {
+	//****Note, assume parrent has locked the mutex for us
+	assert(!pDat.isPrintActive);
+
+	memset(&pDat, 0, sizeof(pDat));
+
+	bool saveToSD = false; // set to true to save to internal SD card
 	bool success = false;
-	if(path)
+
+	if(m_serial.isOpen() && path)
 	{
+		// try to load file from disk
+		char *buf = NULL;
 		FILE *f = fopen(path, "rb");
 		if(f)
 		{
@@ -1451,225 +1475,240 @@ bool XYZV3::print3WFile(const char *path, XYZCallback cbStatus)
 			int len = ftell(f);
 			fseek(f, 0, SEEK_SET);
 
-			char *buf = new char[len];
-			if(buf)
+			if(len > 0)
 			{
-				if(len == fread(buf, 1, len, f))
+				buf = new char[len];
+				if(buf)
 				{
-					success = print3WString(buf, len, cbStatus);
+					if(len == fread(buf, 1, len, f))
+					{
+						// now we have a buffer, go ahead and start to print it
+						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
+						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
+						pDat.lastBlockSize = len % pDat.blockSize;
+						pDat.curBlock = 0;
+						pDat.data = buf;
+						pDat.blockBuf = new char[pDat.blockSize + 12];
+
+						if(pDat.blockBuf)
+						{
+							m_serial.clearSerial();
+							m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+							if(waitForVal("ok", false, 1.0f))
+							{
+								pDat.isPrintActive = true;
+								success = true;
+							}
+						}
+					}
+
+					if(!success)
+					{
+						if(buf)
+							delete [] buf;
+						buf = NULL;
+						pDat.data = NULL;
+
+						if(pDat.blockBuf)
+							delete [] pDat.blockBuf;
+						pDat.blockBuf = NULL;
+					}
 				}
-
-				delete [] buf;
-				buf = NULL;
 			}
-
+			// close file if open
 			fclose(f);
+			f = NULL;
 		}
 	}
 
 	return success;
 }
 
-#if 0
-// print directly to serial port
-bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
+float XYZV3::getFileUploadPct()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool saveToSD = false; // set to true to save to internal SD card
-	bool success = false;
+	if(pDat.isPrintActive && pDat.blockCount > 0)
+		return (float)pDat.curBlock/(float)pDat.blockCount;
+	return 0;
+}
 
+bool XYZV3::sendFileProcess()
+{
+	//****Note, assume parrent has locked the mutex for us
+	assert(pDat.isPrintActive);
+
+	bool success = false;
+	if(m_serial.isOpen() && pDat.data && pDat.blockBuf)
+	{
+		int i, t;
+		for(i=pDat.curBlock; i<min(pDat.curBlock + 4, pDat.blockCount); i++)
+		{
+			int blockLen = (i+1 == pDat.blockCount) ? pDat.lastBlockSize : pDat.blockSize;
+			char *tBuf = pDat.blockBuf;
+
+			// block count
+			t = swap32bit(i);
+			memcpy(tBuf, &t, 4);
+			tBuf += 4;
+
+			// data length
+			t = swap32bit(blockLen);
+			memcpy(tBuf, &t, 4);
+			tBuf += 4;
+
+			// data block
+			memcpy(tBuf, pDat.data + i*pDat.blockSize, blockLen);
+			tBuf += blockLen;
+
+			// end of data
+			t = swap32bit(0);
+			memcpy(tBuf, &t, 4);
+			tBuf += 4;
+
+			// write out in one shot
+			m_serial.writeSerialArray(pDat.blockBuf, blockLen + 12);
+			success = waitForVal("ok", false, 1.0f);
+			if(!success) // bail on error
+				break;
+		} 
+		pDat.curBlock = i;
+	}
+
+	return success;
+}
+
+bool XYZV3::sendFileFinalize()
+{
+	//****Note, assume parrent has locked the mutex for us
+	assert(pDat.isPrintActive);
+
+	bool success = false;
 	if(m_serial.isOpen())
 	{
-		m_serial.clearSerial();
+		if(pDat.data)
+			delete [] pDat.data;
+		pDat.data = NULL;
 
-		m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
-		if(waitForVal("ok", false))
-		{
-			int blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-			int blockCount = (len + blockSize - 1) / blockSize; // round up
-			int lastBlockSize = len % blockSize;
+		if(pDat.blockBuf)
+			delete [] pDat.blockBuf;
+		pDat.blockBuf = NULL;
 
-			for(int i=0; i<blockCount; i++)
-			{
-				// returns E4 and E7, whatever that is, but ignores the error and continues
-				int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-				m_serial.writeSerialByteU32(i, false);
-				m_serial.writeSerialByteU32(blockLen, false);
-				m_serial.writeSerialArray(data + i*blockSize, blockLen);
-				m_serial.writeSerialByteU32(0, false);
-
-				if(waitForVal("ok", false))
-					success = true;
-				else
-				{
-					// bail on error
-					success = false;
-					break;
-				}
-
-				// give time to parrent
-				if(cbStatus)
-					cbStatus((float)i/(float)blockCount);
-			}
-		}
+		pDat.isPrintActive = false;
 
 		// close out printing
 		m_serial.writeSerial("XYZv3/uploadDidFinish");
-		//waitForVal("ok", true);
+		success = waitForVal("ok", false);
 	}
 
-	ReleaseMutex(ghMutex);
 	return success;
 }
-#else
-// queue up in buffer before printing
-// may help reduce chance of E7 errors
-bool XYZV3::print3WString(const char *data, int len, XYZCallback cbStatus)
-{
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool saveToSD = false; // set to true to save to internal SD card
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
-		if(waitForVal("ok", false, 1.0f))
-		{
-			int blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-			int blockCount = (len + blockSize - 1) / blockSize; // round up
-			int lastBlockSize = len % blockSize;
-			int t;
-
-			char *bBuf = new char[blockSize + 12];
-			if(bBuf)
-			{
-				for(int i=0; i<blockCount; i++)
-				{
-					int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-					char *tBuf = bBuf;
-
-					// block count
-					t = swap32bit(i);
-					memcpy(tBuf, &t, 4);
-					tBuf += 4;
-
-					// data length
-					t = swap32bit(blockLen);
-					memcpy(tBuf, &t, 4);
-					tBuf += 4;
-
-					// data block
-					memcpy(tBuf, data + i*blockSize, blockLen);
-					tBuf += blockLen;
-
-					// end of data
-					t = swap32bit(0);
-					memcpy(tBuf, &t, 4);
-					tBuf += 4;
-
-					// write out in one shot
-					m_serial.writeSerialArray(bBuf, blockLen + 12);
-					success = waitForVal("ok", false, 1.0f);
-					if(!success) // bail on error
-						break;
-
-					// give time to parrent
-					if(cbStatus)
-						cbStatus((float)i/(float)blockCount);
-				}
-				delete [] bBuf;
-			}
-
-			// close out printing
-			m_serial.writeSerial("XYZv3/uploadDidFinish");
-			if(!waitForVal("ok", false))
-				success = false;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
-}
-#endif
 
 bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 {
 	return false; // probably don't want to run this!
 
 	WaitForSingleObject(ghMutex, INFINITE);
+
 	bool success = false;
-	bool downgrade = false;
-
-	if(path && m_serial.isOpen())
+	if(writeFirmwareInit(path))
 	{
-		m_serial.clearSerial();
+		while(sendFileProcess())
+		{
+			if(cbStatus)
+				cbStatus(getFileUploadPct());
+		}
+		if(cbStatus)
+			cbStatus(getFileUploadPct());
 
+		if(sendFileFinalize())
+			success = true;
+	}
+	ReleaseMutex(ghMutex);
+
+	return success;
+}
+
+//****FixMe, this is almost identical to print3WFileInit() combine together
+bool XYZV3::writeFirmwareInit(const char *path)
+{
+	//****Note, assume parrent has locked the mutex for us
+	assert(!pDat.isPrintActive);
+
+	memset(&pDat, 0, sizeof(pDat));
+
+	bool downgrade = false;
+	bool success = false;
+
+	if(m_serial.isOpen() && path)
+	{
+		// try to load file from disk
+		char *buf = NULL;
 		FILE *f = fopen(path, "rb");
 		if(f)
 		{
 			// get file length
 			fseek(f, 0, SEEK_END);
-			int len = ftell(f);
+			//****Note, different than print3WFileInit()
+			// shrink len by size of header
+			int len = ftell(f) - 16;
 			fseek(f, 0, SEEK_SET);
 
-			char *buf = new char[len];
-			if(buf)
+			if(len > 0)
 			{
-				if(len == fread(buf, 1, len, f))
+				buf = new char[len];
+				if(buf)
 				{
-					// first 16 bytes are header
-					// don't send that
-					int blen = len - 16; 
-					char *bbuf = buf + 16;
-
-					m_serial.writeSerialPrintf("XYZv3/firmware=temp.bin,%d%s\n", blen, (downgrade) ? ",Downgrade" : "");
-					if(waitForVal("ok", false))
+					//****Note, different than print3WFileInit()
+					// first 16 bytes are header don't send that
+					char header[17];
+					if( 16 == fread(header, 1, 16, f) &&
+						len == fread(buf, 1, len, f) )
 					{
-						int blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-						int blockCount = (blen + blockSize - 1) / blockSize; // round up
-						int lastBlockSize = blen % blockSize;
+						// zero terminate header string
+						header[16] = '\0';
 
-						for(int i=0; i<blockCount; i++)
+						// now we have a buffer, go ahead and start to print it
+						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
+						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
+						pDat.lastBlockSize = len % pDat.blockSize;
+						pDat.curBlock = 0;
+						pDat.data = buf;
+						pDat.blockBuf = new char[pDat.blockSize + 12];
+
+						if(pDat.blockBuf)
 						{
-							int blockLen = (i+1 == blockCount) ? lastBlockSize : blockSize;
-							m_serial.writeSerialByteU32(i, false);
-							m_serial.writeSerialByteU32(blockLen, false);
-							m_serial.writeSerialArray(bbuf + i*blockSize, blockLen);
-							m_serial.writeSerialByteU32(0, false);
-
-							if(waitForVal("ok", false))
-								success = true;
-							else
+							m_serial.clearSerial();
+							//****Note, use different init string than with print3WFileInit()
+							m_serial.writeSerialPrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+							if(waitForVal("ok", false, 1.0f))
 							{
-								// bail on error
-								success = false;
-								break;
+								pDat.isPrintActive = true;
+								success = true;
 							}
-
-							// give time to parrent
-							if(cbStatus)
-								cbStatus((float)i/(float)blockCount);
 						}
 					}
 
-					// close out printing
-					m_serial.writeSerial("XYZv3/uploadDidFinish");
-					//waitForVal("ok", true);
+					if(!success)
+					{
+						if(buf)
+							delete [] buf;
+						buf = NULL;
+						pDat.data = NULL;
+
+						if(pDat.blockBuf)
+							delete [] pDat.blockBuf;
+						pDat.blockBuf = NULL;
+					}
 				}
-
-				delete [] buf;
-				buf = NULL;
 			}
-
+			// close file if open
 			fclose(f);
+			f = NULL;
 		}
 	}
 
-	ReleaseMutex(ghMutex);
 	return success;
 }
+
 
 bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
 {
@@ -1722,8 +1761,6 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 	if(infoIdx > -1)
 		info = XYZV3::indexToInfo(infoIdx);
 
-	// for now encrypt the file for the connected printer
-	// someday we could allow user to specify the target machine
 	if(info && inPath)
 	{
 		const char *fileNum = info->fileNum;
