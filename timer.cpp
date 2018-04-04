@@ -31,20 +31,20 @@ float msTime::getTime_ms()
 }
 
 msTimer::msTimer() 
-	: startTime(0)
-	, elapsedTime(0)
 {
+	startTimer();
 }
 
 void msTimer::startTimer() 
 { 
 	startTime = msTime::getTime_micro(); 
+	elapsedTime = 0;
 }
 
 float msTimer::stopTimer() 
 { 
 	elapsedTime = msTime::getTime_micro() - startTime;
-	return elapsedTime;
+	return getLastTime_s();
 }
 
 float msTimer::getLastTime_s()     

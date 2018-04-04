@@ -1418,7 +1418,6 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 					if(encryptFile(path, tfile, -1))
 					{
 						filePath = tfile;
-
 					}
 				}
 			}
@@ -1696,6 +1695,11 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 	// unless the user requests a particular printer model
 	if(infoIdx > -1)
 		info = XYZV3::indexToInfo(infoIdx);
+#ifdef _DEBUG
+	if(!info)
+		info = XYZV3::modelToInfo("dv1MX0A000");		// miniMaker
+		//info = XYZV3::modelToInfo("dvF100B000");		// 1.0
+#endif
 
 	if(info && inPath)
 	{
@@ -1708,9 +1712,9 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 		if(fi)
 		{
 			// and write to disk
-			FILE *f = NULL;
+			FILE *fo = NULL;
 			if(outPath)
-				f = fopen(outPath, "wb");
+				fo = fopen(outPath, "wb");
 			else
 			{
 				char tPath[MAX_PATH] = "";
@@ -1719,11 +1723,11 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 				if(!ptr)
 					ptr = tPath + strlen(tPath);
 				sprintf(ptr, ".3w");
-				f = fopen(tPath, "wb");
+				fo = fopen(tPath, "wb");
 			}
 
 			// and our destination file
-			if(f)
+			if(fo)
 			{
 				//==============================
 				// process the source gcode file
@@ -1753,68 +1757,68 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 						// write header info
 
 						// write file id
-						fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), f);
+						fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), fo);
 
 						// id, what is this
-						writeByte(f, 1);
+						writeByte(fo, 1);
 
 						// file format version is 2 or 5
 						if(fileIsV5)
-							writeByte(f, 5);
+							writeByte(fo, 5);
 						else
-							writeByte(f, 2);
+							writeByte(fo, 2);
 						
 						// pad to 4 bytes
-						writeByte(f, 0);
-						writeByte(f, 0);
+						writeByte(fo, 0);
+						writeByte(fo, 0);
 
 						// offset to zip marker
-						int pos1 = ftell(f) + 4; // count from next byte after count
+						int pos1 = ftell(fo) + 4; // count from next byte after count
 						// force at least 16 bytes of padding, is this needed?
 						int zipOffset = roundUpTo16(pos1 + 4684) - pos1;
-						writeWord(f, zipOffset);
-						writeRepeatByte(f, 0, zipOffset);
+						writeWord(fo, zipOffset);
+						writeRepeatByte(fo, 0, zipOffset);
 
 						// zip format marker
 						if(fileIsZip)
-							fwrite("TagEa128", 1, strlen("TagEa128"), f);
+							fwrite("TagEa128", 1, strlen("TagEa128"), fo);
 						else
-							fwrite("TagEJ256", 1, strlen("TagEJ256"), f);
+							fwrite("TagEJ256", 1, strlen("TagEJ256"), fo);
 
 						// optional header len
 						if(fileIsV5)
-							writeWord(f, headerLen);
+							writeWord(fo, headerLen);
 
 						// offset to header
-						int pos2 = ftell(f) + 4; // count from next byte after count
+						int pos2 = ftell(fo) + 4; // count from next byte after count
 						// force at least 16 bytes of padding, is this needed?
 						int headerOffset = roundUpTo16(pos2 + 68) - pos2; 
-						writeWord(f, headerOffset);
+						writeWord(fo, headerOffset);
 
 						// mark current file location
-						int offset1 = ftell(f);
+						int offset1 = ftell(fo);
 
 						//?? 
 						if(fileIsV5)
-							writeWord(f, 1);
+							writeWord(fo, 1);
 
 						int crc32 = calcXYZcrc32(bodyBuf, bodyLen);
-						writeWord(f, crc32);
+						writeWord(fo, crc32);
 
 						// zero pad to header offset
-						int pad1 = headerOffset - (ftell(f) - offset1);
-						writeRepeatByte(f, 0, pad1);
+						int pad1 = headerOffset - (ftell(fo) - offset1);
+						writeRepeatByte(fo, 0, pad1);
 
 						// write encrypted and padded header out
-						fwrite(headerBuf, 1, headerLen, f);
+						fwrite(headerBuf, 1, headerLen, fo);
 
 						// mark current file location
-						int pad2 = bodyOffset - ftell(f);
+						int pad2 = bodyOffset - ftell(fo);
 						// pad with zeros to start of body
-						writeRepeatByte(f, 0, pad2);
+						writeRepeatByte(fo, 0, pad2);
 
 						// write encrypted and padded body out
-						fwrite(bodyBuf, 1, bodyLen, f);
+						fwrite(bodyBuf, 1, bodyLen, fo);
 
 						// yeay, it worked
 						success = true;
@@ -1832,8 +1836,8 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 				}
 
 				// clean up file data
-				fclose(f);
-				f = NULL;
+				fclose(fo);
+				fo = NULL;
 			}
 
 			fclose(fi);
@@ -2254,10 +2258,9 @@ void XYZV3::writeByte(FILE *f, char c)
 
 void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 {
-	if(f)
+	if(f && count > 0)
 	{
-		for(int i=0; i<count; i++)
-			fwrite(&byte, 1, 1, f);
+		fwrite(&byte, 1, count, f);
 	}
 }
 
@@ -2356,8 +2359,6 @@ unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 			num = num >> 8 ^ hashTable[(num ^ buf[i]) & 255];
 
 		num = (unsigned int)((unsigned long long)num ^ (long long)-1);
-		if (num < 0)
-			num = num;
 	}
 
 	return num;
@@ -2605,18 +2606,15 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 									writeOffset += len;
 								}
 
-								// clean up zip memory
-								mz_zip_writer_end(&zip);
-
 								*bodyLen = writeOffset;
 								*headerLen = hLen;
 								*headerBuf = hBuf;
 								*bodyBuf = bBuf;
 
-								return true;
+								success = true;
 							}
 						}
-						// clean up zip memory in case of failure
+						// clean up zip memory
 						mz_zip_writer_end(&zip);
 					}
 				}
@@ -2638,21 +2636,25 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					*headerBuf = hBuf;
 					*bodyBuf = bBuf;
 
-					return true;
+					success = true;
 				}
 			}
 
-			delete [] bBuf;
+			if(!success)
+				delete [] bBuf;
 		}
 
 		// make sure we return something
-		*headerBuf = NULL;
-		*headerLen = 0;
-		*bodyBuf = NULL;
-		*bodyLen = 0;
+		if(!success)
+		{
+			*headerBuf = NULL;
+			*headerLen = 0;
+			*bodyBuf = NULL;
+			*bodyLen = 0;
+		}
 	}
 
-	return false;
+	return success;
 }
 
 int XYZV3::getInfoCount()
