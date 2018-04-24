@@ -81,6 +81,7 @@
     <ClCompile Include="..\aes.cpp" />
     <ClCompile Include="..\debug.cpp" />
     <ClCompile Include="..\miniz.c" />
+    <ClCompile Include="..\network.cpp" />
     <ClCompile Include="..\timer.cpp" />
     <ClCompile Include="miniMover.cpp" />
     <ClCompile Include="..\serial.cpp" />
@@ -90,6 +91,7 @@
     <ClInclude Include="..\aes.h" />
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\miniz.h" />
+    <ClInclude Include="..\network.h" />
     <ClInclude Include="..\serial.h" />
     <ClInclude Include="..\timer.h" />
     <ClInclude Include="..\xyzv3.h" />

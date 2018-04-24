@@ -81,6 +81,7 @@
     <ClInclude Include="..\aes.h" />
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\miniz.h" />
+    <ClInclude Include="..\network.h" />
     <ClInclude Include="..\serial.h" />
     <ClInclude Include="..\timer.h" />
     <ClInclude Include="..\xyzv3.h" />
@@ -92,6 +93,7 @@
     <ClCompile Include="..\aes.cpp" />
     <ClCompile Include="..\debug.cpp" />
     <ClCompile Include="..\miniz.c" />
+    <ClCompile Include="..\network.cpp" />
     <ClCompile Include="..\serial.cpp" />
     <ClCompile Include="..\timer.cpp" />
     <ClCompile Include="..\xyzv3.cpp" />
@@ -103,16 +105,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\miniMover.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\.gitignore" />
-    <None Include="..\docs\CODE_OF_CONDUCT.md" />
-    <None Include="..\docs\ISSUE_TEMPLATE.md" />
-    <None Include="..\docs\LICENSE" />
-    <None Include="..\docs\README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\docs\v3 notes.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

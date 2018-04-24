@@ -1,6 +1,8 @@
 #ifndef TIMER_H
 #define TIMER_H
 
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <SDKDDKVer.h>
 #include <Windows.h>
 
 // get time using high resolution clock

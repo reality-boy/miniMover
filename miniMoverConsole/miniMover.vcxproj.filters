@@ -32,6 +32,9 @@
     <ClCompile Include="..\debug.cpp">
       <Filter>Shared Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\network.cpp">
+      <Filter>Shared Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\serial.h">
@@ -50,6 +53,9 @@
       <Filter>Shared Files</Filter>
     </ClInclude>
     <ClInclude Include="..\debug.h">
+      <Filter>Shared Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\network.h">
       <Filter>Shared Files</Filter>
     </ClInclude>
   </ItemGroup>

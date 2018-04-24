@@ -1,6 +1,8 @@
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <SDKDDKVer.h>
 #include <Windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <conio.h> 
 #include <time.h>
 
@@ -25,7 +27,7 @@ void updateStatus(float pct)
 
 void postHelp()
 {
-	printf("miniMover v0.8\n");
+	printf("miniMover v0.9\n");
 	printf("usage: miniMover <args>\n");
 	printf("  -? - print help message\n");
 	printf("  -a+ - enable auto level\n");
@@ -369,11 +371,11 @@ int main(int argc, char **argv)
 					break;
 				case 'a':
 					if(checkCon())
-						xyz.enableAutoLevel(argv[i][2] != '-');
+						xyz.setAutoLevel(argv[i][2] != '-');
 					break;
 				case 'b':
 					if(checkCon())
-						xyz.enableBuzzer(argv[i][2] != '-');
+						xyz.setBuzzer(argv[i][2] != '-');
 					break;
 				case 'c':
 					if(argv[i][2] == 'l') // clean

@@ -1,9 +1,11 @@
 
-#include "targetver.h"
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <SDKDDKVer.h>
 #include <Windows.h>
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
+#include <commdlg.h>
 
 #include "serial.h"
 #include "timer.h"

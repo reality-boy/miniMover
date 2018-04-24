@@ -176,6 +176,15 @@ struct XYZPrinterInfo
 	bool fileIsZip;			// older file format, zips header
 	bool comIsV3;			// old or new serial protocol, v3 is new
 
+	// misc machine info, fill in at some point
+	//bool dualExtruders;
+	//bool hasWifi;
+	//bool hasScanner;
+	//bool supportsLazer;
+	//bool hasHeatedBed;
+	//bool hasLEDs;
+	//bool hasCamera; // can we access this?
+
 	// build volume
 	int length;
 	int width;
@@ -249,9 +258,18 @@ public:
 	bool setZOffset(int offset);
 
 	bool restoreDefaults();
-	bool enableBuzzer(bool enable);
-	bool enableAutoLevel(bool enable);
+	bool setBuzzer(bool enable);
+	bool setAutoLevel(bool enable);
 	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
+	bool setEnergySaving(int level); // level is 0-9 minutes till lights turn off?
+	//****FixMe, what does this do?
+	bool sendDisconnectApp();
+	//****FixMe, what does this do?
+	bool sendEngraverPlaceObject();
+	//****FixMe, what does this do?
+	bool setMachineLife(int time_s);
+	bool setMachineName(const char *name);
+	bool setWifi(const char *ssid, const char *password, int channel);
 
 	bool cancelPrint();
 	bool pausePrint();
@@ -293,6 +311,9 @@ protected:
 	bool sendFileFinalize();
 	// how far allong the upload is
 	float getFileUploadPct();
+
+	bool serialSendMessage(const char *format, ...);
+
 
 	struct sendFileData
 	{

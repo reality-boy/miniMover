@@ -9,18 +9,12 @@ wrapped package.
 class Serial
 {
 public:
-	Serial() 
-		: m_serial(NULL) 
-		, m_port(-1)
-		, m_baudRate(-1)
-		, serBufStart(serBuf)
-		, serBufEnd(serBuf)
-	{}
-	~Serial() { closePort(); }
+	Serial(); 
+	~Serial();
 
 	bool verifyPort(int port);
-	bool openPort(int port, int baudRate);
-	void closePort();
+	bool openSerial(int port, int baudRate);
+	void closeSerial();
 
 	int getPort(); // return current port or -1 if not connected
 	int getBaudRate(); // return current baudRate or -1 if not connected
@@ -29,24 +23,13 @@ public:
 
 	void clearSerial();
 
-	// read a string
 	int readSerial(char *buf, int len);
 	// read to first newline, eating the newline character
 	int readSerialLine(char *buf, int len);
 
-	// write a string
 	int writeSerial(const char *buf);
 	int writeSerialPrintf(const char *fmt, ...);
 	int writeSerialArray(const char *buf, int len);
-
-	// write a byte
-	int writeSerialByteU8(unsigned char num);
-	// write high and low bytes of short
-	int writeSerialByteU16(unsigned short num, bool isLittle);
-	// write 4 bytes of int
-	int writeSerialByteU32(unsigned int num, bool isLittle);
-
-	static const int m_max_serial_buf = 256;
 
 protected:
 	HANDLE m_serial;
@@ -59,8 +42,10 @@ protected:
 	char* serBufStart;
 	char* serBufEnd;
 
-	// static helper functions
+	static const int m_max_serial_buf = 256;
+
 public:
+	// static helper functions
 	// enumerate all ports and return a default port number or -1 if no ports available
 	// Pass in hint string to help guide us to best port
 	static int queryForPorts(const char *hint = NULL);

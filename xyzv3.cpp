@@ -1,3 +1,4 @@
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <SDKDDKVer.h>
 #include <Windows.h>
 #include <time.h>
@@ -40,7 +41,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	{"dv1J00A000",  "daVinciJR10", "3F1J0X", "dv1J00A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0"},
 	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", "dv1JA0A000_V2", false, false,  true, 175, 175, 175, "da Vinci Jr. 1.0A"},
 	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "dv1JW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0w"},
-	{"dv1JS0A000",   "dv1JSOA000", "3F1JSP", "dv1JS0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1"},
+	{"dv1JS0A000",   "dv1JSOA000", "3F1JSP", "dv1JS0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1"}, //daVinciJR10S
 	{"dv1JSOA000", "daVinciJR10S", "3F1JOP", "?????????????",  true, false,  true, 150, 150, 150, "da Vinci Jr. 1.0 3in1 (Open filament)"}, // not sure this is right, file num is suspicioud
 	{"dv2JW0A000", "daVinciJR20W", "3F2JWP", "dv2JW0A000_V2", false, false,  true, 150, 150, 150, "da Vinci Jr. 2.0 Mix"},
 	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", "dv1MX0A000_V2", false, false,  true, 150, 150, 150, "da Vinci miniMaker"},
@@ -61,6 +62,12 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = {
 	//{"dvF210B000"},
 	//{"dvF210A000"},
 	//{"dvF210P000"},
+	//XYZprinting WiFi Box
+	//3FM3WP XYZprinting da Vinci mini w+
+	//3FNAWP XYZprinting da Vinci nano w
+	//3F3PMP XYZprinting da Vinci PartPro 300xT
+	//3FC1SP XYZprinting da Vinci Color AiO
+
 
 XYZV3::XYZV3() 
 {
@@ -83,7 +90,7 @@ bool XYZV3::connect(int port)
 	if(port < 0)
 		port = XYZV3::refreshPortList();
 
-	if(m_serial.openPort(port, 115200))
+	if(m_serial.openSerial(port, 115200))
 	{
 		m_serial.clearSerial();
 		if(updateStatus())
@@ -99,7 +106,7 @@ bool XYZV3::connect(int port)
 void XYZV3::disconnect()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	m_serial.closePort();
+	m_serial.closeSerial();
 	ReleaseMutex(ghMutex);
 }
 
@@ -954,7 +961,7 @@ bool XYZV3::calibrateBedStart()
 
 		m_serial.writeSerial("XYZv3/action=calibratejr:new");
 		if(waitForJsonVal("stat", "start", true) &&
-		   waitForJsonVal("stat", "pressdetector", true, 120))
+			waitForJsonVal("stat", "pressdetector", true, 120))
 		{
 			success = true;
 		}
@@ -1200,164 +1207,102 @@ int XYZV3::getZOffset()
 	return ret;
 }
 
-bool XYZV3::setZOffset(int offset)
+bool XYZV3::serialSendMessage(const char *format, ...)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
-	if(m_serial.isOpen() && offset > 0)
+	if(m_serial.isOpen() && format)
 	{
 		m_serial.clearSerial();
 
-		m_serial.writeSerialPrintf("XYZv3/config=zoffset:set[%d]", offset);
+		const static int BUF_SIZE  = 2048;
+		char msgBuf[BUF_SIZE];
+		va_list arglist;
+
+		va_start(arglist, format);
+		_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+		msgBuf[sizeof(msgBuf)-1] = '\0';
+		va_end(arglist);
+
+		m_serial.writeSerial(msgBuf);
 		if(waitForVal("ok", true))
-		{
 			success = true;
-		}
 	}
 
 	ReleaseMutex(ghMutex);
 	return success;
+}
+
+bool XYZV3::setZOffset(int offset)
+{
+	return serialSendMessage("XYZv3/config=zoffset:set[%d]", offset);
 }
 
 bool XYZV3::restoreDefaults()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=restoredefault:on");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=restoredefault:on");
 }
 
-bool XYZV3::enableBuzzer(bool enable)
+bool XYZV3::setBuzzer(bool enable)
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=buzzer:%s", (enable) ? "on" : "off");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off");
 }
 
-bool XYZV3::enableAutoLevel(bool enable)
+bool XYZV3::setAutoLevel(bool enable)
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=autolevel:%s", (enable) ? "on" : "off");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off");
 }
 
 bool XYZV3::setLanguage(const char *lang)
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
+	return lang && serialSendMessage("XYZv3/config=lang:[%s]", lang);
+}
 
-	if(m_serial.isOpen() && lang)
-	{
-		m_serial.clearSerial();
+// level is 0-9 minutes till lights turn off?
+bool XYZV3::setEnergySaving(int level)
+{
+	return serialSendMessage("XYZv3/config=energy:[%d]", level);
+}
 
-		m_serial.writeSerialPrintf("XYZv3/config=lang:[%s]", lang);
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
+bool XYZV3::sendDisconnectApp()
+{
+	return serialSendMessage("XYZv3/config=disconnectap");
+}
 
-	ReleaseMutex(ghMutex);
-	return success;
+bool XYZV3::sendEngraverPlaceObject()
+{
+	return serialSendMessage("XYZv3/config=engrave:placeobject");
+}
+
+bool XYZV3::setMachineLife(int time_s)
+{
+	return serialSendMessage("XYZv3/config=life:[%d]", time_s);
+}
+
+bool XYZV3::setMachineName(const char *name)
+{
+	return name && serialSendMessage("XYZv3/config=name:[%s]", name);
+}
+
+bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
+{
+	return ssid && password && serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel);
 }
 
 bool XYZV3::cancelPrint()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=print[cancel]");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=print[cancel]");
 }
 
 bool XYZV3::pausePrint()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=print[pause]");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=print[pause]");
 }
 
 bool XYZV3::resumePrint()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=print[resume]");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=print[resume]");
 }
 
 // call when print finished to prep for a new job
@@ -1365,32 +1310,11 @@ bool XYZV3::resumePrint()
 // be sure old job is off print bed!!!
 bool XYZV3::readyPrint()
 {
-	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=print[complete]");
-		if(waitForVal("ok", true))
-		{
-			success = true;
-		}
-	}
-
-	ReleaseMutex(ghMutex);
-	return success;
+	return serialSendMessage("XYZv3/config=print[complete]");
 }
 
 /*
 //****FixMe, implement these
-XYZv3/config=disconnectap
-XYZv3/config=engrave:placeobject
-XYZv3/config=energy:[E] 
-XYZv3/config=life:[XX] 
-XYZv3/config=name:[N] 
-XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
 XYZv3/config=pda:[1591]
 XYZv3/config=pdb:[4387]
 XYZv3/config=pdc:[7264]
@@ -1955,11 +1879,11 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						if(hbuf[0] != ';')
 						{
 							// decrypt header
-						    struct AES_ctx ctx;
+							struct AES_ctx ctx;
 							uint8_t iv[16] = {0}; // 16 zeros
 							char *key = "@xyzprinting.com";
-						    AES_init_ctx_iv(&ctx, key, iv);
-						    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)hbuf, headerLen);
+							AES_init_ctx_iv(&ctx, key, iv);
+							AES_CBC_decrypt_buffer(&ctx, (uint8_t*)hbuf, headerLen);
 						}
 
 						// remove any padding from header
@@ -1997,7 +1921,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 							if(zbuf)
 							{
 								// decrypt body
-							    struct AES_ctx ctx;
+								struct AES_ctx ctx;
 								uint8_t iv[16] = {0}; // 16 zeros
 								char *key = "@xyzprinting.com";
 
@@ -2012,8 +1936,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 									int len = ((bodyLen - readOffset) < blockLen) ? (bodyLen - readOffset) : blockLen;
 
 									// reset decrypter every block
-								    AES_init_ctx_iv(&ctx, key, iv);
-								    AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+readOffset, len);
+									AES_init_ctx_iv(&ctx, key, iv);
+									AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+readOffset, len);
 
 									// remove any padding from body
 									len = pkcs7unpad(bbuf+readOffset, len);
@@ -2067,11 +1991,11 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 							if(bbuf[0] != ';')
 							{
 								// decrypt body
-							    struct AES_ctx ctx;
+								struct AES_ctx ctx;
 								uint8_t iv[16] = {0}; // 16 zeros
 								char *key = "@xyzprinting.com@xyzprinting.com";
-							    AES_init_ctx_iv(&ctx, key, iv);
-							    AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
+								AES_init_ctx_iv(&ctx, key, iv);
+								AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
 							}
 
 							// remove any padding from body
@@ -2307,49 +2231,49 @@ int XYZV3::pkcs7pad(char *buf, int len)
 unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 {
 	static const unsigned int hashTable[] = { 
-        0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615, 3915621685,
-        2657392035, 249268274, 2044508324, 3772115230, 2547177864, 162941995, 
-        2125561021, 3887607047, 2428444049, 498536548, 1789927666, 4089016648, 
-        2227061214, 450548861, 1843258603, 4107580753, 2211677639, 325883990, 
-        1684777152, 4251122042, 2321926636, 335633487, 1661365465, 4195302755, 
-        2366115317, 997073096, 1281953886, 3579855332, 2724688242, 1006888145, 
-        1258607687, 3524101629, 2768942443, 901097722, 1119000684, 3686517206, 
-        2898065728, 853044451, 1172266101, 3705015759, 2882616665, 651767980, 
-        1373503546, 3369554304, 3218104598, 565507253, 1454621731, 3485111705, 
-        3099436303, 671266974, 1594198024, 3322730930, 2970347812, 795835527, 
-        1483230225, 3244367275, 3060149565, 1994146192, 31158534, 2563907772, 
-        4023717930, 1907459465, 112637215, 2680153253, 3904427059, 2013776290, 
-        251722036, 2517215374, 3775830040, 2137656763, 141376813, 2439277719, 
-        3865271297, 1802195444, 476864866, 2238001368, 4066508878, 1812370925, 
-        453092731, 2181625025, 4111451223, 1706088902, 314042704, 2344532202, 
-        4240017532, 1658658271, 366619977, 2362670323, 4224994405, 1303535960, 
-        984961486, 2747007092, 3569037538, 1256170817, 1037604311, 2765210733, 
-        3554079995, 1131014506, 879679996, 2909243462, 3663771856, 1141124467, 
-        855842277, 2852801631, 3708648649, 1342533948, 654459306, 3188396048, 
-        3373015174, 1466479909, 544179635, 3110523913, 3462522015, 1591671054, 
-        702138776, 2966460450, 3352799412, 1504918807, 783551873, 3082640443, 
-        3233442989, 3988292384, 2596254646, 62317068, 1957810842, 3939845945, 
-        2647816111, 81470997, 1943803523, 3814918930, 2489596804, 225274430, 
-        2053790376, 3826175755, 2466906013, 167816743, 2097651377, 4027552580, 
-        2265490386, 503444072, 1762050814, 4150417245, 2154129355, 426522225, 
-        1852507879, 4275313526, 2312317920, 282753626, 1742555852, 4189708143, 
-        2394877945, 397917763, 1622183637, 3604390888, 2714866558, 953729732, 
-        1340076626, 3518719985, 2797360999, 1068828381, 1219638859, 3624741850, 
-        2936675148, 906185462, 1090812512, 3747672003, 2825379669, 829329135, 
-        1181335161, 3412177804, 3160834842, 628085408, 1382605366, 3423369109, 
-        3138078467, 570562233, 1426400815, 3317316542, 2998733608, 733239954, 
-        1555261956, 3268935591, 3050360625, 752459403, 1541320221, 2607071920, 
-        3965973030, 1969922972, 40735498, 2617837225, 3943577151, 1913087877, 
-        83908371, 2512341634, 3803740692, 2075208622, 213261112, 2463272603, 
-        3855990285, 2094854071, 198958881, 2262029012, 4057260610, 1759359992, 
-        534414190, 2176718541, 4139329115, 1873836001, 414664567, 2282248934, 
-        4279200368, 1711684554, 285281116, 2405801727, 4167216745, 1634467795, 
-        376229701, 2685067896, 3608007406, 1308918612, 956543938, 2808555105, 
-        3495958263, 1231636301, 1047427035, 2932959818, 3654703836, 1088359270, 
-        936918000, 2847714899, 3736837829, 1202900863, 817233897, 3183342108, 
-        3401237130, 1404277552, 615818150, 3134207493, 3453421203, 1423857449, 
-        601450431, 3009837614, 3294710456, 1567103746, 711928724, 3020668471, 
-        3272380065, 1510334235, 755167117 };
+		0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615, 3915621685,
+		2657392035, 249268274, 2044508324, 3772115230, 2547177864, 162941995, 
+		2125561021, 3887607047, 2428444049, 498536548, 1789927666, 4089016648, 
+		2227061214, 450548861, 1843258603, 4107580753, 2211677639, 325883990, 
+		1684777152, 4251122042, 2321926636, 335633487, 1661365465, 4195302755, 
+		2366115317, 997073096, 1281953886, 3579855332, 2724688242, 1006888145, 
+		1258607687, 3524101629, 2768942443, 901097722, 1119000684, 3686517206, 
+		2898065728, 853044451, 1172266101, 3705015759, 2882616665, 651767980, 
+		1373503546, 3369554304, 3218104598, 565507253, 1454621731, 3485111705, 
+		3099436303, 671266974, 1594198024, 3322730930, 2970347812, 795835527, 
+		1483230225, 3244367275, 3060149565, 1994146192, 31158534, 2563907772, 
+		4023717930, 1907459465, 112637215, 2680153253, 3904427059, 2013776290, 
+		251722036, 2517215374, 3775830040, 2137656763, 141376813, 2439277719, 
+		3865271297, 1802195444, 476864866, 2238001368, 4066508878, 1812370925, 
+		453092731, 2181625025, 4111451223, 1706088902, 314042704, 2344532202, 
+		4240017532, 1658658271, 366619977, 2362670323, 4224994405, 1303535960, 
+		984961486, 2747007092, 3569037538, 1256170817, 1037604311, 2765210733, 
+		3554079995, 1131014506, 879679996, 2909243462, 3663771856, 1141124467, 
+		855842277, 2852801631, 3708648649, 1342533948, 654459306, 3188396048, 
+		3373015174, 1466479909, 544179635, 3110523913, 3462522015, 1591671054, 
+		702138776, 2966460450, 3352799412, 1504918807, 783551873, 3082640443, 
+		3233442989, 3988292384, 2596254646, 62317068, 1957810842, 3939845945, 
+		2647816111, 81470997, 1943803523, 3814918930, 2489596804, 225274430, 
+		2053790376, 3826175755, 2466906013, 167816743, 2097651377, 4027552580, 
+		2265490386, 503444072, 1762050814, 4150417245, 2154129355, 426522225, 
+		1852507879, 4275313526, 2312317920, 282753626, 1742555852, 4189708143, 
+		2394877945, 397917763, 1622183637, 3604390888, 2714866558, 953729732, 
+		1340076626, 3518719985, 2797360999, 1068828381, 1219638859, 3624741850, 
+		2936675148, 906185462, 1090812512, 3747672003, 2825379669, 829329135, 
+		1181335161, 3412177804, 3160834842, 628085408, 1382605366, 3423369109, 
+		3138078467, 570562233, 1426400815, 3317316542, 2998733608, 733239954, 
+		1555261956, 3268935591, 3050360625, 752459403, 1541320221, 2607071920, 
+		3965973030, 1969922972, 40735498, 2617837225, 3943577151, 1913087877, 
+		83908371, 2512341634, 3803740692, 2075208622, 213261112, 2463272603, 
+		3855990285, 2094854071, 198958881, 2262029012, 4057260610, 1759359992, 
+		534414190, 2176718541, 4139329115, 1873836001, 414664567, 2282248934, 
+		4279200368, 1711684554, 285281116, 2405801727, 4167216745, 1634467795, 
+		376229701, 2685067896, 3608007406, 1308918612, 956543938, 2808555105, 
+		3495958263, 1231636301, 1047427035, 2932959818, 3654703836, 1088359270, 
+		936918000, 2847714899, 3736837829, 1202900863, 817233897, 3183342108, 
+		3401237130, 1404277552, 615818150, 3134207493, 3453421203, 1423857449, 
+		601450431, 3009837614, 3294710456, 1567103746, 711928724, 3020668471, 
+		3272380065, 1510334235, 755167117 };
 
 	unsigned int num = -1;
 
@@ -2430,7 +2354,9 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 	{
 		// parse header once to get info on print time
 		int printTime = 1;
-		float totalFilamen = 1.0f;
+		int totalFacets = 50;
+		int totalLayers = 10;
+		float totalFilament = 1.0f;
 
 		char *s = NULL;
 		const char *tcode = gcode;
@@ -2444,6 +2370,9 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				// ; filename = temp.3w
 				// ; print_time = {estimated time in seconds}
 				// ; machine = dv1MX0A000 // change to match current printer
+				// ; facets = {totalFacets}
+				// ; total_layers = {totalLayers}
+				// ; version = 18020109
 				// ; total_filament = {estimated filament used in mm}
 
 				// print time
@@ -2452,13 +2381,19 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				else if(NULL != (s = strstr(lineBuf, "TIME:")))
 					printTime = atoi(s + strlen("TIME:"));
 
+				// total facets
+				//****FixMe, fill in totalFacets
+
+				// total layers
+				//****FixMe, fill in totalLayers
+
 				// filament used
 				else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
-					totalFilamen = (float)atof(s + strlen("total_filament = "));
+					totalFilament = (float)atof(s + strlen("total_filament = "));
 				else if(NULL != (s = strstr(lineBuf, "filament_used = ")))
-					totalFilamen = (float)atof(s + strlen("filament_used = "));
+					totalFilament = (float)atof(s + strlen("filament_used = "));
 				else if(NULL != (s = strstr(lineBuf, "Filament used: ")))
-					totalFilamen = 1000.0f * (float)atof(s + strlen("Filament used: ")); // m to mm
+					totalFilament = 1000.0f * (float)atof(s + strlen("Filament used: ")); // m to mm
 			}
 			else
 				break;
@@ -2477,7 +2412,10 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 			bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
 			bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
 			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", fileNum);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilamen);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; facets = %d\n", totalFacets);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; total_layers = %d\n", totalLayers);
+			bbufOffset += sprintf(bBuf + bbufOffset, "; version = 18020109\n");
+			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilament);
 
 			bool isHeader = true;
 			bool wasHeader = true;
@@ -2544,12 +2482,12 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				// it appears that v5 files don't always encrypt
 				if(!fileIsV5)
 				{
-				    struct AES_ctx ctx;
+					struct AES_ctx ctx;
 					uint8_t iv[16] = {0}; // 16 zeros
 
 					char *hkey = "@xyzprinting.com";
-				    AES_init_ctx_iv(&ctx, hkey, iv);
-				    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)hBuf, hLen);
+					AES_init_ctx_iv(&ctx, hkey, iv);
+					AES_CBC_encrypt_buffer(&ctx, (uint8_t*)hBuf, hLen);
 				}
 
 				//============
@@ -2580,7 +2518,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 								}
 
 								// encrypt body
-							    struct AES_ctx ctx;
+								struct AES_ctx ctx;
 								uint8_t iv[16] = {0}; // 16 zeros
 								char *key = "@xyzprinting.com";
 
@@ -2600,8 +2538,8 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 									len = pkcs7pad(bBuf+writeOffset, len);
 
 									// reset decrypter every block
-								    AES_init_ctx_iv(&ctx, key, iv);
-								    AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf+writeOffset, len);
+									AES_init_ctx_iv(&ctx, key, iv);
+									AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf+writeOffset, len);
 
 									writeOffset += len;
 								}
@@ -2623,11 +2561,11 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					int bLen = pkcs7pad(bBuf, bbufOffset);
 
 					// encrypt body using ECB mode
-				    struct AES_ctx ctx;
+					struct AES_ctx ctx;
 					uint8_t iv[16] = {0}; // 16 zeros
 					char *bkey = "@xyzprinting.com@xyzprinting.com";
-				    AES_init_ctx_iv(&ctx, bkey, iv);
-				    AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
+					AES_init_ctx_iv(&ctx, bkey, iv);
+					AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
 
 					// bBuf already padded out, no need to copy it over
 					// just mark the padding
@@ -2690,4 +2628,3 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 
 	return NULL;
 }
-

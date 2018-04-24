@@ -1,8 +1,12 @@
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <SDKDDKVer.h>
 #include <Windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <Setupapi.h>
 #include <assert.h>
+#include <winioctl.h>
 
 #include "serial.h"
 #include "debug.h"
@@ -18,6 +22,20 @@ int Serial::defaultPortID = -1;
 
 int Serial::portNumbers[maxPortCount] = {-1};
 char Serial::portNames[maxPortCount][maxPortName] = {""};
+
+Serial::Serial() 
+	: m_serial(NULL) 
+	, m_port(-1)
+	, m_baudRate(-1)
+	, serBufStart(serBuf)
+	, serBufEnd(serBuf)
+{
+}
+
+Serial::~Serial() 
+{ 
+	closeSerial(); 
+}
 
 bool Serial::verifyPort(int port)
 {
@@ -53,7 +71,7 @@ bool setupConfig(const char *portStr, HANDLE h)
 }
 */
 
-bool Serial::openPort(int port, int baudRate)
+bool Serial::openSerial(int port, int baudRate)
 {
 	bool blocking = false; // set to true to block till data arives
 	int timeout_ms = 50;
@@ -64,7 +82,7 @@ bool Serial::openPort(int port, int baudRate)
 		return true;
 
 	// close out any previous connection
-	closePort();
+	closeSerial();
 	
 	// auto detect port
 	if(port < 0)
@@ -123,12 +141,12 @@ bool Serial::openPort(int port, int baudRate)
 			}
 		}
 
-		closePort();
+		closeSerial();
 	}
 	return false;
 }
 
-void Serial::closePort()
+void Serial::closeSerial()
 {
 	if(m_serial)
 		CloseHandle(m_serial);
@@ -244,22 +262,11 @@ int Serial::readSerialLine(char *lineBuf, int len)
 
 int Serial::writeSerial(const char *buf)
 {
-	DWORD bytesWritten = 0;
 
-	if(m_serial && buf)
-	{
-		int len = strlen(buf);
+	if(buf)
+		return writeSerialArray(buf, strlen(buf));
 
-		if(WriteFile(m_serial, buf, len, &bytesWritten, NULL))
-		{
-			// success
-			debugPrint(DBG_LOG, "sent: %s", buf);
-		}
-		else
-			debugPrint(DBG_WARN, "wirteSerial failed to write");
-	}
-
-	return bytesWritten;
+	return 0;
 }
 
 int Serial::writeSerialPrintf(const char *fmt, ...)
@@ -269,14 +276,14 @@ int Serial::writeSerialPrintf(const char *fmt, ...)
 		static const int tstrLen = 4096;
 		char tstr[tstrLen];
 
-	    va_list arglist;
-	    va_start(arglist, fmt);
+		va_list arglist;
+		va_start(arglist, fmt);
 
-	    //customized operations...
-	    vsnprintf_s(tstr, tstrLen, fmt, arglist);
+		//customized operations...
+		vsnprintf_s(tstr, tstrLen, fmt, arglist);
 		tstr[tstrLen-1] = '\0';
 
-	    va_end(arglist);
+		va_end(arglist);
 
 		return writeSerial(tstr);
 	}
@@ -301,55 +308,6 @@ int Serial::writeSerialArray(const char *buf, int len)
 			debugPrint(DBG_ERR, "failed to write bytes");
 	}
 
-	return bytesWritten;
-}
-
-// write a byte
-int Serial::writeSerialByteU8(unsigned char num)
-{
-	DWORD bytesWritten = 0;
-	if(m_serial)
-	{
-		if(WriteFile(m_serial, &num, sizeof(num), &bytesWritten, NULL))
-		{
-			debugPrint(DBG_LOG, "write byte: %d", num);
-		}
-		else
-			debugPrint(DBG_ERR, "failed to write byte");
-	}
-
-	return bytesWritten;
-}
-
-// write high and low bytes of short
-int Serial::writeSerialByteU16(unsigned short num, bool isLittle)
-{
-	DWORD bytesWritten = 0;
-	if(isLittle) {
-		bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
-	} else {
-		bytesWritten += writeSerialByteU8((num >> 8) & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 0) & 0xFF);
-	}
-	return bytesWritten;
-}
-
-// write 4 bytes of int
-int Serial::writeSerialByteU32(unsigned int num, bool isLittle)
-{
-	DWORD bytesWritten = 0;
-	if(isLittle) {
-		bytesWritten += writeSerialByteU8((num >> 0)  & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 8)  & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 16) & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 24) & 0xFF);
-	} else {
-		bytesWritten += writeSerialByteU8((num >> 24) & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 16) & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 8)  & 0xFF);
-		bytesWritten += writeSerialByteU8((num >> 0)  & 0xFF);
-	}
 	return bytesWritten;
 }
 

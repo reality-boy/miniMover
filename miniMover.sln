@@ -5,6 +5,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMover", "miniMoverConso
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMoverUI", "miniMoverUI\miniMoverUI.vcxproj", "{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{36F1FD98-C9EC-44B2-B0C7-C5DE03F375CD}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		docs\CODE_OF_CONDUCT.md = docs\CODE_OF_CONDUCT.md
+		docs\error codes.txt = docs\error codes.txt
+		docs\firmware.txt = docs\firmware.txt
+		docs\ISSUE_TEMPLATE.md = docs\ISSUE_TEMPLATE.md
+		docs\LICENSE = docs\LICENSE
+		docs\README.md = docs\README.md
+		docs\socket.txt = docs\socket.txt
+		docs\v3 notes.txt = docs\v3 notes.txt
+		docs\v3 scanner notes.txt = docs\v3 scanner notes.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
