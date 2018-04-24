@@ -1,0 +1,75 @@
+XYZv3/config=rotate:-<abs(angle),<time>
+XYZv3/config=rotate:+<abs(angle),<time>
+
+XYZv3/PBRead=0
+XYZv3/PBRead=1
+
+XYZv3/config=laser:+2  // 0 left laser on
+XYZ_@3D:50
+
+XYZv3/config=laser:-2  // 1 left laser off
+XYZ_@3D:51
+
+XYZv3/config=laser:+1  // 2 right laser on
+XYZ_@3D:52
+
+XYZv3/config=laser:-1  // 3 right laser off
+XYZ_@3D:53
+
+XYZv3/config=led:+0    // 4 turntable led on
+XYZ_@3D:59
+
+XYZv3/config=led:-0    // 5 turntable led off
+XYZ_@3D:60
+
+XYZv3/config=led:+2    // 6 left led on
+XYZ_@3D:63
+
+XYZv3/config=led:-2    // 7 left led off
+XYZ_@3D:64
+
+XYZv3/config=led:+1    // 8 right led on
+XYZ_@3D:65
+
+XYZv3/config=led:-1    // 9 right led off
+XYZ_@3D:66
+
+XYZv3/config=scan:home // 10 calib prepair
+XYZ_@3D:54
+
+XYZv3/config=scan:ffs  // 11 calib ???
+XYZ_@3D:55
+
+                       // 12 turntable start?
+XYZ_@3D:56
+
+XYZv3/config=scan:cw   // 13 turntable rotate on (clockwise)
+XYZ_@3D:57
+
+XYZv3/config=scan:ccw  // 14 turntable rotate on (counter clockwise)
+XYZ_@3D:58
+
+XYZv3/config=scan:stop // 15 turntable rotate off
+XYZ_@3D:62
+
+XYZv3/config=scan:lock // 16 turntable rotate lock
+XYZ_@3D:61_LEDLK
+
+XYZv3/config=scan:unlock  // 17 turntable rotate unlock
+XYZ_@3D:61_LEDUK
+
+XYZv3/config=scan:prepare // 18 home print bed?
+XYZ_@3D:61_G28
+
+
+XYZv3/query=ivps       // 19 machine status?
+XYZ_@3D:0
+
+XYZv3/query=e          // 20 machine status?
+XYZ_@3D:8
+
+XYZv3/query=j          // 21 machine status?
+
+XYZ_@3D:61_get2_       // 24
+XYZ_@3D:61_get1_       // 25
+XYZ_@3D:61_check_sd    // 26

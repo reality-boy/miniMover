@@ -8,6 +8,14 @@ Computer\HKEY_CURRENT_USER\Software\XYZmaker
 Computer\HKEY_CURRENT_USER\Software\xyzprinting
 Computer\HKEY_CURRENT_USER\Software\XYZware
 
+Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\DefaultIP
+Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\DefaultPrinter
+
+// track:
+// last printer serial number  // xyzsetting\LastPrinterSN
+// print extruder life  // xyzsetting\EXTRUDER_LIFE
+// last serial port  // xyzsetting\DefaultPort
+
 //*********************
 // commands
 
@@ -1158,6 +1166,10 @@ XYZ_@3D:<nl>
 XYZ_@3D:-1<nl>		// disconnect
 
 XYZ_@3D:0<nl>		// connect
+ PRN:???			// s, machine capabilities?
+ MCHH_ID:3DP01PUS5TH41D0145<nl>	// i, machine serial number
+ MDU:daVinciF10<nl>		// p, printer model number
+ FW_V:1.1.G<nl>			// v, firmware version
 
 XYZ_@3D:1<nl>		//  startOnlinePrint
 
@@ -1183,13 +1195,13 @@ XYZ_@3D:8<nl>		// machine status or printer status
  EST_TIME:0<nl>
  ET0:22<nl>
  BT:28<nl>
- MCH_STATE:26<nl>
+ MCH_STATE:26<nl>	// e, error status
 
 XYZ_@3D:9<nl>		// send build sample?
 
-XYZ_@3D:21<nl>		// set language?
-
 XYZ_@3D:20<nl>
+
+XYZ_@3D:21<nl>		// set language?
 
 XYZ_@3D:90<nl>		// latestBlockSent
 
