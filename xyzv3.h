@@ -144,23 +144,23 @@ struct XYZPrinterState
 
 	char VString[64]; // unknown V:version number
 
-	char WSSID[64];
-	char WBSSID[64];
-	char WChannel[64];
-	char WRssiValue[64];
-	char WPHY[64];
-	char WSecurity[64];
+	char WSSID[64];				// network name
+	char WBSSID[64];			// mac address of router
+	char WChannel[64];			// wifi channel 1-14
+	char WRssiValue[64];		// signal strength 0-100?
+	char WPHY[64];				// network type
+	char WSecurity[64];			// network encryption mode
 
 	int XNozzleID;
 	float XNozzleDiameter_mm;
 	char XNozzle1SerialNumber[64]; //32
 	char XNozzle2SerialNumber[64]; //32
 
-	char N4NetIP[64]; //16
-	char N4NetSSID[64];
-	char N4NetChan[64];
-	char N4NetMAC[64];
-	char N4NetRssiValue[64];
+	char N4NetIP[64];			// ip address on machine
+	char N4NetSSID[64];			// network name
+	char N4NetChan[64];			// wifi channel 1-14
+	char N4NetMAC[64];			// mac address of machine, basically a unique id
+	char N4NetRssiValue[64];	// signal strength 0-100 ?
 };
 
 // info on each printer type
@@ -191,6 +191,23 @@ struct XYZPrinterInfo
 	int height;
 
 	const char *screenName;
+};
+
+struct XYZPrinterLangSt
+{
+	const char *abrv;
+	const char *desc;
+}; 
+
+const int XYZPrintingLangCount = 6;
+const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
+{
+	{ "en", "English" },
+	{ "fr", "French" },
+	{ "it", "Italian" },
+	{ "de", "German" },
+	{ "es", "Spanish" },
+	{ "jp", "Japanese" },
 };
 
 typedef void (*XYZCallback)(float pct);

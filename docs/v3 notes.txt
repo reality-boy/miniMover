@@ -628,16 +628,15 @@ XYZv3/query=U
 XYZv3/query=V
 	V:5.1.5
 
-// Ask wifi information, only with mini w?
+// Ask wifi information, how the network is configured
 //
 // W:{"ssid":"a","bssid":"b","channel":"c","rssiValue":"d","PHY":"e","security":"f"}
-// all are optional
-//  a is ssid
-//  b is bssid
-//  c is channel
-//  d is rssiValue
-//  e is PHY
-//  f is security
+//  a is ssid      // service set id, wireless network name
+//  b is bssid     // basic service set id, mac address of router
+//  c is channel   // 1-14
+//  d is rssiValue // recieved signal strength indicator, 0-20 --, 21-30 poor, 31-40 moderate, 41-?? standard
+//  e is PHY       // physical layer, network subtype? (802.11a, b, g, n, ac, etc)
+//  f is security  // wep, wpa, etc?
 //
 XYZv3/query=W
 	W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
@@ -672,8 +671,15 @@ XYZv3/query=1
 XYZv3/query=2
 XYZv3/query=3
 
-// Query IP only machines with network
-//  port is always 9100
+// Query IP, only machines with network, actual network connection
+// port is always 9100
+//
+// 4:{"wlan":{"ip":"a","ssid":"b","channel":"c","MAC":"d","rssiValue":"e"}}
+//  a is ip         // network ip address of printer
+//  b is ssid       // service set identifyer, wireless network name
+//  c is channel    // 1-14
+//  d is MAC        // mac address of printer
+//  e is rssiValue  // recieved signal strength indicator, 0-20 --, 21-30 poor, 31-40 moderate, 41-?? standard
 XYZv3/query=4
 	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd","rssiValue":"num?"}}
 

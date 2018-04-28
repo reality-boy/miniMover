@@ -1259,7 +1259,8 @@ bool XYZV3::setLanguage(const char *lang)
 	return lang && serialSendMessage("XYZv3/config=lang:[%s]", lang);
 }
 
-// level is 0-9 minutes till lights turn off?
+// level is 0-9 minutes till lights turn off
+// XYZWare sets this to 0,3,6
 bool XYZV3::setEnergySaving(int level)
 {
 	return serialSendMessage("XYZv3/config=energy:[%d]", level);

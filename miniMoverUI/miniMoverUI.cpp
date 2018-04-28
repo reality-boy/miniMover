@@ -46,6 +46,7 @@ XYZV3 xyz;
 int g_timerInterval = 500;
 
 bool g_threadRunning = false;
+bool g_wifiOptionsEdited = false;
 
 const int g_maxPorts = 24;
 int g_comIDtoPort[g_maxPorts] = {-1};
@@ -261,8 +262,34 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 
 void MainDlgSetStatus(HWND hDlg, const char *msg)
 {
+	debugPrint(DBG_LOG, "status: %s", msg);
 	SendDlgItemMessage(hDlg, IDC_STATIC_STATUS, WM_SETTEXT, 0, (LPARAM)msg);
 }
+
+void setZOffset(HWND hDlg)
+{
+	SetCursor(waitCursor);
+	MainDlgSetStatus(hDlg, "set z-offset");
+	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
+		MainDlgSetStatus(hDlg, "set z-offset complete");
+	else
+		MainDlgSetStatus(hDlg, "set z-offset failed");
+	SetCursor(defaultCursor);
+}
+
+void setMachineName(HWND hDlg)
+{
+	SetCursor(waitCursor);
+	MainDlgSetStatus(hDlg, "set machine name");
+	char tstr[64];
+	GetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, tstr, sizeof(tstr));
+	if(xyz.setMachineName(tstr))
+		MainDlgSetStatus(hDlg, "set machine name complete");
+	else
+		MainDlgSetStatus(hDlg, "set machine name failed");
+	SetCursor(defaultCursor);
+}
+
 
 void MainDlgUpdateComDropdown(HWND hDlg)
 {
@@ -317,8 +344,43 @@ void MainDlgUpdate(HWND hDlg)
 
 			SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
 
+			//****FixMe, save these off in the registry so we can
+			// detect the printer when the usb is disconnected
+			// st->N4NetIP
+			// st->N4NetSSID
+			// st->nMachineName
+
+			// I believe the W functions represent wifi network as configured on the machine
+			// and 4 functions represent the network as connected
+			if(!g_wifiOptionsEdited)
+			{
+				const char *SSID = (st->WSSID[0]) ? st->WSSID : st->N4NetSSID;
+				const char *chan = (st->WChannel[0]) ? st->WChannel : st->N4NetChan;
+				SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
+				SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_CHAN, chan);
+				if(*SSID || *chan)
+					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "******");
+				else
+					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "");
+			}
+
+			//****FixMe, what one matches this?
+			//SetDlgItemTextA(hDlg, IDC_COMBO_ENERGY_SAVING, st->???);
+
+			SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
+
 			int pct = max(g_printPct, st->dPrintPercentComplete);
 			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
+
+			int id = 0;
+			for(id=0; id<XYZPrintingLangCount; id++)
+				if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
+					break;
+			// default to en if not found
+			if(id == XYZPrintingLangCount)
+				id = 0;
+
+			SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
 		}
 	}
 	else
@@ -338,17 +400,6 @@ void MainDlgConnect(HWND hDlg)
 		MainDlgSetStatus(hDlg, "not connected");
 }
 
-void setZOffset(HWND hDlg)
-{
-	SetCursor(waitCursor);
-	MainDlgSetStatus(hDlg, "set z-offset");
-	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
-		MainDlgSetStatus(hDlg, "set z-offset complete");
-	else
-		MainDlgSetStatus(hDlg, "set z-offset failed");
-	SetCursor(defaultCursor);
-}
-
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	int t;
@@ -361,6 +412,15 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		MainDlgUpdateComDropdown(hDlg);
 		MainDlgUpdateModelDropdown(hDlg);
 		MainDlgConnect(hDlg);
+
+		for(int i=0; i<XYZPrintingLangCount; i++)
+			SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_ADDSTRING, 0, (LPARAM)XYZPrintingLang[i].desc);
+		SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, 0, 0); // default to something
+
+		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"off");
+		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"3 min");
+		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"6 min");
+		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_SETCURSEL, 1, 0); // default to something
 
 		hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
 
@@ -391,8 +451,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_SETCURSOR:
 		if(g_threadRunning)
 			SetCursor(waitCursor);
-		else
-			SetCursor(defaultCursor);
+//		else
+//			SetCursor(defaultCursor);
 		break;
 
 	case XYZ_THREAD_DONE:
@@ -413,7 +473,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			if((HWND)lParam ==  GetDlgItem(hDlg, IDC_SPIN_ZOFF)) 
 				setZOffset(hDlg);
-			//if((HWND)lParam ==  GetDlgItem(hDlg, IDC_SPIN_WIFI_CHAN)) 
 		}
 		break;
 
@@ -427,17 +486,12 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDOK:
 			if(GetFocus() == GetDlgItem(hDlg, IDC_EDIT_ZOFF))
 				setZOffset(hDlg);
+			else if(GetFocus() == GetDlgItem(hDlg, IDC_EDIT_MACHINE_NAME))
+				setMachineName(hDlg);
 			break;
 
 		case IDCANCEL:
 			EndDialog(hDlg, 0);
-			break;
-
-		case IDC_COMBO_PORT:
-			if(HIWORD(wParam) == CBN_SELCHANGE)
-				MainDlgConnect(hDlg);
-			else if(HIWORD(wParam) == CBN_DROPDOWN)
-				MainDlgUpdateComDropdown(hDlg);
 			break;
 
 		case IDC_BUTTON_PRINT:
@@ -559,11 +613,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			SetCursor(defaultCursor);
 			break;
 
-		case IDC_EDIT_ZOFF:
-			if(HIWORD(wParam) == EN_KILLFOCUS)
-				setZOffset(hDlg);
-			break;
-
 		case IDC_BUTTON_HOME: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "homing printer");
@@ -636,29 +685,133 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_WIFI_AUTO:
 			{
+				SetCursor(waitCursor);
+				MainDlgSetStatus(hDlg, "auto detecting wifi");
+
 				char ssid[64];
 				char password[64];
 				int chan;
+
 				if(autoDetectWifi(ssid, password, chan))
 				{
 					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, ssid);
 					SetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, chan, false);
 
 					if('\0' != password[0])
+					{
 						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, password);
+						MainDlgSetStatus(hDlg, "auto detect wifi complete");
+					}
 					else
 					{
 						MainDlgSetStatus(hDlg, "failed to detect wifi password");
 						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "");
 					}
+
+					g_wifiOptionsEdited = true;
 				}
 				else
 					MainDlgSetStatus(hDlg, "failed to detect wifi network");
+
+				SetCursor(defaultCursor);
 			}
 			break;
 
+		case IDC_EDIT_WIFI_SSID:
+		case IDC_EDIT_WIFI_PASSWD:
+		case IDC_EDIT_WIFI_CHAN:
+		case IDC_SPIN_WIFI_CHAN:
+			// don't override user edits with status updates from printer
+			g_wifiOptionsEdited = true;
+			break;
+
 		case IDC_BUTTON_WIFI_SET:
-			//****FixMe, fill this in
+			{
+				SetCursor(waitCursor);
+				MainDlgSetStatus(hDlg, "set wifi parameters");
+
+				char ssid[64] = "";
+				char password[64] = "";
+				int chan = -1;
+
+				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, ssid, sizeof(ssid));
+				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, password, sizeof(password));
+				chan = GetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, NULL, false);
+
+				bool noPass = (0 == strcmp(password, "******"));
+				if(!*ssid || !*password || noPass || chan < 0)
+				{
+					MessageBox(NULL, "Invalid wifi settings.", "miniMover", MB_OK);
+					MainDlgSetStatus(hDlg, "set wifi parameters failed");
+				}
+				else if(xyz.setWifi(ssid, password, chan))
+				{
+					MainDlgSetStatus(hDlg, "set wifi parameters complete");
+					g_wifiOptionsEdited = false;
+				}
+				else
+					MainDlgSetStatus(hDlg, "set wifi parameters failed");
+
+				SetCursor(defaultCursor);
+			}
+			break;
+
+		case IDC_BUTTON_RESET:
+			SetCursor(waitCursor);
+			MainDlgSetStatus(hDlg, "reset options");
+			if(xyz.restoreDefaults())
+			{
+				g_wifiOptionsEdited = false;
+				MainDlgSetStatus(hDlg, "reset options complete");
+			}
+			else
+				MainDlgSetStatus(hDlg, "reset options failed");
+			SetCursor(defaultCursor);
+			break;
+
+		case IDC_EDIT_ZOFF:
+			if(HIWORD(wParam) == EN_KILLFOCUS)
+				setZOffset(hDlg);
+			break;
+
+		case IDC_EDIT_MACHINE_NAME:
+			if(HIWORD(wParam) == EN_KILLFOCUS)
+				setMachineName(hDlg);
+			break;
+
+		case IDC_COMBO_ENERGY_SAVING:
+			if(HIWORD(wParam) == CBN_SELCHANGE)
+			{
+				SetCursor(waitCursor);
+				MainDlgSetStatus(hDlg, "set energy saving");
+				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
+				if(xyz.setEnergySaving(id * 3))
+					MainDlgSetStatus(hDlg, "set energy saving complete");
+				else
+					MainDlgSetStatus(hDlg, "set energy saving failed");
+				SetCursor(defaultCursor);
+			}
+			break;
+
+		case IDC_COMBO_LANGUAGE:
+			if(HIWORD(wParam) == CBN_SELCHANGE)
+			{
+				SetCursor(waitCursor);
+				MainDlgSetStatus(hDlg, "set language");
+				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
+				if(xyz.setLanguage(XYZPrintingLang[id].abrv))
+					MainDlgSetStatus(hDlg, "set language complete");
+				else
+					MainDlgSetStatus(hDlg, "set language failed");
+				SetCursor(defaultCursor);
+			}
+			break;
+
+		case IDC_COMBO_PORT:
+			if(HIWORD(wParam) == CBN_SELCHANGE)
+				MainDlgConnect(hDlg);
+			else if(HIWORD(wParam) == CBN_DROPDOWN)
+				MainDlgUpdateComDropdown(hDlg);
 			break;
 
 		case IDC_CHECK_AUTO:
@@ -680,9 +833,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				xyz.setBuzzer(false);
 			SetCursor(defaultCursor);
 			break;
-
-		//xyz.restoreDefaults();
-		//xyz.setLanguage(bgStr1);
 
 		default:
 			return FALSE; // Message not handled 

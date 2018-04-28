@@ -16,9 +16,9 @@ enum debugLevel
 {
 	DBG_ERR,
 	DBG_WARN,
-	DBG_REPORT,		
-	DBG_LOG,
-	DBG_VERBOSE,
+	DBG_REPORT,		// by default here and above logged to console
+	DBG_LOG,		// by default here and above logged to disk
+	DBG_VERBOSE,	// by default not logged
 };
 
 void debugInit();
