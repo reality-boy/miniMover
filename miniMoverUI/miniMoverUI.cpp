@@ -349,6 +349,14 @@ void MainDlgUpdate(HWND hDlg)
 			// st->N4NetIP
 			// st->N4NetSSID
 			// st->nMachineName
+			// 
+			// or check out
+			// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting
+			//   DefaultIP     192.168.0.20
+			//   DefaultPort   COM3
+			//   DefaultPrinter  XYZprinting da Vinci miniMaker
+			//   LastPrinterSN 3FM1XPUS5CA68P0591
+			// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\3FM1XPUS5CA68P0591
 
 			// I believe the W functions represent wifi network as configured on the machine
 			// and 4 functions represent the network as connected

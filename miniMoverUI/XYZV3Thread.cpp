@@ -8,6 +8,7 @@
 #include <commdlg.h>
 
 #include "serial.h"
+#include "network.h"
 #include "timer.h"
 #include "xyzv3.h"
 #include "XYZV3Thread.h"

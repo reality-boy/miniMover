@@ -15,6 +15,10 @@ public:
 	bool openSocket(const char *ip, int port);
 	bool closeSocket();
 
+	bool isOpen() { return isInit && soc != INVALID_SOCKET; }
+
+	void clearSocket() {} // is this ever needed?
+
 	int readSocket(char *buf, const int len);
 
 	bool writeSocket(const char *buf);

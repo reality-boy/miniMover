@@ -17,6 +17,7 @@
 #include "timer.h"
 #include "aes.h"
 #include "serial.h"
+#include "network.h"
 #include "xyzv3.h"
 
 #pragma warning(disable:4996) // live on the edge!
@@ -110,10 +111,12 @@ void XYZV3::disconnect()
 	ReleaseMutex(ghMutex);
 }
 
+/*
 bool XYZV3::isConnected()
 {
 	return m_serial.isOpen() && m_status.isValid;
 }
+*/
 
 int XYZV3::refreshPortList()
 {
@@ -139,10 +142,8 @@ bool XYZV3::updateStatus()
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
-	if(m_serial.isOpen())
+	if(serialSendMessage("XYZv3/query=a"))
 	{
-		m_serial.clearSerial();
-
 		static const int len = 1024;
 		char buf[len];
 		const char *strPtr = NULL;
@@ -150,8 +151,6 @@ bool XYZV3::updateStatus()
 
 		// zero out results
 		memset(&m_status, 0, sizeof(m_status));
-
-		m_serial.writeSerial("XYZv3/query=a");
 
 		// only try so many times for the answer
 		bool isDone = false;
@@ -584,10 +583,9 @@ bool XYZV3::updateStatus()
 		// use zero wait time, in case command is ignored
 		if(!zOffsetSet)
 		{
-			m_serial.clearSerial();
-
-			m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
-			const char* buf = waitForLine(true); 
+			const char *buf = NULL;
+			if(serialSendMessage("XYZv3/config=zoffset:get"))
+				buf = waitForLine(true); 
 			if(*buf)
 				m_status.zOffset = atoi(buf);
 		}
@@ -625,24 +623,19 @@ void XYZV3::printRawStatus()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 
-	if(m_serial.isOpen())
-	{
-		//-----------
-		// get status
+	//-----------
+	// get status
 
-		m_serial.clearSerial();
-		m_serial.writeSerial("XYZv3/query=a");
-		printf("XYZv3/query=a\n");
+	printf("XYZv3/query=a\n");
+	if(serialSendMessage("XYZv3/query=a"))
 		printAllLines();
 
-		//------------
-		// get z-offset
+	//------------
+	// get z-offset
 
-		m_serial.clearSerial();
-		m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
-		printf("XYZv3/config=zoffset:get\n");
+	printf("XYZv3/config=zoffset:get\n");
+	if(serialSendMessage("XYZv3/config=zoffset:get"))
 		printAllLines();
-	}
 
 	ReleaseMutex(ghMutex);
 }
@@ -953,20 +946,10 @@ const char* XYZV3::filamentColorIdToStr(int colorId)
 bool XYZV3::calibrateBedStart()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=calibratejr:new");
-		if(waitForJsonVal("stat", "start", true) &&
-			waitForJsonVal("stat", "pressdetector", true, 120))
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=calibratejr:new") &&
+		waitForJsonVal("stat", "start", true) &&
+		waitForJsonVal("stat", "pressdetector", true, 120);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -975,20 +958,10 @@ bool XYZV3::calibrateBedStart()
 bool XYZV3::calibrateBedRun()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=calibratejr:detectorok");
-		if( waitForJsonVal("stat", "processing", true) &&
-			waitForJsonVal("stat", "ok", true, 240))
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=calibratejr:detectorok") &&
+		waitForJsonVal("stat", "processing", true) &&
+		waitForJsonVal("stat", "ok", true, 240);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -997,19 +970,9 @@ bool XYZV3::calibrateBedRun()
 bool XYZV3::calibrateBedFinish()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		// back out of calibration
-		m_serial.writeSerial("XYZv3/action=calibratejr:release");
+	bool success = 
+		serialSendMessage("XYZv3/action=calibratejr:release") &&
 		waitForJsonVal("stat", "complete", true);
-		
-		success = true;
-	}
-
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1017,20 +980,10 @@ bool XYZV3::calibrateBedFinish()
 bool XYZV3::cleanNozzleStart()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=cleannozzle:new");
-		if( waitForJsonVal("stat", "start", true) &&
-			waitForJsonVal("stat", "complete", true, 120)) // wait for nozzle to heat up //****FixMe, show temp...
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=cleannozzle:new") &&
+		waitForJsonVal("stat", "start", true) &&
+		waitForJsonVal("stat", "complete", true, 120); // wait for nozzle to heat up //****FixMe, show temp...
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1038,18 +991,9 @@ bool XYZV3::cleanNozzleStart()
 bool XYZV3::cleanNozzleFinish()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		// always clear out state
-		m_serial.writeSerial("XYZv3/action=cleannozzle:cancel");
-		if(waitForJsonVal("stat", "ok", true))
-			success = true;
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=cleannozzle:cancel") &&
+		waitForJsonVal("stat", "ok", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1057,19 +1001,10 @@ bool XYZV3::cleanNozzleFinish()
 bool XYZV3::homePrinter()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=home");
-		if( waitForJsonVal("stat", "start", true) &&
-			waitForJsonVal("stat", "complete", true, 120))
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=home") &&
+		waitForJsonVal("stat", "start", true) &&
+		waitForJsonVal("stat", "complete", true, 120);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1077,20 +1012,11 @@ bool XYZV3::homePrinter()
 bool XYZV3::jogPrinter(char axis, int dist_mm)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
-			axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm));
-		if( waitForJsonVal("stat", "start", true) &&
-			waitForJsonVal("stat", "complete", true, 120))
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
+								axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm)) &&
+		waitForJsonVal("stat", "start", true) &&
+		waitForJsonVal("stat", "complete", true, 120);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1098,28 +1024,14 @@ bool XYZV3::jogPrinter(char axis, int dist_mm)
 bool XYZV3::unloadFilament()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=unload:new");
-		if( waitForJsonVal("stat", "start", true) &&
-			// could query temp and status with  XYZv3/query=jt
-			// waitForJsonVal("stat", "heat", true, 120) && // extemp:22 // does not seem to ever be sent
-			waitForJsonVal("stat", "unload", true, 240) &&
-			// could query temp and status with  XYZv3/query=jt
-			waitForJsonVal("stat", "complete", true, 240))
-		{
-			success = true;
-		}
-
-		// clear out state
-		//m_serial.writeSerial("XYZv3/action=unload:cancel");
-		//waitForJsonVal("stat", "complete", true);
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=unload:new") &&
+		waitForJsonVal("stat", "start", true) &&
+		// could query temp and status with  XYZv3/query=jt
+		waitForJsonVal("stat", "heat", true, 120) && // extemp:22 // does not seem to ever be sent
+		waitForJsonVal("stat", "unload", true, 240) &&
+		// could query temp and status with  XYZv3/query=jt
+		waitForJsonVal("stat", "complete", true, 240);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1127,21 +1039,11 @@ bool XYZV3::unloadFilament()
 bool XYZV3::loadFilamentStart()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerial("XYZv3/action=load:new");
-		if( waitForJsonVal("stat", "start", true) &&
-			//waitForJsonVal("stat", "heat", true, 120) && // extemp:26
-			waitForJsonVal("stat", "load", true, 240)) // wait for nozzle to heat up //****FixMe, show temp...
-		{
-			success = true;
-		}
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=load:new") &&
+		waitForJsonVal("stat", "start", true) &&
+		waitForJsonVal("stat", "heat", true, 120) && // extemp:26
+		waitForJsonVal("stat", "load", true, 240); // wait for nozzle to heat up //****FixMe, show temp...
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1149,18 +1051,9 @@ bool XYZV3::loadFilamentStart()
 bool XYZV3::loadFilamentFinish()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
-
-	if(m_serial.isOpen())
-	{
-		m_serial.clearSerial();
-
-		// always clear out state
-		m_serial.writeSerial("XYZv3/action=load:cancel");
-		if(waitForJsonVal("stat", "complete", true))
-			success = true;
-	}
-
+	bool success = 
+		serialSendMessage("XYZv3/action=load:cancel") &&
+		waitForJsonVal("stat", "complete", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1169,19 +1062,12 @@ int XYZV3::incrementZOffset(bool up)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	int ret = -1;
-
-	if(m_serial.isOpen())
+	if(serialSendMessage("XYZv3/action=zoffset:%s", (up) ? "up" : "down"))
 	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/action=zoffset:%s", (up) ? "up" : "down");
 		const char* buf = waitForLine(true);
 		if(*buf)
-		{
 			ret = atoi(buf);
-		}
 	}
-
 	ReleaseMutex(ghMutex);
 	return ret;
 }
@@ -1190,26 +1076,19 @@ int XYZV3::getZOffset()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	int ret = -1;
-
-	if(m_serial.isOpen())
+	if(serialSendMessage("XYZv3/config=zoffset:get"))
 	{
-		m_serial.clearSerial();
-
-		m_serial.writeSerialPrintf("XYZv3/config=zoffset:get");
 		const char* buf = waitForLine(true);
 		if(*buf)
-		{
 			ret = atoi(buf);
-		}
 	}
-
 	ReleaseMutex(ghMutex);
 	return ret;
 }
 
 bool XYZV3::serialSendMessage(const char *format, ...)
 {
-	WaitForSingleObject(ghMutex, INFINITE);
+	//****Note, assume parrent has locked the mutex for us
 	bool success = false;
 
 	if(m_serial.isOpen() && format)
@@ -1226,84 +1105,156 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		va_end(arglist);
 
 		m_serial.writeSerial(msgBuf);
-		if(waitForVal("ok", true))
-			success = true;
+		success = true;
 	}
 
-	ReleaseMutex(ghMutex);
 	return success;
 }
 
 bool XYZV3::setZOffset(int offset)
 {
-	return serialSendMessage("XYZv3/config=zoffset:set[%d]", offset);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=zoffset:set[%d]", offset) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::restoreDefaults()
 {
-	return serialSendMessage("XYZv3/config=restoredefault:on");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=restoredefault:on") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setBuzzer(bool enable)
 {
-	return serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setAutoLevel(bool enable)
 {
-	return serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setLanguage(const char *lang)
 {
-	return lang && serialSendMessage("XYZv3/config=lang:[%s]", lang);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		lang && 
+		serialSendMessage("XYZv3/config=lang:[%s]", lang) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 // level is 0-9 minutes till lights turn off
 // XYZWare sets this to 0,3,6
 bool XYZV3::setEnergySaving(int level)
 {
-	return serialSendMessage("XYZv3/config=energy:[%d]", level);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=energy:[%d]", level) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::sendDisconnectApp()
 {
-	return serialSendMessage("XYZv3/config=disconnectap");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=disconnectap") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::sendEngraverPlaceObject()
 {
-	return serialSendMessage("XYZv3/config=engrave:placeobject");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=engrave:placeobject") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setMachineLife(int time_s)
 {
-	return serialSendMessage("XYZv3/config=life:[%d]", time_s);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=life:[%d]", time_s) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setMachineName(const char *name)
 {
-	return name && serialSendMessage("XYZv3/config=name:[%s]", name);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		name && 
+		serialSendMessage("XYZv3/config=name:[%s]", name) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 {
-	return ssid && password && serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel);
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		ssid && 
+		password && 
+		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::cancelPrint()
 {
-	return serialSendMessage("XYZv3/config=print[cancel]");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=print[cancel]") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::pausePrint()
 {
-	return serialSendMessage("XYZv3/config=print[pause]");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=print[pause]") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 bool XYZV3::resumePrint()
 {
-	return serialSendMessage("XYZv3/config=print[resume]");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=print[resume]") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 // call when print finished to prep for a new job
@@ -1311,7 +1262,12 @@ bool XYZV3::resumePrint()
 // be sure old job is off print bed!!!
 bool XYZV3::readyPrint()
 {
-	return serialSendMessage("XYZv3/config=print[complete]");
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/config=print[complete]") &&
+		waitForVal("ok", true);
+	ReleaseMutex(ghMutex);
+	return success;
 }
 
 /*
@@ -1549,23 +1505,20 @@ bool XYZV3::sendFileFinalize()
 	//****Note, assume parrent has locked the mutex for us
 	assert(pDat.isPrintActive);
 
-	bool success = false;
-	if(m_serial.isOpen())
-	{
-		if(pDat.data)
-			delete [] pDat.data;
-		pDat.data = NULL;
+	if(pDat.data)
+		delete [] pDat.data;
+	pDat.data = NULL;
 
-		if(pDat.blockBuf)
-			delete [] pDat.blockBuf;
-		pDat.blockBuf = NULL;
+	if(pDat.blockBuf)
+		delete [] pDat.blockBuf;
+	pDat.blockBuf = NULL;
 
-		pDat.isPrintActive = false;
+	pDat.isPrintActive = false;
 
-		// close out printing
-		m_serial.writeSerial("XYZv3/uploadDidFinish");
-		success = waitForVal("ok", false);
-	}
+	// close out printing
+	bool success = 
+		serialSendMessage("XYZv3/uploadDidFinish") &&
+		waitForVal("ok", false);
 
 	return success;
 }

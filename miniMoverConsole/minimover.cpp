@@ -8,6 +8,7 @@
 
 #include "timer.h"
 #include "serial.h"
+#include "network.h"
 #include "debug.h"
 #include "xyzv3.h"
 
