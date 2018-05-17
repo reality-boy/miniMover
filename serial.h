@@ -1,12 +1,14 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#include "stream.h"
 /*
 Serial class that hides win32 serial api in a nicely 
 wrapped package.
 */
 
-class Serial
+
+class Serial : public Stream
 {
 public:
 	Serial(); 
@@ -20,30 +22,25 @@ public:
 	int getBaudRate(); // return current baudRate or -1 if not connected
 
 	bool isOpen() { return m_serial != NULL; }
+	void clear();
+	int read(char *buf, int len);
+	int write(const char *buf, int len);
 
-	void clearSerial();
-
-	int readSerial(char *buf, int len);
-	// read to first newline, eating the newline character
-	int readSerialLine(char *buf, int len);
-
-	int writeSerial(const char *buf);
-	int writeSerialPrintf(const char *fmt, ...);
-	int writeSerialArray(const char *buf, int len);
+	// from base class
+	//int readLine(char *buf, int bufLen);
+	//int writeStr(const char *buf);
+	//int writePrintf(const char *fmt, ...);
 
 protected:
 	HANDLE m_serial;
 	int m_port;
 	int m_baudRate;
 
-	// readSerialLine data
-	const static int serBufLen = 4096;
-	char serBuf[serBufLen];
-	char* serBufStart;
-	char* serBufEnd;
-
 	static const int m_max_serial_buf = 256;
+};
 
+class SerialHelper
+{
 public:
 	// static helper functions
 	// enumerate all ports and return a default port number or -1 if no ports available

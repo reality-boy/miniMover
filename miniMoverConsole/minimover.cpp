@@ -75,10 +75,10 @@ bool isKey(const char *str)
 
 bool printStatus()
 {
-	if(xyz.updateStatus())
+	if(xyz.queryStatus())
 	{
 		printf("\nPrinter Status\n\n");
-		const XYZPrinterState *st = xyz.getPrinterState();
+		const XYZPrinterStatus *st = xyz.getPrinterStatus();
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
@@ -100,7 +100,7 @@ bool printStatus()
 
 			printf("Serial number: %s\n", st->iMachineSerialNum);
 
-			printf("Status: (%d, %d) %s\n", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
+			printf("Status: (%d, %d) %s\n", st->jPrinterState, st->jPrinterSubState, st->jPrinterStateStr);
 
 			printf("language: %s\n", st->lLang);
 
@@ -226,13 +226,13 @@ bool printStatus()
 
 bool monitorPrintJob()
 {
-	if(xyz.updateStatus())
+	if(xyz.queryStatus())
 	{
-		const XYZPrinterState *st = xyz.getPrinterState();
+		const XYZPrinterStatus *st = xyz.getPrinterStatus();
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
-			printf("S: %s", st->jPrinterStatusStr);
+			printf("S: %s", st->jPrinterStateStr);
 
 			if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
 				printf(", temp: %d C %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
@@ -255,8 +255,8 @@ bool monitorPrintJob()
 		// else just wait till next cycle
 
 		// if not PRINT_NONE
-		return ( st->jPrinterStatus != PRINT_ENDING_PROCESS_DONE &&
-				 st->jPrinterStatus != PRINT_NONE);
+		return ( st->jPrinterState != PRINT_ENDING_PROCESS_DONE &&
+				 st->jPrinterState != PRINT_NONE);
 	}
 
 	return true; // assume we are still printing if we got an update error
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 	{
 #ifdef DUMP_STATUS
 		if(checkCon())
-			xyz.printRawStatus();
+			xyz.queryStatus(true);
 #else
 		postHelp();
 #endif
@@ -384,12 +384,13 @@ int main(int argc, char **argv)
 						if(checkCon())
 						{
 							printf("starting clean nozzle\n");
-							if(xyz.cleanNozzleStart())
+							if( xyz.cleanNozzleStart() &&
+								xyz.cleanNozzleRun())
 							{
 								printf("clean nozzle with a wire and press enter when finished\n");
 								getch();
 
-								if(xyz.cleanNozzleFinish())
+								if(xyz.cleanNozzleCancel())
 								{
 									printf("clean nozzle succeeded\n");
 								}
@@ -405,7 +406,8 @@ int main(int argc, char **argv)
 						if(checkCon())
 						{
 							printf("starting calibration\n");
-							if(xyz.calibrateBedStart())
+							if( xyz.calibrateBedStart() &&
+								xyz.calibrateBedDetectorLowered())
 							{
 								printf("lower detector and hit enter to continue...\n");
 								getch();
@@ -463,7 +465,8 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						printf("start home printer\n");
-						if(xyz.homePrinter())
+						if( xyz.homePrinterStart() &&
+							xyz.homePrinterRun())
 							printf("home printer succeeded\n");
 						else
 							printf("home printer failed\n");
@@ -473,12 +476,13 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						printf("starting load filament\n");
-						if(xyz.loadFilamentStart())
+						if( xyz.loadFilamentStart() &&
+							xyz.loadFilamentRun())
 						{
 							printf("wait for filament to come out of nozzle then hit enter\n");
 							getch();
 
-							if(xyz.loadFilamentFinish())
+							if(xyz.loadFilamentCancel())
 							{
 								printf("load filament succeeded\n");
 							}
@@ -534,7 +538,7 @@ int main(int argc, char **argv)
 					break;
 				case 'r': // raw status
 					if(checkCon())
-						xyz.printRawStatus();
+						xyz.queryStatus(true);
 					break;
 				case 's': // status
 					if(checkCon())
@@ -544,7 +548,8 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						printf("start unload filament\n");
-						if(xyz.unloadFilament())
+						if( xyz.unloadFilamentStart() &&
+							xyz.unloadFilamentRun())
 							printf("unload filament succeeded\n");
 						else
 							printf("unload filament failed\n");
@@ -556,7 +561,8 @@ int main(int argc, char **argv)
 						int t = atoi(argv[i+1]);
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('x', t))
+							if( !xyz.jogPrinterStart('x', t) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 						i++;
@@ -565,7 +571,8 @@ int main(int argc, char **argv)
 					{
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('x', 10))
+							if( !xyz.jogPrinterStart('x', 10) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 					}
@@ -576,7 +583,8 @@ int main(int argc, char **argv)
 						int t = atoi(argv[i+1]);
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('y', t))
+							if( !xyz.jogPrinterStart('y', t) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 						i++;
@@ -585,7 +593,8 @@ int main(int argc, char **argv)
 					{
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('y', 10))
+							if( !xyz.jogPrinterStart('y', 10) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 					}
@@ -596,7 +605,8 @@ int main(int argc, char **argv)
 						int t = atoi(argv[i+1]);
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('z', t))
+							if( !xyz.jogPrinterStart('z', t) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 						i++;
@@ -605,7 +615,8 @@ int main(int argc, char **argv)
 					{
 						if(checkCon())
 						{
-							if(!xyz.jogPrinter('z', 10))
+							if( !xyz.jogPrinterStart('z', 10) ||
+								!xyz.jogPrinterRun())
 								printf("jog printer failed\n");
 						}
 					}

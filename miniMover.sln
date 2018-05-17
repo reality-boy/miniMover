@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMover", "miniMoverConsole\miniMover.vcxproj", "{E91D031F-5BF3-4567-A69E-F19413754505}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMoverUI", "miniMoverUI\miniMoverUI.vcxproj", "{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{36F1FD98-C9EC-44B2-B0C7-C5DE03F375CD}"
@@ -19,20 +17,22 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		docs\v3 scanner notes.txt = docs\v3 scanner notes.txt
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMover", "miniMoverConsole\miniMover.vcxproj", "{E91D031F-5BF3-4567-A69E-F19413754505}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E91D031F-5BF3-4567-A69E-F19413754505}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E91D031F-5BF3-4567-A69E-F19413754505}.Debug|Win32.Build.0 = Debug|Win32
-		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.ActiveCfg = Release|Win32
-		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.Build.0 = Release|Win32
 		{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}.Debug|Win32.ActiveCfg = Debug|Win32
 		{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}.Debug|Win32.Build.0 = Debug|Win32
 		{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}.Release|Win32.ActiveCfg = Release|Win32
 		{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}.Release|Win32.Build.0 = Release|Win32
+		{E91D031F-5BF3-4567-A69E-F19413754505}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E91D031F-5BF3-4567-A69E-F19413754505}.Debug|Win32.Build.0 = Debug|Win32
+		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.ActiveCfg = Release|Win32
+		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

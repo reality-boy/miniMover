@@ -22,7 +22,7 @@
 
 #pragma warning(disable:4996) // live on the edge!
 
-//****FixMe, rather than calling clearSerial() we
+//****FixMe, rather than calling clear() we
 // should check what data was left over and assert!
 //****FixMe, keep track of 'end' messages and fire them
 // if we try to exit in middle of operation, like calibrating bed
@@ -93,8 +93,8 @@ bool XYZV3::connect(int port)
 
 	if(m_serial.openSerial(port, 115200))
 	{
-		m_serial.clearSerial();
-		if(updateStatus())
+		m_serial.clear();
+		if(queryStatus())
 		{
 			success = true;
 		}
@@ -120,24 +120,25 @@ bool XYZV3::isConnected()
 
 int XYZV3::refreshPortList()
 {
-	return Serial::queryForPorts("XYZ");
+	return SerialHelper::queryForPorts("XYZ");
 }
 
 int XYZV3::getPortCount()
 {
-	return Serial::getPortCount();
+	return SerialHelper::getPortCount();
 }
 
 int XYZV3::getPortNumber(int id)
 {
-	return Serial::getPortNumber(id);
+	return SerialHelper::getPortNumber(id);
 }
 
 const char* XYZV3::getPortName(int id)
 {
-	return Serial::getPortName(id);
+	return SerialHelper::getPortName(id);
 }
-bool XYZV3::updateStatus()
+
+bool XYZV3::queryStatus(bool doPrint)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
@@ -157,8 +158,11 @@ bool XYZV3::updateStatus()
 		float end = msTime::getTime_s() + 0.5f; // wait a second or two
 		while(msTime::getTime_s() < end && !isDone)
 		{
-			if(m_serial.readSerialLine(buf, len))
+			if(m_serial.readLine(buf, len))
 			{
+				if(doPrint)
+					printf("%s\n", buf);
+
 				char s1[256] = "";
 
 				switch(buf[0])
@@ -225,73 +229,73 @@ bool XYZV3::updateStatus()
 				case 'j': // printer status, j:st,sb
 					//   st - status id
 					//   sb - substatus id
-					sscanf(buf, "j:%d,%d", &m_status.jPrinterStatus, &m_status.jPrinterSubStatus);
+					sscanf(buf, "j:%d,%d", &m_status.jPrinterState, &m_status.jPrinterSubState);
 
 					// translate old printer status codes
-					switch(m_status.jPrinterStatus)
+					switch(m_status.jPrinterState)
 					{
 					case 0:
-						m_status.jPrinterStatus = PRINT_INITIAL;
+						m_status.jPrinterState = PRINT_INITIAL;
 						break;
 					case 1:
-						m_status.jPrinterStatus = PRINT_HEATING;
+						m_status.jPrinterState = PRINT_HEATING;
 						break;
 					case 2:
-						m_status.jPrinterStatus = PRINT_PRINTING;
+						m_status.jPrinterState = PRINT_PRINTING;
 						break;
 					case 3:
-						m_status.jPrinterStatus = PRINT_CALIBRATING;
+						m_status.jPrinterState = PRINT_CALIBRATING;
 						break;
 					case 4:
-						m_status.jPrinterStatus = PRINT_CALIBRATING_DONE;
+						m_status.jPrinterState = PRINT_CALIBRATING_DONE;
 						break;
 					case 5:
-						m_status.jPrinterStatus = PRINT_COOLING_DONE;
+						m_status.jPrinterState = PRINT_COOLING_DONE;
 						break;
 					case 6:
-						m_status.jPrinterStatus = PRINT_COOLING_END;
+						m_status.jPrinterState = PRINT_COOLING_END;
 						break;
 					case 7:
-						m_status.jPrinterStatus = PRINT_ENDING_PROCESS;
+						m_status.jPrinterState = PRINT_ENDING_PROCESS;
 						break;
 					case 8:
-						m_status.jPrinterStatus = PRINT_ENDING_PROCESS_DONE;
+						m_status.jPrinterState = PRINT_ENDING_PROCESS_DONE;
 						break;
 					case 9:
-						m_status.jPrinterStatus = PRINT_JOB_DONE;
+						m_status.jPrinterState = PRINT_JOB_DONE;
 						break;
 					case 10:
-						m_status.jPrinterStatus = PRINT_NONE;
+						m_status.jPrinterState = PRINT_NONE;
 						break;
 					case 11:
-						m_status.jPrinterStatus = PRINT_IN_PROGRESS;
+						m_status.jPrinterState = PRINT_IN_PROGRESS;
 						break;
 					case 12:
-						m_status.jPrinterStatus = PRINT_STOP;
+						m_status.jPrinterState = PRINT_STOP;
 						break;
 					case 13:
-						m_status.jPrinterStatus = PRINT_LOAD_FILAMENT;
+						m_status.jPrinterState = PRINT_LOAD_FILAMENT;
 						break;
 					case 14:
-						m_status.jPrinterStatus = PRINT_UNLOAD_FILAMENT;
+						m_status.jPrinterState = PRINT_UNLOAD_FILAMENT;
 						break;
 					case 15:
-						m_status.jPrinterStatus = PRINT_AUTO_CALIBRATION;
+						m_status.jPrinterState = PRINT_AUTO_CALIBRATION;
 						break;
 					case 16:
-						m_status.jPrinterStatus = PRINT_JOG_MODE;
+						m_status.jPrinterState = PRINT_JOG_MODE;
 						break;
 					case 17:
-						m_status.jPrinterStatus = PRINT_FATAL_ERROR;
+						m_status.jPrinterState = PRINT_FATAL_ERROR;
 						break;
 					}
 
 					// fill in status string
-					strPtr = statusCodesToStr(m_status.jPrinterStatus, m_status.jPrinterSubStatus);
+					strPtr = stateCodesToStr(m_status.jPrinterState, m_status.jPrinterSubState);
 					if(strPtr)
-						strcpy(m_status.jPrinterStatusStr, strPtr); 
+						strcpy(m_status.jPrinterStateStr, strPtr); 
 					else 
-						m_status.jPrinterStatusStr[0] = '\0';
+						m_status.jPrinterStateStr[0] = '\0';
 
 					break;
 
@@ -587,7 +591,11 @@ bool XYZV3::updateStatus()
 			if(serialSendMessage("XYZv3/config=zoffset:get"))
 				buf = waitForLine(true); 
 			if(*buf)
+			{
+				if(doPrint)
+					printf("%s\n", buf);
 				m_status.zOffset = atoi(buf);
+			}
 		}
 
 		success = true;
@@ -595,49 +603,6 @@ bool XYZV3::updateStatus()
 
 	ReleaseMutex(ghMutex);
 	return success;
-}
-
-void XYZV3::printAllLines()
-{
-	if(m_serial.isOpen())
-	{
-		static const int len = 1024;
-		char buf[len];
-
-		// only try so many times for the answer
-		bool isDone = false;
-		float end = msTime::getTime_s() + 0.5f; // wait a second or two
-		while(msTime::getTime_s() < end && !isDone)
-		{
-			if(m_serial.readSerialLine(buf, len))
-			{
-				printf("%s\n", buf);
-				if(buf[0] == '$' || buf[0] == 'E')
-					isDone = true;
-			}
-		}
-	}
-}
-
-void XYZV3::printRawStatus()
-{
-	WaitForSingleObject(ghMutex, INFINITE);
-
-	//-----------
-	// get status
-
-	printf("XYZv3/query=a\n");
-	if(serialSendMessage("XYZv3/query=a"))
-		printAllLines();
-
-	//------------
-	// get z-offset
-
-	printf("XYZv3/config=zoffset:get\n");
-	if(serialSendMessage("XYZv3/config=zoffset:get"))
-		printAllLines();
-
-	ReleaseMutex(ghMutex);
 }
 
 float XYZV3::nozzleIDToDiameter(int id)
@@ -661,11 +626,11 @@ float XYZV3::nozzleIDToDiameter(int id)
 	return -1.0f;
 }
 
-const char* XYZV3::statusCodesToStr(int status, int subStatus)
+const char* XYZV3::stateCodesToStr(int state, int subState)
 {
 	static char tstr[512];
 
-	switch(status)
+	switch(state)
 	{
 	case PRINT_INITIAL:
 		return "initializing";
@@ -705,61 +670,61 @@ const char* XYZV3::statusCodesToStr(int status, int subStatus)
 		return "fatal error";
 
 	case STATE_PRINT_FILE_CHECK:
-		sprintf(tstr, "file check (%d)", subStatus);
+		sprintf(tstr, "file check (%d)", subState);
 		return tstr;
 	case STATE_PRINT_LOAD_FIALMENT: //  (substatus 12 14)
-		sprintf(tstr, "load filament (%d)", subStatus);
+		sprintf(tstr, "load filament (%d)", subState);
 		return tstr;
-	case STATE_PRINT_UNLOAD_FIALMENT: //  (substatus 22 24)
+	case STATE_PRINT_UNLOAD_FIALMENT: //  (substate 22 24)
 		// substate 21 is unload start or heating
 		// substate 22 is unload unloading or done, I think
-		sprintf(tstr, "unload filament (%d)", subStatus);
+		sprintf(tstr, "unload filament (%d)", subState);
 		return tstr;
 	case STATE_PRINT_JOG_MODE:
-		sprintf(tstr, "jog mode (%d)", subStatus);
+		sprintf(tstr, "jog mode (%d)", subState);
 		return tstr;
 	case STATE_PRINT_FATAL_ERROR:
-		sprintf(tstr, "fatal error (%d)", subStatus);
+		sprintf(tstr, "fatal error (%d)", subState);
 		return tstr;
 	case STATE_PRINT_HOMING:
-		sprintf(tstr, "homing (%d)", subStatus);
+		sprintf(tstr, "homing (%d)", subState);
 		return tstr;
-	case STATE_PRINT_CALIBRATE: //  (substatus 41 42 43 44 45 46 47 48 49)
-		sprintf(tstr, "calibrating (%d)", subStatus);
+	case STATE_PRINT_CALIBRATE: //  (substate 41 42 43 44 45 46 47 48 49)
+		sprintf(tstr, "calibrating (%d)", subState);
 		return tstr;
-	case STATE_PRINT_CLEAN_NOZZLE: //  (substatus 52)
-		sprintf(tstr, "clean nozzle (%d)", subStatus);
+	case STATE_PRINT_CLEAN_NOZZLE: //  (substate 52)
+		sprintf(tstr, "clean nozzle (%d)", subState);
 		return tstr;
 	case STATE_PRINT_GET_SD_FILE:
-		sprintf(tstr, "get sd file (%d)", subStatus);
+		sprintf(tstr, "get sd file (%d)", subState);
 		return tstr;
 	case STATE_PRINT_PRINT_SD_FILE:
-		sprintf(tstr, "print sd file (%d)", subStatus);
+		sprintf(tstr, "print sd file (%d)", subState);
 		return tstr;
-	case STATE_PRINT_ENGRAVE_PLACE_OBJECT: //  (substatus 30)
-		sprintf(tstr, "engrave place object (%d)", subStatus);
+	case STATE_PRINT_ENGRAVE_PLACE_OBJECT: //  (substate 30)
+		sprintf(tstr, "engrave place object (%d)", subState);
 		return tstr;
 	case STATE_PRINT_ADJUST_ZOFFSET:
-		sprintf(tstr, "adjust zoffset (%d)", subStatus);
+		sprintf(tstr, "adjust zoffset (%d)", subState);
 		return tstr;
 	case PRINT_TASK_PAUSED:
-		sprintf(tstr, "print paused (%d)", subStatus);
+		sprintf(tstr, "print paused (%d)", subState);
 		return tstr;
 	case PRINT_TASK_CANCELING:
-		sprintf(tstr, "print canceled (%d)", subStatus);
+		sprintf(tstr, "print canceled (%d)", subState);
 		return tstr;
 	case STATE_PRINT_BUSY:
-		sprintf(tstr, "busy (%d)", subStatus);
+		sprintf(tstr, "busy (%d)", subState);
 		return tstr;
 	case STATE_PRINT_SCANNER_IDLE:
-		sprintf(tstr, "scanner idle (%d)", subStatus);
+		sprintf(tstr, "scanner idle (%d)", subState);
 		return tstr;
 	case STATE_PRINT_SCANNER_RUNNING:
-		sprintf(tstr, "scanner running (%d)", subStatus);
+		sprintf(tstr, "scanner running (%d)", subState);
 		return tstr;
 
 	default:
-		sprintf(tstr, "unknown error (%d:%d)", status, subStatus);
+		sprintf(tstr, "unknown error (%d:%d)", state, subState);
 		return tstr;
 	}
 }
@@ -949,19 +914,29 @@ bool XYZV3::calibrateBedStart()
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:new") &&
 		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "pressdetector", true, 120);
+		waitForJsonVal("stat", "pressdetector", true, 120); //****FixMe, deal with delay, does this need to be this long, it should only last while we home
 	ReleaseMutex(ghMutex);
 	return success;
 }
 
 // ask user to lower detector, then call this
-bool XYZV3::calibrateBedRun()
+bool XYZV3::calibrateBedDetectorLowered()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:detectorok") &&
-		waitForJsonVal("stat", "processing", true) &&
-		waitForJsonVal("stat", "ok", true, 240);
+		waitForJsonVal("stat", "processing", true);
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+// call in loop while true to pump status
+bool XYZV3::calibrateBedRun()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		waitForJsonVal("stat", "ok", true, 240); //****FixMe, deal with delay
+		// or stat:fail
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -982,13 +957,22 @@ bool XYZV3::cleanNozzleStart()
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=cleannozzle:new") &&
-		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "complete", true, 120); // wait for nozzle to heat up //****FixMe, show temp...
+		waitForJsonVal("stat", "start", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
 
-bool XYZV3::cleanNozzleFinish()
+bool XYZV3::cleanNozzleRun()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
+		// or state is PRINT_NONE
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::cleanNozzleCancel()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
@@ -998,40 +982,43 @@ bool XYZV3::cleanNozzleFinish()
 	return success;
 }
 
-bool XYZV3::homePrinter()
+bool XYZV3::homePrinterStart()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=home") &&
-		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "complete", true, 120);
+		waitForJsonVal("stat", "start", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
 
-bool XYZV3::jogPrinter(char axis, int dist_mm)
+bool XYZV3::homePrinterRun()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
+		// or state is PRINT_NONE
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
 								axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm)) &&
-		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "complete", true, 120);
+		waitForJsonVal("stat", "start", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
 
-bool XYZV3::unloadFilament()
+bool XYZV3::jogPrinterRun()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
-		serialSendMessage("XYZv3/action=unload:new") &&
-		waitForJsonVal("stat", "start", true) &&
-		// could query temp and status with  XYZv3/query=jt
-		waitForJsonVal("stat", "heat", true, 120) && // extemp:22 // does not seem to ever be sent
-		waitForJsonVal("stat", "unload", true, 240) &&
-		// could query temp and status with  XYZv3/query=jt
-		waitForJsonVal("stat", "complete", true, 240);
+		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
+		// or state is PRINT_NONE
 	ReleaseMutex(ghMutex);
 	return success;
 }
@@ -1041,18 +1028,66 @@ bool XYZV3::loadFilamentStart()
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=load:new") &&
-		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "heat", true, 120) && // extemp:26
-		waitForJsonVal("stat", "load", true, 240); // wait for nozzle to heat up //****FixMe, show temp...
+		waitForJsonVal("stat", "start", true);
 	ReleaseMutex(ghMutex);
 	return success;
 }
 
-bool XYZV3::loadFilamentFinish()
+bool XYZV3::loadFilamentRun()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		waitForJsonVal("stat", "heat", true, 120) &&  //****FixMe, deal with delay
+		waitForJsonVal("stat", "load", true, 240); //****FixMe, deal with delay
+
+		// if user does not hit cancel/done then eventually one of these will be returned
+		// waitForJsonVal("stat", "fail", true);
+		// waitForJsonVal("stat", "complete", true);
+		// or state is PRINT_NONE
+
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::loadFilamentCancel()
 {
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = 
 		serialSendMessage("XYZv3/action=load:cancel") &&
+		waitForJsonVal("stat", "complete", true);
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::unloadFilamentStart()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/action=unload:new") &&
+		waitForJsonVal("stat", "start", true);
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::unloadFilamentRun()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		// could query temp and state with  XYZv3/query=jt
+		waitForJsonVal("stat", "heat", true, 120) &&  //****FixMe, deal with delay
+		waitForJsonVal("stat", "unload", true, 240) && //****FixMe, deal with delay
+		// could query temp and state with  XYZv3/query=jt
+		waitForJsonVal("stat", "complete", true, 240); //****FixMe, deal with delay
+		// or state is PRINT_NONE
+	ReleaseMutex(ghMutex);
+	return success;
+}
+
+bool XYZV3::unloadFilamentCancel()
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	bool success = 
+		serialSendMessage("XYZv3/action=unload:cancel") &&
 		waitForJsonVal("stat", "complete", true);
 	ReleaseMutex(ghMutex);
 	return success;
@@ -1093,7 +1128,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 
 	if(m_serial.isOpen() && format)
 	{
-		m_serial.clearSerial();
+		m_serial.clear();
 
 		const static int BUF_SIZE  = 2048;
 		char msgBuf[BUF_SIZE];
@@ -1104,7 +1139,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		m_serial.writeSerial(msgBuf);
+		m_serial.writeStr(msgBuf);
 		success = true;
 	}
 
@@ -1411,12 +1446,12 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 						if(pDat.blockBuf)
 						{
-							m_serial.clearSerial();
+							m_serial.clear();
 
 							if(isPrint)
-								m_serial.writeSerialPrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+								m_serial.writePrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
 							else
-								m_serial.writeSerialPrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+								m_serial.writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
 							if(waitForVal("ok", false, 1.0f))
 							{
@@ -1489,7 +1524,7 @@ bool XYZV3::sendFileProcess()
 			tBuf += 4;
 
 			// write out in one shot
-			m_serial.writeSerialArray(pDat.blockBuf, blockLen + 12);
+			m_serial.write(pDat.blockBuf, blockLen + 12);
 			success = waitForVal("ok", false, 1.0f);
 			if(!success) // bail on error
 				break;
@@ -1993,7 +2028,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 		do
 		{
 			// blocking call, no need to sleep
-			if(m_serial.readSerialLine(buf, len))
+			if(m_serial.readLine(buf, len))
 			{
 				isValid = true;
 				break;
@@ -2016,7 +2051,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 			{
 				char buf2[len];
 
-				if(!m_serial.readSerialLine(buf2, len) || buf2[0] != '$')
+				if(!m_serial.readLine(buf2, len) || buf2[0] != '$')
 					debugPrint(DBG_WARN, "waitForLine $ failed, returned %d:'%s'", len, buf2);
 			}
 			return buf;

@@ -45,6 +45,9 @@
     <ClInclude Include="..\network.h">
       <Filter>Shared Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\stream.h">
+      <Filter>Shared Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp">
@@ -72,6 +75,9 @@
       <Filter>Shared Files</Filter>
     </ClCompile>
     <ClCompile Include="..\network.cpp">
+      <Filter>Shared Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sream.cpp">
       <Filter>Shared Files</Filter>
     </ClCompile>
   </ItemGroup>

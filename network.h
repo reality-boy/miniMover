@@ -2,11 +2,12 @@
 #define NETWORK_H
 
 #include <Winsock2.h>
+#include "stream.h"
 
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel);
 
-class Socket
+class Socket : public Stream
 {
 public:
 	Socket();
@@ -16,14 +17,14 @@ public:
 	bool closeSocket();
 
 	bool isOpen() { return isInit && soc != INVALID_SOCKET; }
+	void clear() {} // is this ever needed?
+	int read(char *buf, int bufLen);
+	int write(const char *buf, int bufLen);
 
-	void clearSocket() {} // is this ever needed?
-
-	int readSocket(char *buf, const int len);
-
-	bool writeSocket(const char *buf);
-	bool writeSocketPrintf(const char *fmt, ...);
-	bool writeSocketArray(const char *buf, int len);
+	// from base class
+	//int readLine(char *buf, int bufLen);
+	//int writeStr(const char *buf);
+	//int writePrintf(const char *fmt, ...);
 
 protected:
 	WSADATA wsaData;

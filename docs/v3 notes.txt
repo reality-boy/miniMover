@@ -818,6 +818,8 @@ calibratejr:{"stat":"pressdetector"}<nl>$<nl>	// recieve immediately
 
 XYZv3/action=calibratejr:detectorok				// send
 calibratejr:{"stat":"processing"}<nl>$<nl>		// recieve immediately
+
+// in loop
 calibratejr:{"stat":"ok",438,453,453,437,445,443,412,420,424}<nl>$<nl>	// recieve when done
 // or
 calibratejr:{"stat":"fail"}<nl>$<nl>			// recieve if button not pressed
@@ -906,7 +908,7 @@ load:{"stat":"start"}<nl>$<nl>				// return immediately
 // then in loop
 XYZv3/query=jt								// send to get status
 j:9530,11.t:1,205,210<nl>$<nl>				// returns immediately, 
-// or										// state 9531 is 'STATE_PRINT_UNLOAD_FIALMENT', 11 is heating up, 12 is loading
+// or										// state 9530 is 'STATE_PRINT_LOAD_FIALMENT', 11 is heating up, 12 is loading
 j:9511,0.t:1,94,0<nl>$<nl>					// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
 
 load:{"stat":"load"}<nl>$<nl>				// transition from heating to loading

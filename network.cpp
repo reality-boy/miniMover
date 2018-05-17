@@ -220,53 +220,21 @@ bool Socket::closeSocket()
 	return success;
 }
 
-bool Socket::writeSocket(const char *buf)
+int Socket::write(const char *buf, const int bufLen)
 {
-	if(buf)
-		return writeSocketArray(buf, strlen(buf));
-
-	return false;
-}
-
-bool Socket::writeSocketPrintf(const char *fmt, ...)
-{
-	if(isInit && soc != INVALID_SOCKET && fmt)
-	{
-		static const int tstrLen = 4096;
-		char tstr[tstrLen];
-
-		va_list arglist;
-		va_start(arglist, fmt);
-
-		//customized operations...
-		vsnprintf_s(tstr, tstrLen, fmt, arglist);
-		tstr[tstrLen-1] = '\0';
-
-		va_end(arglist);
-
-		return writeSocket(tstr);
-	}
-
-	return 0;
-}
-
-bool Socket::writeSocketArray(const char *buf, const int len)
-{
-	bool success = false;
-	int iResult;
+	int bytesWritten = 0;
 
 	if(isInit && soc != INVALID_SOCKET) 
 	{
 		// Send an initial buffer
 		//****FixMe, do we need to loop to send it all?
 		//****FixMe, deal with blocking
-		iResult = send(soc, buf, (int)strlen(buf), 0);
-		if(iResult != SOCKET_ERROR)
+		bytesWritten = send(soc, buf, bufLen, 0);
+		if(bytesWritten != SOCKET_ERROR)
 		{
-			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", iResult);
+			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", bytesWritten);
 
-			if(iResult == strlen(buf))
-				success = true;
+			//if(bytesWritten == strlen(buf))
 		}
 		else
 			debugPrint(DBG_WARN, "send failed with error: %d\n", WSAGetLastError());
@@ -274,10 +242,10 @@ bool Socket::writeSocketArray(const char *buf, const int len)
 	else
 		debugPrint(DBG_WARN, "Not connected to server!\n");
 
-	return success;
+	return bytesWritten;
 }
 
-int Socket::readSocket(char *buf, const int len)
+int Socket::read(char *buf, int bufLen)
 {
 	int count = -1;
 
@@ -289,7 +257,7 @@ int Socket::readSocket(char *buf, const int len)
 		{
 			int iResult = -1;
 			//****FixMe, deal with blocking
-			iResult = recv(soc, buf, len, 0);
+			iResult = recv(soc, buf, bufLen, 0);
 			if(iResult >= 0)
 			{
 				debugPrint(DBG_LOG, "Bytes received: %d\n", iResult);
@@ -314,7 +282,7 @@ if(socket.openSocket("216.58.216.14", 80))
 	if(socket.writeSocket("GET\n\n")) 
 	{
 		int count;
-		while(count = socket.readSocket(data, dataLen) > 0)
+		while(count = socket.read(data, dataLen) > 0)
 		{
 			// do something with the data
 			count = count;

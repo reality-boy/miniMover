@@ -16,19 +16,17 @@
 
 // static class data
 
-int Serial::portCount = 0;
-int Serial::defaultPortNum = -1;
-int Serial::defaultPortID = -1;
+int SerialHelper::portCount = 0;
+int SerialHelper::defaultPortNum = -1;
+int SerialHelper::defaultPortID = -1;
 
-int Serial::portNumbers[maxPortCount] = {-1};
-char Serial::portNames[maxPortCount][maxPortName] = {""};
+int SerialHelper::portNumbers[maxPortCount] = {-1};
+char SerialHelper::portNames[maxPortCount][maxPortName] = {""};
 
 Serial::Serial() 
 	: m_serial(NULL) 
 	, m_port(-1)
 	, m_baudRate(-1)
-	, serBufStart(serBuf)
-	, serBufEnd(serBuf)
 {
 }
 
@@ -86,7 +84,7 @@ bool Serial::openSerial(int port, int baudRate)
 	
 	// auto detect port
 	if(port < 0)
-		port = queryForPorts();
+		port = SerialHelper::queryForPorts();
 
 	if(port >= 2) // reject default ports, maybe there is a better way?
 	{
@@ -126,7 +124,7 @@ bool Serial::openSerial(int port, int baudRate)
 								{
 									if(SetupComm(m_serial, m_max_serial_buf, m_max_serial_buf))
 									{
-										clearSerial();
+										clear();
 
 										m_port = port;
 										m_baudRate = baudRate;
@@ -165,25 +163,20 @@ int Serial::getBaudRate()
 	return (m_serial) ? m_baudRate : -1;
 }
  
-void Serial::clearSerial()
+void Serial::clear()
 {
+	//****FixMe, drain buffer and log to error log
 	if(m_serial)
 		PurgeComm (m_serial, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
-
-	//****FixMe, drain buffer and log to error log
-
-	serBuf[0] = '\0';
-	serBufStart = serBuf;
-	serBufEnd = serBuf;
 }
 
-int Serial::readSerial(char *buf, int len)
+int Serial::read(char *buf, int len)
 {
 	DWORD bytesRead = 0;
 
 	if(m_serial && buf && len > 0)
 	{
-		//****FixMe, drain readSerialLine buffer first!
+		//****FixMe, drain readLine buffer first!
 		buf[0] = '\0';
 		if(ReadFile(m_serial, buf, len-1, &bytesRead, NULL) && bytesRead > 0)
 		{
@@ -197,101 +190,9 @@ int Serial::readSerial(char *buf, int len)
 	return bytesRead;
 }
 
-//****FixMe, this does not work right at all.  If we ever recieved a
-// partial line we would never fill it in properly and recieve the rest of 
-// the line.  It only works if we recieve one or more full lines at a time.
-// yuck!
-int Serial::readSerialLine(char *lineBuf, int len)
-{
-	if(lineBuf && len > 0)
-	{
-		*lineBuf = '\0';
-		char *lineBufStart = lineBuf;
-		const char *lineBufEnd = &lineBuf[len-1];
 
-		//loop around at least twicw in order to ensure we drained the buffer and found a new line
-		for(int i=0; i<2; i++)
-		{
-			if(serBufStart == serBufEnd)
-			{
-				serBufStart = serBuf;
-				int len = readSerial(serBuf, serBufLen);
-				serBufEnd = &serBuf[len];
-			}
 
-			if(serBufStart != serBufEnd)
-			{
-				bool isDone = false;
-				while(lineBufStart != lineBufEnd && serBufStart != serBufEnd)
-				{
-					*lineBufStart = *serBufStart;
-
-					if(*lineBufStart == '\n')
-					{
-						*lineBufStart = '\0';
-						isDone = true;
-					}
-
-					lineBufStart++;
-					serBufStart++;
-
-					if(isDone)
-					{
-						int len = lineBufStart - lineBuf;
-
-						if(len > 0)
-							debugPrint(DBG_LOG, "recieved: %s", lineBuf);
-
-						return len;
-					}
-				}
-			}
-		}
-
-		*lineBufStart = '\0';
-		int len = lineBufStart - lineBuf;
-
-		if(len > 0)
-			debugPrint(DBG_LOG, "recieved partial: %s", lineBuf);
-
-		return len;
-	}
-
-	return 0;
-}
-
-int Serial::writeSerial(const char *buf)
-{
-
-	if(buf)
-		return writeSerialArray(buf, strlen(buf));
-
-	return 0;
-}
-
-int Serial::writeSerialPrintf(const char *fmt, ...)
-{
-	if(m_serial && fmt)
-	{
-		static const int tstrLen = 4096;
-		char tstr[tstrLen];
-
-		va_list arglist;
-		va_start(arglist, fmt);
-
-		//customized operations...
-		vsnprintf_s(tstr, tstrLen, fmt, arglist);
-		tstr[tstrLen-1] = '\0';
-
-		va_end(arglist);
-
-		return writeSerial(tstr);
-	}
-
-	return 0;
-}
-
-int Serial::writeSerialArray(const char *buf, int len)
+int Serial::write(const char *buf, int len)
 {
 	DWORD bytesWritten = 0;
 
@@ -314,7 +215,7 @@ int Serial::writeSerialArray(const char *buf, int len)
 // enumerate all available ports and find there string name as well
 // only usb serial ports have a string name, but that is most serial devices these days
 // based on CEnumerateSerial http://www.naughter.com/enumser.html
-int Serial::queryForPorts(const char *hint)
+int SerialHelper::queryForPorts(const char *hint)
 {
 	portCount = 0;
 	defaultPortNum = -1;
@@ -397,12 +298,12 @@ int Serial::queryForPorts(const char *hint)
 			++nIndex;
 		}
 
-		if(Serial::getPortName(defaultPortID))
-			debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortNum, Serial::getPortName(defaultPortID));
+		if(SerialHelper::getPortName(defaultPortID))
+			debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortNum, SerialHelper::getPortName(defaultPortID));
 		else
 			debugPrint(DBG_LOG, "detected port: %d:NULL", defaultPortNum);
-		for(int i=0; i<Serial::getPortCount(); i++)
-			debugPrint(DBG_LOG, "  %d:%s", Serial::getPortNumber(i), Serial::getPortName(i));
+		for(int i=0; i<SerialHelper::getPortCount(); i++)
+			debugPrint(DBG_LOG, "  %d:%s", SerialHelper::getPortNumber(i), SerialHelper::getPortName(i));
 
 		SetupDiDestroyDeviceInfoList(hDevInfoSet);
 	}
@@ -412,7 +313,7 @@ int Serial::queryForPorts(const char *hint)
 
 //****Note, older code that is reliable but does not give you a string name for the port
 /*
-int Serial::enumeratePorts(int list[], int *count)
+int SerialHelper::enumeratePorts(int list[], int *count)
 {
 	//What will be the return value
 	bool bSuccess = false;

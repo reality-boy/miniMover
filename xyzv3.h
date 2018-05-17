@@ -17,9 +17,9 @@ to use a third party slicing tool to generate the gcode.
 class Serial; // from serial.h
 class Socket; // from network.h
 
-// printer status word
+// printer state word
 // items marked with state have substatus words as well.
-enum XYZPrintStatusCode
+enum XYZPrintStateCode
 {
 	PRINT_INITIAL = 9500,
 	PRINT_HEATING = 9501,
@@ -64,7 +64,7 @@ enum XYZPrintStatusCode
 };
 
 // status of current printer
-struct XYZPrinterState
+struct XYZPrinterStatus
 {
 	bool isValid;
 
@@ -88,9 +88,9 @@ struct XYZPrinterState
 
 	char iMachineSerialNum[64]; //20
 
-	XYZPrintStatusCode jPrinterStatus;
-	int jPrinterSubStatus;
-	char jPrinterStatusStr[256];
+	XYZPrintStateCode jPrinterState;
+	int jPrinterSubState;
+	char jPrinterStateStr[256];
 
 	int kFilamentMaterialType;
 	char kFilamentMaterialTypeStr[32];
@@ -235,40 +235,61 @@ public:
 	static int getPortNumber(int id);
 	static const char* getPortName(int id);
 
-	//****FixMe, statusCode and status are too close together!!!!
-	bool updateStatus(); // update status struct
-	const XYZPrinterState* getPrinterState() { return &m_status; }
+	// === query commands ===
+
+	bool queryStatus(bool doPrint = false); // update status struct
+	const XYZPrinterStatus* getPrinterStatus() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
-	// dump what is returned from the serial port to console
-	void printAllLines();
-	void printRawStatus(); 
+	// === action commands ===
 
 	// run auto bed leveling routine
 	// call to start
 	bool calibrateBedStart(); 
 	// ask to lower detector then call
+	bool calibrateBedDetectorLowered();
+	// call in loop while true to pump status
 	bool calibrateBedRun();
 	// ask to raise detector then call
 	bool calibrateBedFinish();
 
 	// heats up nozzle so you can clean it out with a wire
+	// call to start
 	bool cleanNozzleStart();
-	bool cleanNozzleFinish(); // call once user finishes cleaning
+	// call in loop while true to pump status
+	bool cleanNozzleRun();
+	// call once user finishes cleaning or anytime to cancel
+	bool cleanNozzleCancel(); 
 
 	// home printer so you can safely move head
-	bool homePrinter();
+	// call to start
+	bool homePrinterStart();
+	// call in loop while true to pump status
+	bool homePrinterRun();
 
 	// move head in given direction, axis is one of x,y,z
-	bool jogPrinter(char axis, int dist_mm);
-
-	// unloads filament without any user interaction
-	bool unloadFilament();
+	// call to start
+	bool jogPrinterStart(char axis, int dist_mm);
+	// call in loop while true to pump status
+	bool jogPrinterRun();
 
 	// loads filament
+	// call to start
 	bool loadFilamentStart();
-	// call when filament comes out of extruder!!!
-	bool loadFilamentFinish();
+	// call in loop while true to pump status
+	bool loadFilamentRun();
+	// call when filament comes out of extruder, or any time to cancel
+	bool loadFilamentCancel();
+
+	// unloads filament without any user interaction
+	// call to start
+	bool unloadFilamentStart();
+	// call in loop while true to pump status
+	bool unloadFilamentRun();
+	// optionally call to cancel unload
+	bool unloadFilamentCancel();
+
+	// === config commands ===
 
 	// increment/decrement z offset by one step (1/100th of  a mm?)
 	int incrementZOffset(bool up);
@@ -288,6 +309,8 @@ public:
 	bool setMachineLife(int time_s);
 	bool setMachineName(const char *name);
 	bool setWifi(const char *ssid, const char *password, int channel);
+
+	// === upload commands ===
 
 	bool cancelPrint();
 	bool pausePrint();
@@ -347,7 +370,7 @@ protected:
 		char *blockBuf;		// buffer to hold one block of data to be sent
 	} pDat;
 
-	const char* statusCodesToStr(int status, int subStatus);
+	const char* stateCodesToStr(int state, int subState);
 	static float nozzleIDToDiameter(int id);
 	const char* errorCodeToStr(int code);
 	const char* filamentMaterialTypeToStr(int materialType);
@@ -380,7 +403,7 @@ protected:
 
 	Serial m_serial;
 	Socket m_socket;
-	XYZPrinterState m_status;
+	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
 
 	static const int m_infoArrayLen = 21;

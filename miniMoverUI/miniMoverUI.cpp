@@ -80,7 +80,7 @@ void listAddLine(HWND hList, const char *format, ...)
 	}
 }
 
-void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrinterInfo *inf)
+void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPrinterInfo *inf)
 {
 	int d, h, m;
 
@@ -226,7 +226,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 		else
 			listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
 
-		bool isPrinting = st->jPrinterStatus >= PRINT_INITIAL && st->jPrinterStatus <= PRINT_PRINTING;
+		bool isPrinting = st->jPrinterState >= PRINT_INITIAL && st->jPrinterState <= PRINT_PRINTING;
 		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
 		{
 				//listAddLine(hwndListInfo, "No job running");
@@ -251,7 +251,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterState *st, const XYZPrin
 
 		if(st->eErrorStatus != 0)
 			listAddLine(hwndListInfo, "Error: (0x%08x)%s", st->eErrorStatus, st->eErrorStatusStr);
-		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterStatus, st->jPrinterSubStatus, st->jPrinterStatusStr);
+		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterState, st->jPrinterSubState, st->jPrinterStateStr);
 
 
 		ListBox_SetTopIndex(hwndListInfo, index);
@@ -330,9 +330,9 @@ void MainDlgUpdate(HWND hDlg)
 {
 	debugReduceNoise(true);
 	// don't set wait cursor since this triggers 2x a second
-	if(!g_threadRunning && xyz.updateStatus())
+	if(!g_threadRunning && xyz.queryStatus())
 	{
-		const XYZPrinterState *st = xyz.getPrinterState();
+		const XYZPrinterStatus *st = xyz.getPrinterStatus();
 		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 
 		if(st->isValid)
@@ -560,10 +560,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_LOAD:
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "loading filament");
-			if(xyz.loadFilamentStart())
+			if( xyz.loadFilamentStart() &&
+				xyz.loadFilamentRun())
 			{
 				MessageBox(NULL, "Hit ok when filliment comes out of nozzle.", "Load Filament", MB_OK);
-				if(xyz.loadFilamentFinish())
+				if(xyz.loadFilamentCancel())
 					MainDlgSetStatus(hDlg, "loading filament complete");
 				else
 					MainDlgSetStatus(hDlg, "loading filament failed");
@@ -576,7 +577,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_UNLOAD: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "unloading filament");
-			if(xyz.unloadFilament())
+			if( xyz.unloadFilamentStart() &&
+				xyz.unloadFilamentRun())
 				MainDlgSetStatus(hDlg, "unloading filament complete");
 			else
 				MainDlgSetStatus(hDlg, "unloading filament failed");
@@ -586,10 +588,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_CLEAN: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "cleaning nozzle");
-			if(xyz.cleanNozzleStart())
+			if( xyz.cleanNozzleStart() &&
+				xyz.cleanNozzleRun())
 			{
 				MessageBox(NULL, "Hit ok after cleaning nozzle.", "Clean Nozzle", MB_OK);
-				if(xyz.cleanNozzleFinish())
+				if(xyz.cleanNozzleCancel())
 					MainDlgSetStatus(hDlg, "cleaning nozzle complete");
 				else
 					MainDlgSetStatus(hDlg, "cleaning nozzle failed");
@@ -605,7 +608,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(xyz.calibrateBedStart()) 
 			{
 				MessageBox(NULL, "Lower detector and hit ok.", "Calibrate Bed", MB_OK);
-				if(xyz.calibrateBedRun())
+				if( xyz.calibrateBedDetectorLowered() &&
+					xyz.calibrateBedRun())
 				{
 					MessageBox(NULL, "Raise detector and hit ok.", "Calibrate Bed", MB_OK);
 					if(xyz.calibrateBedFinish())
@@ -624,7 +628,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_HOME: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "homing printer");
-			if(xyz.homePrinter()) 
+			if( xyz.homePrinterStart() &&
+				xyz.homePrinterRun()) 
 				MainDlgSetStatus(hDlg, "homing printer complete");
 			else
 				MainDlgSetStatus(hDlg, "homing printer failed");
@@ -634,7 +639,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_XP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if(xyz.jogPrinter('x', 10))
+			if( xyz.jogPrinterStart('x', 10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move x complete");
 			else
 				MainDlgSetStatus(hDlg, "move x failed");
@@ -644,7 +650,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_XM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if(xyz.jogPrinter('x', -10))
+			if( xyz.jogPrinterStart('x', -10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move x complete");
 			else
 				MainDlgSetStatus(hDlg, "move x failed");
@@ -654,7 +661,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_YP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if(xyz.jogPrinter('y', 10))
+			if( xyz.jogPrinterStart('y', 10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move y complete");
 			else
 				MainDlgSetStatus(hDlg, "move y failed");
@@ -664,7 +672,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_YM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if(xyz.jogPrinter('y', -10))
+			if( xyz.jogPrinterStart('y', -10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move y complete");
 			else
 				MainDlgSetStatus(hDlg, "move y failed");
@@ -674,7 +683,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_ZP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if(xyz.jogPrinter('z', 10))
+			if( xyz.jogPrinterStart('z', 10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move z complete");
 			else
 				MainDlgSetStatus(hDlg, "move z failed");
@@ -684,7 +694,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_ZM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if(xyz.jogPrinter('z', -10))
+			if( xyz.jogPrinterStart('z', -10) &&
+				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move z complete");
 			else
 				MainDlgSetStatus(hDlg, "move z failed");

@@ -83,6 +83,7 @@
     <ClInclude Include="..\miniz.h" />
     <ClInclude Include="..\network.h" />
     <ClInclude Include="..\serial.h" />
+    <ClInclude Include="..\stream.h" />
     <ClInclude Include="..\timer.h" />
     <ClInclude Include="..\xyzv3.h" />
     <ClInclude Include="Resource.h" />
@@ -95,6 +96,7 @@
     <ClCompile Include="..\miniz.c" />
     <ClCompile Include="..\network.cpp" />
     <ClCompile Include="..\serial.cpp" />
+    <ClCompile Include="..\sream.cpp" />
     <ClCompile Include="..\timer.cpp" />
     <ClCompile Include="..\xyzv3.cpp" />
     <ClCompile Include="miniMoverUI.cpp" />
