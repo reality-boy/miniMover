@@ -22,13 +22,14 @@ void Stream::clear()
 // partial line we would never fill it in properly and recieve the rest of 
 // the line.  It only works if we recieve one or more full lines at a time.
 // yuck!
-int Stream::readLine(char *lineBuf, int len)
+int Stream::readLine(char *buf, int bufLen)
 {
-	if(lineBuf && len > 0)
+	int len = 0;
+	if(buf && bufLen > 0)
 	{
-		*lineBuf = '\0';
-		char *lineBufStart = lineBuf;
-		const char *lineBufEnd = &lineBuf[len-1];
+		*buf = '\0';
+		char *bufStart = buf;
+		const char *bufEnd = &buf[bufLen-1];
 
 		//loop around at least twicw in order to ensure we drained the buffer and found a new line
 		for(int i=0; i<2; i++)
@@ -36,32 +37,32 @@ int Stream::readLine(char *lineBuf, int len)
 			if(lineBufStart == lineBufEnd)
 			{
 				lineBufStart = lineBuf;
-				int len = read(lineBuf, lineBufLen);
+				len = read(lineBuf, lineBufLen);
 				lineBufEnd = &lineBuf[len];
 			}
 
 			if(lineBufStart != lineBufEnd)
 			{
 				bool isDone = false;
-				while(lineBufStart != lineBufEnd && lineBufStart != lineBufEnd)
+				while(bufStart != bufEnd && lineBufStart != lineBufEnd)
 				{
-					*lineBufStart = *lineBufStart;
+					*bufStart = *lineBufStart;
 
-					if(*lineBufStart == '\n')
+					if(*bufStart == '\n')
 					{
-						*lineBufStart = '\0';
+						*bufStart = '\0';
 						isDone = true;
 					}
 
-					lineBufStart++;
+					bufStart++;
 					lineBufStart++;
 
 					if(isDone)
 					{
-						int len = lineBufStart - lineBuf;
+						len = bufStart - buf;
 
 						if(len > 0)
-							debugPrint(DBG_LOG, "recieved: %s", lineBuf);
+							debugPrint(DBG_LOG, "recieved: %s", buf);
 
 						return len;
 					}
@@ -69,11 +70,11 @@ int Stream::readLine(char *lineBuf, int len)
 			}
 		}
 
-		*lineBufStart = '\0';
-		int len = lineBufStart - lineBuf;
+		*bufStart = '\0';
+		len = bufStart - buf;
 
 		if(len > 0)
-			debugPrint(DBG_LOG, "recieved partial: %s", lineBuf);
+			debugPrint(DBG_LOG, "recieved partial: %s", buf);
 
 		return len;
 	}
