@@ -93,6 +93,9 @@ bool XYZV3::connect(int port)
 
 	if(m_serial.openSerial(port, 115200))
 	{
+		// clear out our previous state
+		memset(&m_status, 0, sizeof(m_status));
+
 		m_serial.clear();
 		if(queryStatus())
 		{
@@ -589,7 +592,7 @@ bool XYZV3::queryStatus(bool doPrint)
 		{
 			const char *buf = NULL;
 			if(serialSendMessage("XYZv3/config=zoffset:get"))
-				buf = waitForLine(true); 
+				buf = waitForLine(true, 0.5f); 
 			if(*buf)
 			{
 				if(doPrint)
@@ -1453,7 +1456,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 							else
 								m_serial.writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
-							if(waitForVal("ok", false, 1.0f))
+							if(waitForVal("ok", false))
 							{
 								pDat.isPrintActive = true;
 								success = true;
@@ -1525,7 +1528,7 @@ bool XYZV3::sendFileProcess()
 
 			// write out in one shot
 			m_serial.write(pDat.blockBuf, blockLen + 12);
-			success = waitForVal("ok", false, 1.0f);
+			success = waitForVal("ok", false);
 			if(!success) // bail on error
 				break;
 		} 

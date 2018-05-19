@@ -23,10 +23,6 @@ void Stream::clear()
 	m_lineBufEnd = m_lineBuf;
 }
 
-//****FixMe, this does not work right at all.  If we ever recieved a
-// partial line we would never fill it in properly and recieve the rest of 
-// the line.  It only works if we recieve one or more full lines at a time.
-// yuck!
 int Stream::readLine(char *buf, int bufLen)
 {
 	if(buf && bufLen > 0)
@@ -90,7 +86,9 @@ int Stream::readLine(char *buf, int bufLen)
 		debugPrint(DBG_LOG, "recieved partial: %s", buf);
 
 		// but return true if we got a partial string
-		return bufStart - buf; // length
+		// length of 1 is just a blank terminator, so return zero...
+		len = bufStart - buf + 1;
+		return (len > 1) ? len : 0; // length
 	}
 
 	return 0;
@@ -98,7 +96,6 @@ int Stream::readLine(char *buf, int bufLen)
 
 int Stream::writeStr(const char *buf)
 {
-
 	if(buf)
 		return write(buf, strlen(buf));
 

@@ -60,15 +60,8 @@ HWND hwndListInfo = NULL;
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
 
-/*
-// cache XYZPrinterStatus to detect changes
-ZOffset, int, IDC_EDIT_ZOFF
-Language, ???, IDC_COMBO_LANGUAGE
-LED Timeout, int, IDC_COMBO_ENERGY_SAVING
-Printer Name, string, IDC_EDIT_MACHINE_NAME
-SSID, string, IDC_EDIT_WIFI_SSID
-Channel, int, IDC_EDIT_WIFI_CHAN
-*/
+XYZPrinterStatus prSt = { 0 };
+
 //-------------------------------------------
 // main dialog
 
@@ -299,6 +292,14 @@ void setMachineName(HWND hDlg)
 	SetCursor(defaultCursor);
 }
 
+int getMoveDist(HWND hDlg)
+{
+	int t = SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_GETCURSEL, 0, 0);
+	if(t == 0) return 1;
+	if(t == 1) return 10;
+	if(t == 2) return 100;
+	return 1;
+}
 
 void MainDlgUpdateComDropdown(HWND hDlg)
 {
@@ -351,7 +352,9 @@ void MainDlgUpdate(HWND hDlg)
 			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 
-			SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
+			// only update if changed
+			if(prSt.zOffset != st->zOffset)
+				SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
 
 			//****FixMe, save these off in the registry so we can
 			// detect the printer when the usb is disconnected
@@ -371,33 +374,51 @@ void MainDlgUpdate(HWND hDlg)
 			// and 4 functions represent the network as connected
 			if(!g_wifiOptionsEdited)
 			{
+				const char *prSSID = (prSt.WSSID[0]) ? prSt.WSSID : prSt.N4NetSSID;
 				const char *SSID = (st->WSSID[0]) ? st->WSSID : st->N4NetSSID;
+				// only update if changed
+				if(0!=strcmp(prSSID, SSID))
+					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
+
+				const char *prChan = (prSt.WChannel[0]) ? prSt.WChannel : prSt.N4NetChan;
 				const char *chan = (st->WChannel[0]) ? st->WChannel : st->N4NetChan;
-				SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
-				SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_CHAN, chan);
+				// only update if changed
+				if(0!=strcmp(prChan, chan))
+					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_CHAN, chan);
+
+				/*
 				if(*SSID || *chan)
 					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "******");
 				else
 					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "");
+				*/
 			}
 
 			//****FixMe, what one matches this?
 			//SetDlgItemTextA(hDlg, IDC_COMBO_ENERGY_SAVING, st->???);
 
-			SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
+			// only update if changed
+			if(0 != strcmp(prSt.nMachineName, st->nMachineName))
+				SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
 
 			int pct = max(g_printPct, st->dPrintPercentComplete);
 			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
 
-			int id = 0;
-			for(id=0; id<XYZPrintingLangCount; id++)
-				if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
-					break;
-			// default to en if not found
-			if(id == XYZPrintingLangCount)
-				id = 0;
+			if(0 != strcmp(prSt.lLang, st->lLang))
+			{
+				int id = 0;
+				for(id=0; id<XYZPrintingLangCount; id++)
+					if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
+						break;
+				// default to en if not found
+				if(id == XYZPrintingLangCount)
+					id = 0;
 
-			SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
+				SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
+			}
+
+			// copy to backup
+			memcpy(&prSt, st, sizeof(prSt));
 		}
 	}
 	else
@@ -438,6 +459,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"3 min");
 		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"6 min");
 		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_SETCURSEL, 1, 0); // default to something
+
+		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"1 mm");
+		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"10 mm");
+		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"100 mm");
+		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_SETCURSEL, 1, 0); // default to something
 
 		hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
 
@@ -648,7 +674,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_XP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if( xyz.jogPrinterStart('x', 10) &&
+			if( xyz.jogPrinterStart('x', getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move x complete");
 			else
@@ -659,7 +685,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_XM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if( xyz.jogPrinterStart('x', -10) &&
+			if( xyz.jogPrinterStart('x', -getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move x complete");
 			else
@@ -670,7 +696,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_YP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if( xyz.jogPrinterStart('y', 10) &&
+			if( xyz.jogPrinterStart('y', getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move y complete");
 			else
@@ -681,7 +707,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_YM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if( xyz.jogPrinterStart('y', -10) &&
+			if( xyz.jogPrinterStart('y', -getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move y complete");
 			else
@@ -692,7 +718,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_ZP: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if( xyz.jogPrinterStart('z', 10) &&
+			if( xyz.jogPrinterStart('z', getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move z complete");
 			else
@@ -703,7 +729,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON_ZM: 
 			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if( xyz.jogPrinterStart('z', -10) &&
+			if( xyz.jogPrinterStart('z', -getMoveDist(hDlg)) &&
 				xyz.jogPrinterRun())
 				MainDlgSetStatus(hDlg, "move z complete");
 			else

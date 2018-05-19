@@ -378,9 +378,9 @@ protected:
 	bool getJsonVal(const char *str, const char *key, char *val);
 
 	// serial functions
-	const char* waitForLine(bool waitForEndCom, float timeout_s = 0.5f);
-	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = 0.5f);
-	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = 0.5f);
+	const char* waitForLine(bool waitForEndCom, float timeout_s = 5.0f);
+	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = 5.0f);
+	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = 5.0f);
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);
