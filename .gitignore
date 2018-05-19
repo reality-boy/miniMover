@@ -40,6 +40,8 @@ files/
 miniz/
 Release/
 tiny-AES/
+
+# user provided
 .gitignore~
 *.sdf
 *.suo
@@ -48,3 +50,9 @@ tiny-AES/
 *.user
 *.ipch
 debug.txt
+*.aps
+*.idb
+*.pdb
+*.res
+*.tlog
+
