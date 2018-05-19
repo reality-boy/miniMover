@@ -9,8 +9,8 @@ class Stream
 {
 public:
 	Stream() 
-		: lineBufStart(lineBuf)
-		, lineBufEnd(lineBuf)
+		: m_lineBufStart(m_lineBuf)
+		, m_lineBufEnd(m_lineBuf)
 	{}
 
 	~Stream() {}
@@ -36,10 +36,10 @@ public:
 protected:
 
 	// readLine data
-	const static int lineBufLen = 4096;
-	char lineBuf[lineBufLen];
-	char* lineBufStart;
-	char* lineBufEnd;
+	const static int m_lineBufLen = 4096;
+	char m_lineBuf[m_lineBufLen];
+	char* m_lineBufStart;
+	char* m_lineBufEnd;
 };
 
 #endif // STREAM_H

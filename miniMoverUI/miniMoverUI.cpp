@@ -60,6 +60,15 @@ HWND hwndListInfo = NULL;
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
 
+/*
+// cache XYZPrinterStatus to detect changes
+ZOffset, int, IDC_EDIT_ZOFF
+Language, ???, IDC_COMBO_LANGUAGE
+LED Timeout, int, IDC_COMBO_ENERGY_SAVING
+Printer Name, string, IDC_EDIT_MACHINE_NAME
+SSID, string, IDC_EDIT_WIFI_SSID
+Channel, int, IDC_EDIT_WIFI_CHAN
+*/
 //-------------------------------------------
 // main dialog
 

@@ -165,9 +165,24 @@ int Serial::getBaudRate()
  
 void Serial::clear()
 {
-	//****FixMe, drain buffer and log to error log
-	if(m_serial)
-		PurgeComm (m_serial, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
+	// call parrent
+	Stream::clear();
+
+	// check if we have data waiting, without stalling
+	DWORD dwErrorFlags;
+	COMSTAT ComStat;
+	ClearCommError(m_serial, &dwErrorFlags, &ComStat);
+	if(ComStat.cbInQue)
+	{
+		// log any leftover data
+		const int len = 4096;
+		char buf[len];
+		if(read(buf, len))
+			debugPrint(DBG_REPORT, "leftover data: %s", buf);
+	}
+
+	//if(m_serial)
+	//	PurgeComm (m_serial, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
 }
 
 int Serial::read(char *buf, int len)

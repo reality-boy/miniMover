@@ -13,9 +13,14 @@
 
 void Stream::clear()
 {
-	lineBuf[0] = '\0';
-	lineBufStart = lineBuf;
-	lineBufEnd = lineBuf;
+	// log any leftover data
+	int len = m_lineBufEnd - m_lineBufStart;
+	if(len > 0)
+		debugPrint(DBG_REPORT, "leftover data: %s", m_lineBufStart);
+
+	m_lineBuf[0] = '\0';
+	m_lineBufStart = m_lineBuf;
+	m_lineBufEnd = m_lineBuf;
 }
 
 //****FixMe, this does not work right at all.  If we ever recieved a
@@ -24,59 +29,68 @@ void Stream::clear()
 // yuck!
 int Stream::readLine(char *buf, int bufLen)
 {
-	int len = 0;
 	if(buf && bufLen > 0)
 	{
+		// make sure we return something
 		*buf = '\0';
+
+		// setup our counters
 		char *bufStart = buf;
 		const char *bufEnd = &buf[bufLen-1];
 
-		//loop around at least twicw in order to ensure we drained the buffer and found a new line
-		for(int i=0; i<2; i++)
+		// check if we already have a newline terminated string
+		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
 		{
-			if(lineBufStart == lineBufEnd)
+			*bufStart = *m_lineBufStart;
+			m_lineBufStart++;
+
+			if(*bufStart == '\n')
 			{
-				lineBufStart = lineBuf;
-				len = read(lineBuf, lineBufLen);
-				lineBufEnd = &lineBuf[len];
+				*bufStart = '\0';
+				debugPrint(DBG_LOG, "recieved: %s", buf);
+				return bufStart - buf + 1; // length
 			}
-
-			if(lineBufStart != lineBufEnd)
-			{
-				bool isDone = false;
-				while(bufStart != bufEnd && lineBufStart != lineBufEnd)
-				{
-					*bufStart = *lineBufStart;
-
-					if(*bufStart == '\n')
-					{
-						*bufStart = '\0';
-						isDone = true;
-					}
-
-					bufStart++;
-					lineBufStart++;
-
-					if(isDone)
-					{
-						len = bufStart - buf;
-
-						if(len > 0)
-							debugPrint(DBG_LOG, "recieved: %s", buf);
-
-						return len;
-					}
-				}
-			}
+			bufStart++;
 		}
 
+		int len = 0;
+		// move old data to start of buffer
+		if(m_lineBufStart < m_lineBufEnd)
+		{
+			len = m_lineBufEnd - m_lineBufStart;
+			memcpy(m_lineBuf, m_lineBufStart, len);
+			m_lineBufStart = m_lineBuf;
+			m_lineBufEnd = m_lineBuf + len;
+		}
+
+		// get new data from serial device
+		len = (m_lineBuf + m_lineBufLen) - m_lineBufStart;
+		len = read(m_lineBufEnd, len);
+		m_lineBufEnd += len;
+
+		// try once more for a newline
+		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
+		{
+			*bufStart = *m_lineBufStart;
+			m_lineBufStart++;
+
+			if(*bufStart == '\n')
+			{
+				*bufStart = '\0';
+				debugPrint(DBG_LOG, "recieved: %s", buf);
+				return bufStart - buf + 1; // length
+			}
+			bufStart++;
+		}
+
+		// null terminate the string
 		*bufStart = '\0';
-		len = bufStart - buf;
 
-		if(len > 0)
-			debugPrint(DBG_LOG, "recieved partial: %s", buf);
+		// log the error
+		debugPrint(DBG_LOG, "recieved partial: %s", buf);
 
-		return len;
+		// but return true if we got a partial string
+		return bufStart - buf; // length
 	}
 
 	return 0;
