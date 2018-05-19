@@ -355,7 +355,6 @@ protected:
 
 	bool serialSendMessage(const char *format, ...);
 
-
 	struct sendFileData
 	{
 		bool isPrintActive;

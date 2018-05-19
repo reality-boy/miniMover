@@ -141,6 +141,31 @@ const char* XYZV3::getPortName(int id)
 	return SerialHelper::getPortName(id);
 }
 
+bool XYZV3::serialSendMessage(const char *format, ...)
+{
+	//****Note, assume parrent has locked the mutex for us
+	bool success = false;
+
+	if(m_serial.isOpen() && format)
+	{
+		m_serial.clear();
+
+		const static int BUF_SIZE  = 2048;
+		char msgBuf[BUF_SIZE];
+		va_list arglist;
+
+		va_start(arglist, format);
+		_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+		msgBuf[sizeof(msgBuf)-1] = '\0';
+		va_end(arglist);
+
+		m_serial.writeStr(msgBuf);
+		success = true;
+	}
+
+	return success;
+}
+
 bool XYZV3::queryStatus(bool doPrint)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
@@ -1124,31 +1149,6 @@ int XYZV3::getZOffset()
 	return ret;
 }
 
-bool XYZV3::serialSendMessage(const char *format, ...)
-{
-	//****Note, assume parrent has locked the mutex for us
-	bool success = false;
-
-	if(m_serial.isOpen() && format)
-	{
-		m_serial.clear();
-
-		const static int BUF_SIZE  = 2048;
-		char msgBuf[BUF_SIZE];
-		va_list arglist;
-
-		va_start(arglist, format);
-		_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
-		msgBuf[sizeof(msgBuf)-1] = '\0';
-		va_end(arglist);
-
-		m_serial.writeStr(msgBuf);
-		success = true;
-	}
-
-	return success;
-}
-
 bool XYZV3::setZOffset(int offset)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
@@ -1395,8 +1395,6 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 
 	return success;
 }
-
-
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
@@ -2174,9 +2172,10 @@ void XYZV3::writeByte(FILE *f, char c)
 
 void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 {
-	if(f && count > 0)
+	if(f)
 	{
-		fwrite(&byte, 1, count, f);
+		for(int i=0; i<count; i++)
+			fwrite(&byte, 1, 1, f);
 	}
 }
 
