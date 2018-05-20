@@ -325,7 +325,7 @@ bool handlePrintFile(const char *path)
 int main(int argc, char **argv)
 {
 	debugInit();
-	msTimer t;
+	msTimer tm;
 
 	if(argc <= 1)
 	{
@@ -365,6 +365,8 @@ int main(int argc, char **argv)
 			}
 			else
 			{
+				int t;
+
 				switch(argv[i][1])
 				{
 				case '?':
@@ -496,7 +498,7 @@ int main(int argc, char **argv)
 				case 'o':
 					if(i+1 < argc && !isKey(argv[i+1]))
 					{
-						int t = atoi(argv[i+1]);
+						t = atoi(argv[i+1]);
 						if(checkCon())
 						{
 							int offset = xyz.getZOffset();
@@ -556,74 +558,54 @@ int main(int argc, char **argv)
 					}
 					break;
 				case 'x':
+					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1])) 
+						t = atoi(argv[i+1]);
+					if(checkCon())
 					{
-						int t = atoi(argv[i+1]);
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('x', t) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-						i++;
+						if( !xyz.jogPrinterStart('x', t) ||
+							!xyz.jogPrinterRun())
+							printf("jog printer failed\n");
 					}
-					else
-					{
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('x', 10) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-					}
+					i++;
 					break;
 				case 'y':
+					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1]))
+						t = atoi(argv[i+1]);
+					if(checkCon())
 					{
-						int t = atoi(argv[i+1]);
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('y', t) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-						i++;
+						if( !xyz.jogPrinterStart('y', t) ||
+							!xyz.jogPrinterRun())
+							printf("jog printer failed\n");
 					}
-					else
-					{
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('y', 10) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-					}
+					i++;
 					break;
 				case 'z':
+					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1]))
+						t = atoi(argv[i+1]);
+					if(checkCon())
 					{
-						int t = atoi(argv[i+1]);
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('z', t) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-						i++;
+						if( !xyz.jogPrinterStart('z', t) ||
+							!xyz.jogPrinterRun())
+							printf("jog printer failed\n");
 					}
-					else
-					{
-						if(checkCon())
-						{
-							if( !xyz.jogPrinterStart('z', 10) ||
-								!xyz.jogPrinterRun())
-								printf("jog printer failed\n");
-						}
-					}
+					i++;
 					break;
 				default:
 					printf("unknown argument %s\n", argv[i]);
 					break;
+
+				//****FixMe, hook these up!
+				// restoreDefaults()
+				// setLanguage("en")
+				// setEnergySaving(0-9)
+				// sendDisconnectApp()
+				// sendDisconnectApp()
+				// setMachineLife(int time_s)
+				// setMachineName("name")
+				// setWifi(const char *ssid, const char *password, int channel)
 				}
 			}
 		}
@@ -635,7 +617,7 @@ int main(int argc, char **argv)
 	debugFinalize();
 
 #if defined(_DEBUG) |  defined(DUMP_STATUS)
-	printf("run took %0.4f seconds\n", t.stopTimer());
+	printf("run took %0.4f seconds\n", tm.stopTimer());
 	printf("\nhit any key to continue.\n");
 	getch();
 #endif

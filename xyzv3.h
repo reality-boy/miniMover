@@ -315,7 +315,7 @@ public:
 	bool cancelPrint();
 	bool pausePrint();
 	bool resumePrint();
-	bool readyPrint();
+	bool readyPrint(); // call to notify printer bed is clear
 
 	// print a gcode or 3w file, convert as needed
 	bool printFile(const char *path, XYZCallback cbStatus);
