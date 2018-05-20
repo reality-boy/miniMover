@@ -22,8 +22,6 @@
 
 #pragma warning(disable:4996) // live on the edge!
 
-//****FixMe, rather than calling clear() we
-// should check what data was left over and assert!
 //****FixMe, keep track of 'end' messages and fire them
 // if we try to exit in middle of operation, like calibrating bed
 //****FixMe, rewrite message loop to be state driven
@@ -2339,6 +2337,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				//****FixMe, fill in totalFacets
 
 				// total layers
+				// ;LAYER_COUNT:356
 				//****FixMe, fill in totalLayers
 
 				// filament used
