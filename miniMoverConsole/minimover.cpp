@@ -15,6 +15,7 @@
 #pragma warning(disable:4996) // live on the edge!
 
 XYZV3 xyz;
+Serial serial;
 int port = -1;
 
 void updateStatus(float pct)
@@ -55,9 +56,17 @@ void postHelp()
 
 bool checkCon()
 {
-	if(xyz.connect(port))
+	//****FixMe, is this called frequently?
+	int tPort = port;
+	if(tPort < 0)
+		tPort = SerialHelper::queryForPorts("XYZ");
+	if(serial.openSerial(port, 115200))
+	{
+		xyz.setStream(&serial);
 		return true;
+	}
 
+	xyz.setStream(NULL);
 	if(port >= 0)
 		printf("printer not found on port: %d\n", port);
 	else
@@ -612,7 +621,8 @@ int main(int argc, char **argv)
 	}
 	
 	// disconnect just in case
-	xyz.disconnect();
+	xyz.setStream(NULL);
+	serial.closeSerial();
 
 	debugFinalize();
 

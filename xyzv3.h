@@ -224,16 +224,9 @@ public:
 	//===========================
 	// serial communication
 
-	// port is com port number, -1 is auto detect
-	bool connect(int port = -1);
-	void disconnect();
-	//bool isConnected(); // return true if connected
-
-	// expose serial functionality
-	static int refreshPortList();
-	static int getPortCount();
-	static int getPortNumber(int id);
-	static const char* getPortName(int id);
+	// attach to a serial stream
+	// pass in NULL to disconnect from stream
+	void setStream(Stream *s);
 
 	// === query commands ===
 
@@ -400,8 +393,7 @@ protected:
 	bool checkLineIsHeader(const char* lineBuf);
 	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
 
-	Serial m_serial;
-	Socket m_socket;
+	Stream *m_stream;
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
 

@@ -42,6 +42,7 @@
 // globals
 
 XYZV3 xyz;
+Serial serial;
 
 int g_timerInterval = 500;
 
@@ -303,8 +304,8 @@ int getMoveDist(HWND hDlg)
 
 void MainDlgUpdateComDropdown(HWND hDlg)
 {
-	XYZV3::refreshPortList();
-	int count = XYZV3::getPortCount();
+	SerialHelper::queryForPorts("XYZ");
+	int count = SerialHelper::getPortCount();
 
 	if(count >= g_maxPorts)
 		count = g_maxPorts;
@@ -316,8 +317,8 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 		const char *name = "Auto";
 		if(i > 0)
 		{
-			port = XYZV3::getPortNumber(i-1);
-			name = XYZV3::getPortName(i-1);
+			port = SerialHelper::getPortNumber(i-1);
+			name = SerialHelper::getPortName(i-1);
 		}
 
 		g_comIDtoPort[i] = port;
@@ -432,10 +433,19 @@ void MainDlgConnect(HWND hDlg)
 	if(comID == CB_ERR)
 		comID = 0;
 
-	if(xyz.connect(g_comIDtoPort[comID]))
+	int port = g_comIDtoPort[comID];
+	if(port < 0)
+		port = SerialHelper::queryForPorts("XYZ");
+	if( serial.openSerial(port, 115200))
+	{
+		xyz.setStream(&serial);
 		MainDlgSetStatus(hDlg, "connected");
+	}
 	else
+	{
+		xyz.setStream(NULL);
 		MainDlgSetStatus(hDlg, "not connected");
+	}
 }
 
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -483,7 +493,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_CLOSE:
 		DestroyWindow(hDlg);
-		xyz.disconnect();
+		xyz.setStream(NULL);
+		serial.closeSerial();
 
 		KillTimer(hDlg, g_timer);
 		return TRUE;

@@ -74,6 +74,9 @@ XYZV3::XYZV3()
 {
 	memset(&m_status, 0, sizeof(m_status));
 	memset(&pDat, 0, sizeof(pDat));
+	m_stream = NULL;
+	m_info = NULL;
+
 	ghMutex = CreateMutex(NULL, FALSE, NULL);
 } 
 
@@ -82,63 +85,20 @@ XYZV3::~XYZV3()
 	CloseHandle(ghMutex);
 } 
 
-bool XYZV3::connect(int port)
+void XYZV3::setStream(Stream *s)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	bool success = false;
 
-	// try to find a good default
-	if(port < 0)
-		port = XYZV3::refreshPortList();
+	m_stream = s;
+	memset(&m_status, 0, sizeof(m_status));
 
-	if(m_serial.openSerial(port, 115200))
+	if(m_stream)
 	{
-		// clear out our previous state
-		memset(&m_status, 0, sizeof(m_status));
-
-		m_serial.clear();
-		if(queryStatus())
-		{
-			success = true;
-		}
+		m_stream->clear();
+		queryStatus();
 	}
 
 	ReleaseMutex(ghMutex);
-	return success;
-}
-
-void XYZV3::disconnect()
-{
-	WaitForSingleObject(ghMutex, INFINITE);
-	m_serial.closeSerial();
-	ReleaseMutex(ghMutex);
-}
-
-/*
-bool XYZV3::isConnected()
-{
-	return m_serial.isOpen() && m_status.isValid;
-}
-*/
-
-int XYZV3::refreshPortList()
-{
-	return SerialHelper::queryForPorts("XYZ");
-}
-
-int XYZV3::getPortCount()
-{
-	return SerialHelper::getPortCount();
-}
-
-int XYZV3::getPortNumber(int id)
-{
-	return SerialHelper::getPortNumber(id);
-}
-
-const char* XYZV3::getPortName(int id)
-{
-	return SerialHelper::getPortName(id);
 }
 
 bool XYZV3::serialSendMessage(const char *format, ...)
@@ -146,9 +106,9 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 	//****Note, assume parrent has locked the mutex for us
 	bool success = false;
 
-	if(m_serial.isOpen() && format)
+	if(m_stream && m_stream->isOpen() && format)
 	{
-		m_serial.clear();
+		m_stream->clear();
 
 		const static int BUF_SIZE  = 2048;
 		char msgBuf[BUF_SIZE];
@@ -159,7 +119,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		m_serial.writeStr(msgBuf);
+		m_stream->writeStr(msgBuf);
 		success = true;
 	}
 
@@ -171,462 +131,465 @@ bool XYZV3::queryStatus(bool doPrint)
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
-	if(serialSendMessage("XYZv3/query=a"))
+	if(m_stream && m_stream->isOpen())
 	{
-		static const int len = 1024;
-		char buf[len];
-		const char *strPtr = NULL;
-		bool zOffsetSet = false;
-
-		// zero out results
-		memset(&m_status, 0, sizeof(m_status));
-
-		// only try so many times for the answer
-		bool isDone = false;
-		float end = msTime::getTime_s() + 0.5f; // wait a second or two
-		while(msTime::getTime_s() < end && !isDone)
+		if(serialSendMessage("XYZv3/query=a"))
 		{
-			if(m_serial.readLine(buf, len))
+			static const int len = 1024;
+			char buf[len];
+			const char *strPtr = NULL;
+			bool zOffsetSet = false;
+
+			// zero out results
+			memset(&m_status, 0, sizeof(m_status));
+
+			// only try so many times for the answer
+			bool isDone = false;
+			float end = msTime::getTime_s() + 0.5f; // wait a second or two
+			while(msTime::getTime_s() < end && !isDone)
 			{
-				if(doPrint)
-					printf("%s\n", buf);
-
-				char s1[256] = "";
-
-				switch(buf[0])
+				if(m_stream->readLine(buf, len))
 				{
-				case 'b': // heat bed temperature, b:xx - deg C
-					sscanf(buf, "b:%d", &m_status.bBedActualTemp_C);
-					break;
+					if(doPrint)
+						printf("%s\n", buf);
 
-				case 'c': // Calibration values, c:{x1,x2,x3,x4,x5,x6,x7,x8,x9} 
-					//only on miniMover
-					m_status.cCalibIsValid = true;
-					sscanf(buf, "c:{%d,%d,%d,%d,%d,%d,%d,%d,%d}",
-						&m_status.cCalib[0], 
-						&m_status.cCalib[1], 
-						&m_status.cCalib[2], 
-						&m_status.cCalib[3], 
-						&m_status.cCalib[4], 
-						&m_status.cCalib[5], 
-						&m_status.cCalib[6], 
-						&m_status.cCalib[7], 
-						&m_status.cCalib[8]);
-					break;
+					char s1[256] = "";
 
-				case 'd': // print status, d:ps,el,es
-					//   ps - print percent complete (0-100?)
-					//   el - print elapsed time (minutes)
-					//   es - print estimated time left (minutes)
-					//   a value of 0,0,0 indicates no job is running
-					sscanf(buf, "d:%d,%d,%d", &m_status.dPrintPercentComplete, &m_status.dPrintElapsedTime_m, &m_status.dPrintTimeLeft_m);
-
-					// why is this set to this? is it a bad 3w file?
-					if(m_status.dPrintTimeLeft_m == 0x04444444)
-						m_status.dPrintTimeLeft_m = -1;
-					break;
-
-				case 'e': // error status, e:ec - some sort of string?
-					sscanf(buf, "e:%d", &m_status.eErrorStatus);
-					strPtr = errorCodeToStr(m_status.eErrorStatus);
-					if(strPtr)
-						strcpy(m_status.eErrorStatusStr, strPtr);
-					else
-						m_status.eErrorStatusStr[0] = '\0';
-					break;
-
-				case 'f': // filament remaining, f:ct,len,len2
-					//   ct - how many spools of filiment, 1 for normal printer
-					//   len - filament 1 left in millimeters
-					//   len2 - filament 2 left in millimeters, optional
-					sscanf(buf, "f:%d,%d,%d", &m_status.fFilamentSpoolCount, &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
-					break;
-
-				//case 'g': break; // unused
-
-				case 'h': // pla filament loaded, h:x > 0 if pla filament in printer
-					// not used with miniMaker
-					sscanf(buf, "h:%d", &m_status.hIsFilamentPLA);
-					break;
-
-				case 'i': // machine serial number, i:sn - serial number
-					//****Note, convert ? characters to - characters when parsing sn
-					sscanf(buf, "i:%s", &m_status.iMachineSerialNum);
-					break;
-
-				case 'j': // printer status, j:st,sb
-					//   st - status id
-					//   sb - substatus id
-					sscanf(buf, "j:%d,%d", &m_status.jPrinterState, &m_status.jPrinterSubState);
-
-					// translate old printer status codes
-					switch(m_status.jPrinterState)
+					switch(buf[0])
 					{
-					case 0:
-						m_status.jPrinterState = PRINT_INITIAL;
+					case 'b': // heat bed temperature, b:xx - deg C
+						sscanf(buf, "b:%d", &m_status.bBedActualTemp_C);
 						break;
-					case 1:
-						m_status.jPrinterState = PRINT_HEATING;
-						break;
-					case 2:
-						m_status.jPrinterState = PRINT_PRINTING;
-						break;
-					case 3:
-						m_status.jPrinterState = PRINT_CALIBRATING;
-						break;
-					case 4:
-						m_status.jPrinterState = PRINT_CALIBRATING_DONE;
-						break;
-					case 5:
-						m_status.jPrinterState = PRINT_COOLING_DONE;
-						break;
-					case 6:
-						m_status.jPrinterState = PRINT_COOLING_END;
-						break;
-					case 7:
-						m_status.jPrinterState = PRINT_ENDING_PROCESS;
-						break;
-					case 8:
-						m_status.jPrinterState = PRINT_ENDING_PROCESS_DONE;
-						break;
-					case 9:
-						m_status.jPrinterState = PRINT_JOB_DONE;
-						break;
-					case 10:
-						m_status.jPrinterState = PRINT_NONE;
-						break;
-					case 11:
-						m_status.jPrinterState = PRINT_IN_PROGRESS;
-						break;
-					case 12:
-						m_status.jPrinterState = PRINT_STOP;
-						break;
-					case 13:
-						m_status.jPrinterState = PRINT_LOAD_FILAMENT;
-						break;
-					case 14:
-						m_status.jPrinterState = PRINT_UNLOAD_FILAMENT;
-						break;
-					case 15:
-						m_status.jPrinterState = PRINT_AUTO_CALIBRATION;
-						break;
-					case 16:
-						m_status.jPrinterState = PRINT_JOG_MODE;
-						break;
-					case 17:
-						m_status.jPrinterState = PRINT_FATAL_ERROR;
-						break;
-					}
 
-					// fill in status string
-					strPtr = stateCodesToStr(m_status.jPrinterState, m_status.jPrinterSubState);
-					if(strPtr)
-						strcpy(m_status.jPrinterStateStr, strPtr); 
-					else 
-						m_status.jPrinterStateStr[0] = '\0';
+					case 'c': // Calibration values, c:{x1,x2,x3,x4,x5,x6,x7,x8,x9} 
+						//only on miniMover
+						m_status.cCalibIsValid = true;
+						sscanf(buf, "c:{%d,%d,%d,%d,%d,%d,%d,%d,%d}",
+							&m_status.cCalib[0], 
+							&m_status.cCalib[1], 
+							&m_status.cCalib[2], 
+							&m_status.cCalib[3], 
+							&m_status.cCalib[4], 
+							&m_status.cCalib[5], 
+							&m_status.cCalib[6], 
+							&m_status.cCalib[7], 
+							&m_status.cCalib[8]);
+						break;
 
-					break;
+					case 'd': // print status, d:ps,el,es
+						//   ps - print percent complete (0-100?)
+						//   el - print elapsed time (minutes)
+						//   es - print estimated time left (minutes)
+						//   a value of 0,0,0 indicates no job is running
+						sscanf(buf, "d:%d,%d,%d", &m_status.dPrintPercentComplete, &m_status.dPrintElapsedTime_m, &m_status.dPrintTimeLeft_m);
 
-				case 'k': // material type, k:xx
-					//   xx is material type?
-					//   one of 41 46 47 50 51 54 56
-					//not used on miniMaker
-					sscanf(buf, "k:%d", &m_status.kFilamentMaterialType);
+						// why is this set to this? is it a bad 3w file?
+						if(m_status.dPrintTimeLeft_m == 0x04444444)
+							m_status.dPrintTimeLeft_m = -1;
+						break;
 
-					strPtr = filamentMaterialTypeToStr(m_status.kFilamentMaterialType);
-					if(strPtr)
-						strcpy(m_status.kFilamentMaterialTypeStr, strPtr);
-					else 
-						m_status.kFilamentMaterialTypeStr[0] = '\0';
-
-					break;
-
-				case 'l': // language, l:ln - one of en, fr, it, de, es, jp
-					sscanf(buf, "l:%s", &m_status.lLang);
-					break;
-
-				case 'm': // ????? m:x,y,z
-					//****FixMe, work out what this is
-					sscanf(buf, "m:%d,%d,%d", &m_status.mVal[0], &m_status.mVal[1], &m_status.mVal[2]);
-					break;
-
-				case 'n': // printer name, n:nm - name as a string
-					sscanf(buf, "n:%s", &m_status.nMachineName);
-					break;
-
-				case 'o': // print options, o:ps,tt,cc,al
-					//   ps is package size * 1024
-					//   tt ??? //****FixMe, work out what this is
-					//   cc ??? //****FixMe, work out what this is
-					//   al is auto leveling on if a+
-					//o:p8,t1,c1,a+
-					sscanf(buf, "o:p%d,t%d,c%d,%s", 
-						&m_status.oPacketSize, 
-						&m_status.oT, 
-						&m_status.oC, 
-						s1);
-					m_status.oPacketSize = (m_status.oPacketSize > 0) ? m_status.oPacketSize*1024 : 8192;
-					m_status.oAutoLevelEnabled = (0 == strcmp(s1, "a+")) ? true : false;
-					break;
-
-				case 'p': // printer model number, p:mn - model_num
-					//p:dv1MX0A000
-					sscanf(buf, "p:%s", m_status.pMachineModelNumber);
-					m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
-					break;
-
-				//case 'q': break; // unused
-				//case 'r': break; // unused
-
-				case 's': // machine capabilities, s:{xx,yy...}
-					//   xx is one of
-					//   button:no
-					//   buzzer:on  can use buzzer?
-					//   dr:{front:on,top:on}  front/top door 
-					//   eh:1  lazer engraver installed
-					//   fd:1  ???
-					//   fm:1  ???
-					//   of:1  open filament allowed
-					//   sd:yes  sd card yes or no
-					//s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
-					//s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
-					//****FixMe, need to detect if status is available or not, and indicate if feature is present
-					if(getJsonVal(buf, "buzzer", s1))
-						m_status.sBuzzerEnabled = (0==strcmp(s1, "\"on\"")) ? true : false;
-					if(getJsonVal(buf, "button", s1))
-						m_status.sButton = (0==strcmp(s1, "\"yes\"")) ? true : false;
-					if(getJsonVal(buf, "top", s1))
-						m_status.sFrontDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
-					if(getJsonVal(buf, "front", s1))
-						m_status.sTopDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
-					if(getJsonVal(buf, "sd", s1))
-						m_status.sSDCard = (0==strcmp(s1, "\"yes\"")) ? true : false;
-					if(getJsonVal(buf, "eh", s1))
-						m_status.sHasLazer = (s1[0] == '1') ? true : false;
-					if(getJsonVal(buf, "fd", s1))
-						m_status.sFd = (s1[0] == '1') ? true : false;
-					if(getJsonVal(buf, "fm", s1))
-						m_status.sFm = (s1[0] == '1') ? true : false;
-					if(getJsonVal(buf, "of", s1))
-						m_status.sOpenFilament = (s1[0] == '1') ? true : false;
-					break;
-
-				case 't': // extruder temperature, t:ss,aa,bb,cc,dd
-					{
-					//   if ss == 1
-					//     aa is extruder temp in C
-					//     bb is target temp in C
-					//   else
-					//     aa is extruder 1 temp
-					//     bb is extruder 2 temp
-					//t:1,20,0
-					int t;
-					sscanf(buf, "t:%d,%d,%d", &m_status.tExtruderCount, &m_status.tExtruder1ActualTemp_C, &t);
-					if(m_status.tExtruderCount == 1)
-						m_status.tExtruderTargetTemp_C = t; // set by O: if not set here
-					else
-						m_status.tExtruder2ActualTemp_C = t;
-					}
-					break;
-
-				//case 'u': break; // unused
-
-				case 'v': // firmware version, v:fw or v:os,ap,fw
-					//   fw is firmware version string
-					//   os is os version string
-					//   ap is app version string
-					//v:1.1.1
-					sscanf(buf, "v:%s", m_status.vFirmwareVersion);
-					break;
-
-				case 'w': // filament serian number, w:id,sn,xx
-					//   if id == 1
-					//     sn is filament 1 serial number
-					//     xx is optional default filament temp
-					//   else
-					//     sn is filament 1 serial number
-					//     xx is filament 2 serial number
-					//
-					//   Serial number format
-					//   DDMLCMMTTTSSSS
-					//   	DD - Dloc
-					//   	M - Material
-					//   	L - Length
-					//   	    varies but in general 
-					//   	    3 - 120000 mm
-					//   	    5 - 185000 mm
-					//   	    6 - 240000 mm
-					//   	C - color
-					//   	MM - Mloc
-					//   	TTT - Mdate
-					//   	SSSS - serial number
-					//w:1,PMP6PTH6840596
-					sscanf(buf, "w:%d,%s,%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
-
-					if(strlen(m_status.wFilament1SerialNumber) > 4)
-					{
-						strPtr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
+					case 'e': // error status, e:ec - some sort of string?
+						sscanf(buf, "e:%d", &m_status.eErrorStatus);
+						strPtr = errorCodeToStr(m_status.eErrorStatus);
 						if(strPtr)
-							strcpy(m_status.wFilament1Color, strPtr);
+							strcpy(m_status.eErrorStatusStr, strPtr);
+						else
+							m_status.eErrorStatusStr[0] = '\0';
+						break;
+
+					case 'f': // filament remaining, f:ct,len,len2
+						//   ct - how many spools of filiment, 1 for normal printer
+						//   len - filament 1 left in millimeters
+						//   len2 - filament 2 left in millimeters, optional
+						sscanf(buf, "f:%d,%d,%d", &m_status.fFilamentSpoolCount, &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
+						break;
+
+					//case 'g': break; // unused
+
+					case 'h': // pla filament loaded, h:x > 0 if pla filament in printer
+						// not used with miniMaker
+						sscanf(buf, "h:%d", &m_status.hIsFilamentPLA);
+						break;
+
+					case 'i': // machine serial number, i:sn - serial number
+						//****Note, convert ? characters to - characters when parsing sn
+						sscanf(buf, "i:%s", &m_status.iMachineSerialNum);
+						break;
+
+					case 'j': // printer status, j:st,sb
+						//   st - status id
+						//   sb - substatus id
+						sscanf(buf, "j:%d,%d", &m_status.jPrinterState, &m_status.jPrinterSubState);
+
+						// translate old printer status codes
+						switch(m_status.jPrinterState)
+						{
+						case 0:
+							m_status.jPrinterState = PRINT_INITIAL;
+							break;
+						case 1:
+							m_status.jPrinterState = PRINT_HEATING;
+							break;
+						case 2:
+							m_status.jPrinterState = PRINT_PRINTING;
+							break;
+						case 3:
+							m_status.jPrinterState = PRINT_CALIBRATING;
+							break;
+						case 4:
+							m_status.jPrinterState = PRINT_CALIBRATING_DONE;
+							break;
+						case 5:
+							m_status.jPrinterState = PRINT_COOLING_DONE;
+							break;
+						case 6:
+							m_status.jPrinterState = PRINT_COOLING_END;
+							break;
+						case 7:
+							m_status.jPrinterState = PRINT_ENDING_PROCESS;
+							break;
+						case 8:
+							m_status.jPrinterState = PRINT_ENDING_PROCESS_DONE;
+							break;
+						case 9:
+							m_status.jPrinterState = PRINT_JOB_DONE;
+							break;
+						case 10:
+							m_status.jPrinterState = PRINT_NONE;
+							break;
+						case 11:
+							m_status.jPrinterState = PRINT_IN_PROGRESS;
+							break;
+						case 12:
+							m_status.jPrinterState = PRINT_STOP;
+							break;
+						case 13:
+							m_status.jPrinterState = PRINT_LOAD_FILAMENT;
+							break;
+						case 14:
+							m_status.jPrinterState = PRINT_UNLOAD_FILAMENT;
+							break;
+						case 15:
+							m_status.jPrinterState = PRINT_AUTO_CALIBRATION;
+							break;
+						case 16:
+							m_status.jPrinterState = PRINT_JOG_MODE;
+							break;
+						case 17:
+							m_status.jPrinterState = PRINT_FATAL_ERROR;
+							break;
+						}
+
+						// fill in status string
+						strPtr = stateCodesToStr(m_status.jPrinterState, m_status.jPrinterSubState);
+						if(strPtr)
+							strcpy(m_status.jPrinterStateStr, strPtr); 
+						else 
+							m_status.jPrinterStateStr[0] = '\0';
+
+						break;
+
+					case 'k': // material type, k:xx
+						//   xx is material type?
+						//   one of 41 46 47 50 51 54 56
+						//not used on miniMaker
+						sscanf(buf, "k:%d", &m_status.kFilamentMaterialType);
+
+						strPtr = filamentMaterialTypeToStr(m_status.kFilamentMaterialType);
+						if(strPtr)
+							strcpy(m_status.kFilamentMaterialTypeStr, strPtr);
+						else 
+							m_status.kFilamentMaterialTypeStr[0] = '\0';
+
+						break;
+
+					case 'l': // language, l:ln - one of en, fr, it, de, es, jp
+						sscanf(buf, "l:%s", &m_status.lLang);
+						break;
+
+					case 'm': // ????? m:x,y,z
+						//****FixMe, work out what this is
+						sscanf(buf, "m:%d,%d,%d", &m_status.mVal[0], &m_status.mVal[1], &m_status.mVal[2]);
+						break;
+
+					case 'n': // printer name, n:nm - name as a string
+						sscanf(buf, "n:%s", &m_status.nMachineName);
+						break;
+
+					case 'o': // print options, o:ps,tt,cc,al
+						//   ps is package size * 1024
+						//   tt ??? //****FixMe, work out what this is
+						//   cc ??? //****FixMe, work out what this is
+						//   al is auto leveling on if a+
+						//o:p8,t1,c1,a+
+						sscanf(buf, "o:p%d,t%d,c%d,%s", 
+							&m_status.oPacketSize, 
+							&m_status.oT, 
+							&m_status.oC, 
+							s1);
+						m_status.oPacketSize = (m_status.oPacketSize > 0) ? m_status.oPacketSize*1024 : 8192;
+						m_status.oAutoLevelEnabled = (0 == strcmp(s1, "a+")) ? true : false;
+						break;
+
+					case 'p': // printer model number, p:mn - model_num
+						//p:dv1MX0A000
+						sscanf(buf, "p:%s", m_status.pMachineModelNumber);
+						m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
+						break;
+
+					//case 'q': break; // unused
+					//case 'r': break; // unused
+
+					case 's': // machine capabilities, s:{xx,yy...}
+						//   xx is one of
+						//   button:no
+						//   buzzer:on  can use buzzer?
+						//   dr:{front:on,top:on}  front/top door 
+						//   eh:1  lazer engraver installed
+						//   fd:1  ???
+						//   fm:1  ???
+						//   of:1  open filament allowed
+						//   sd:yes  sd card yes or no
+						//s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
+						//s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
+						//****FixMe, need to detect if status is available or not, and indicate if feature is present
+						if(getJsonVal(buf, "buzzer", s1))
+							m_status.sBuzzerEnabled = (0==strcmp(s1, "\"on\"")) ? true : false;
+						if(getJsonVal(buf, "button", s1))
+							m_status.sButton = (0==strcmp(s1, "\"yes\"")) ? true : false;
+						if(getJsonVal(buf, "top", s1))
+							m_status.sFrontDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
+						if(getJsonVal(buf, "front", s1))
+							m_status.sTopDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
+						if(getJsonVal(buf, "sd", s1))
+							m_status.sSDCard = (0==strcmp(s1, "\"yes\"")) ? true : false;
+						if(getJsonVal(buf, "eh", s1))
+							m_status.sHasLazer = (s1[0] == '1') ? true : false;
+						if(getJsonVal(buf, "fd", s1))
+							m_status.sFd = (s1[0] == '1') ? true : false;
+						if(getJsonVal(buf, "fm", s1))
+							m_status.sFm = (s1[0] == '1') ? true : false;
+						if(getJsonVal(buf, "of", s1))
+							m_status.sOpenFilament = (s1[0] == '1') ? true : false;
+						break;
+
+					case 't': // extruder temperature, t:ss,aa,bb,cc,dd
+						{
+						//   if ss == 1
+						//     aa is extruder temp in C
+						//     bb is target temp in C
+						//   else
+						//     aa is extruder 1 temp
+						//     bb is extruder 2 temp
+						//t:1,20,0
+						int t;
+						sscanf(buf, "t:%d,%d,%d", &m_status.tExtruderCount, &m_status.tExtruder1ActualTemp_C, &t);
+						if(m_status.tExtruderCount == 1)
+							m_status.tExtruderTargetTemp_C = t; // set by O: if not set here
+						else
+							m_status.tExtruder2ActualTemp_C = t;
+						}
+						break;
+
+					//case 'u': break; // unused
+
+					case 'v': // firmware version, v:fw or v:os,ap,fw
+						//   fw is firmware version string
+						//   os is os version string
+						//   ap is app version string
+						//v:1.1.1
+						sscanf(buf, "v:%s", m_status.vFirmwareVersion);
+						break;
+
+					case 'w': // filament serian number, w:id,sn,xx
+						//   if id == 1
+						//     sn is filament 1 serial number
+						//     xx is optional default filament temp
+						//   else
+						//     sn is filament 1 serial number
+						//     xx is filament 2 serial number
+						//
+						//   Serial number format
+						//   DDMLCMMTTTSSSS
+						//   	DD - Dloc
+						//   	M - Material
+						//   	L - Length
+						//   	    varies but in general 
+						//   	    3 - 120000 mm
+						//   	    5 - 185000 mm
+						//   	    6 - 240000 mm
+						//   	C - color
+						//   	MM - Mloc
+						//   	TTT - Mdate
+						//   	SSSS - serial number
+						//w:1,PMP6PTH6840596
+						sscanf(buf, "w:%d,%s,%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+
+						if(strlen(m_status.wFilament1SerialNumber) > 4)
+						{
+							strPtr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
+							if(strPtr)
+								strcpy(m_status.wFilament1Color, strPtr);
+							else
+								m_status.wFilament1Color[0] = '\0';
+						}
 						else
 							m_status.wFilament1Color[0] = '\0';
-					}
-					else
-						m_status.wFilament1Color[0] = '\0';
 
-					if(strlen(m_status.wFilament2SerialNumber) > 4)
-					{
-						strPtr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
-						if(strPtr)
-							strcpy(m_status.wFilament2Color, strPtr);
+						if(strlen(m_status.wFilament2SerialNumber) > 4)
+						{
+							strPtr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
+							if(strPtr)
+								strcpy(m_status.wFilament2Color, strPtr);
+							else
+								m_status.wFilament2Color[0] = '\0';
+						}
 						else
 							m_status.wFilament2Color[0] = '\0';
+
+						break;
+
+					//case 'x': break; // unused
+					//case 'y': break; // unused
+
+					case 'z': // z offset
+						sscanf(buf, "z:%d", &m_status.zOffset);
+						zOffsetSet = true;
+						break;
+
+					// case 'A' to 'F' unused
+
+					case 'G':
+						// info on last print and filament used?
+						getJsonVal(buf, "LastUsed", m_status.GLastUsed);
+						break;
+
+					// case 'H' to 'K' unused
+
+					case 'L': // Lifetime timers, L:xx,ml,el,lt
+						//   xx - unknown, set to 1
+						//   ml - machine lifetime power on time (minutes)
+						//   el - extruder lifetime power on time (minutes) (print time)
+						//   lt - last power on time (minutes) (or last print time?) optional
+						sscanf(buf, "L:%d,%d,%d,%d", 
+							&m_status.LExtruderCount,  // just a guess
+							&m_status.LPrinterLifetimePowerOnTime_min, 
+							&m_status.LExtruderLifetimePowerOnTime_min, 
+							&m_status.LPrinterLastPowerOnTime_min); // optional
+						break;
+
+					//case 'M': break; // unused
+					//case 'N': break; // unused
+
+					case 'O': // target temp?, O:{"nozzle":"xx","bed":"yy"}
+						// xx is nozzle target temp in C
+						// yy is bed target temp in C
+						if(getJsonVal(buf, "nozzle", s1))
+							m_status.tExtruderTargetTemp_C = atoi(s1); // set by t: if not set here
+						if(getJsonVal(buf, "bed", s1))
+							m_status.OBedTargetTemp_C = atoi(s1);
+						break;
+
+					//case 'P' to 'U' unused
+
+					case 'V': // some sort of version
+						//V:5.1.5
+						//****FixMe, work out what this is
+						sscanf(buf, "V:%s", m_status.VString);
+						break;
+
+					case 'W': // wifi information
+						// wifi information, only with mini w?
+						// W:{"ssid":"a","bssid":"b","channel":"c","rssiValue":"d","PHY":"e","security":"f"}
+						// all are optional
+						//  a is ssid
+						//  b is bssid
+						//  c is channel
+						//  d is rssiValue
+						//  e is PHY
+						//  f is security
+						getJsonVal(buf, "ssid", m_status.WSSID);
+						getJsonVal(buf, "bssid", m_status.WBSSID);
+						getJsonVal(buf, "channel", m_status.WChannel);
+						getJsonVal(buf, "rssiValue", m_status.WRssiValue);
+						getJsonVal(buf, "PHY", m_status.WPHY);
+						getJsonVal(buf, "security", m_status.WSecurity);
+						break;
+
+					case 'X': // Nozzle Info, X:nt,sn,sn2
+						//   nt is nozzle type one of 
+						//     3, 84
+						//       nozzle diameter 0.3 mm
+						//     1, 77, 82 
+						//       nozzle diameter 0.4 mm
+						//     2
+						//       nozzle diameter 0.4 mm, dual extruder
+						//     54
+						//       nozzle diameter 0.6 mm
+						//     56 
+						//       nozzle diameter 0.8 mm
+						//     L, N, H, Q
+						//       lazer engraver
+						//   sn is serial number in the form xx-xx-xx-xx-xx-xx-yy
+						//     where xx is the nozzle serial number
+						//     and yy is the total nozzle print time (in minutes)
+						//   sn2 is optional second serial number for second nozzle
+						sscanf(buf, "X:%d,%s,%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
+						m_status.XNozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.XNozzleID);
+						break;
+
+					// case 'Y' to '3' unused
+
+					case '4': // Query IP
+						// some sort of json string with wlan, ip, ssid, MAC, rssiValue
+						// not used by miniMaker
+						//4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
+						getJsonVal(buf, "ip", m_status.N4NetIP);
+						getJsonVal(buf, "ssid", m_status.N4NetSSID);
+						getJsonVal(buf, "channel", m_status.N4NetChan);
+						getJsonVal(buf, "MAC", m_status.N4NetMAC);
+						getJsonVal(buf, "rssiValue", m_status.N4NetRssiValue);
+						break;
+
+					// case '5' to '9' unused
+
+					case '$': // end of message
+						isDone = true;
+						m_status.isValid = true;
+						break;
+
+					//****FixMe, returns E4$\n or E7$\n sometimes
+					// in those cases we just ignore the error and keep going
+					case 'E': // error string like E4$\n
+						isDone = true;
+						m_status.isValid = false;
+						debugPrint(DBG_WARN, "recieved error: %s", buf);
+						break;
+
+					default:
+						debugPrint(DBG_WARN, "unknown string: %s", buf);
+						break;
 					}
-					else
-						m_status.wFilament2Color[0] = '\0';
-
-					break;
-
-				//case 'x': break; // unused
-				//case 'y': break; // unused
-
-				case 'z': // z offset
-					sscanf(buf, "z:%d", &m_status.zOffset);
-					zOffsetSet = true;
-					break;
-
-				// case 'A' to 'F' unused
-
-				case 'G':
-					// info on last print and filament used?
-					getJsonVal(buf, "LastUsed", m_status.GLastUsed);
-					break;
-
-				// case 'H' to 'K' unused
-
-				case 'L': // Lifetime timers, L:xx,ml,el,lt
-					//   xx - unknown, set to 1
-					//   ml - machine lifetime power on time (minutes)
-					//   el - extruder lifetime power on time (minutes) (print time)
-					//   lt - last power on time (minutes) (or last print time?) optional
-					sscanf(buf, "L:%d,%d,%d,%d", 
-						&m_status.LExtruderCount,  // just a guess
-						&m_status.LPrinterLifetimePowerOnTime_min, 
-						&m_status.LExtruderLifetimePowerOnTime_min, 
-						&m_status.LPrinterLastPowerOnTime_min); // optional
-					break;
-
-				//case 'M': break; // unused
-				//case 'N': break; // unused
-
-				case 'O': // target temp?, O:{"nozzle":"xx","bed":"yy"}
-					// xx is nozzle target temp in C
-					// yy is bed target temp in C
-					if(getJsonVal(buf, "nozzle", s1))
-						m_status.tExtruderTargetTemp_C = atoi(s1); // set by t: if not set here
-					if(getJsonVal(buf, "bed", s1))
-						m_status.OBedTargetTemp_C = atoi(s1);
-					break;
-
-				//case 'P' to 'U' unused
-
-				case 'V': // some sort of version
-					//V:5.1.5
-					//****FixMe, work out what this is
-					sscanf(buf, "V:%s", m_status.VString);
-					break;
-
-				case 'W': // wifi information
-					// wifi information, only with mini w?
-					// W:{"ssid":"a","bssid":"b","channel":"c","rssiValue":"d","PHY":"e","security":"f"}
-					// all are optional
-					//  a is ssid
-					//  b is bssid
-					//  c is channel
-					//  d is rssiValue
-					//  e is PHY
-					//  f is security
-					getJsonVal(buf, "ssid", m_status.WSSID);
-					getJsonVal(buf, "bssid", m_status.WBSSID);
-					getJsonVal(buf, "channel", m_status.WChannel);
-					getJsonVal(buf, "rssiValue", m_status.WRssiValue);
-					getJsonVal(buf, "PHY", m_status.WPHY);
-					getJsonVal(buf, "security", m_status.WSecurity);
-					break;
-
-				case 'X': // Nozzle Info, X:nt,sn,sn2
-					//   nt is nozzle type one of 
-					//     3, 84
-					//       nozzle diameter 0.3 mm
-					//     1, 77, 82 
-					//       nozzle diameter 0.4 mm
-					//     2
-					//       nozzle diameter 0.4 mm, dual extruder
-					//     54
-					//       nozzle diameter 0.6 mm
-					//     56 
-					//       nozzle diameter 0.8 mm
-					//     L, N, H, Q
-					//       lazer engraver
-					//   sn is serial number in the form xx-xx-xx-xx-xx-xx-yy
-					//     where xx is the nozzle serial number
-					//     and yy is the total nozzle print time (in minutes)
-					//   sn2 is optional second serial number for second nozzle
-					sscanf(buf, "X:%d,%s,%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
-					m_status.XNozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.XNozzleID);
-					break;
-
-				// case 'Y' to '3' unused
-
-				case '4': // Query IP
-					// some sort of json string with wlan, ip, ssid, MAC, rssiValue
-					// not used by miniMaker
-					//4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
-					getJsonVal(buf, "ip", m_status.N4NetIP);
-					getJsonVal(buf, "ssid", m_status.N4NetSSID);
-					getJsonVal(buf, "channel", m_status.N4NetChan);
-					getJsonVal(buf, "MAC", m_status.N4NetMAC);
-					getJsonVal(buf, "rssiValue", m_status.N4NetRssiValue);
-					break;
-
-				// case '5' to '9' unused
-
-				case '$': // end of message
-					isDone = true;
-					m_status.isValid = true;
-					break;
-
-				//****FixMe, returns E4$\n or E7$\n sometimes
-				// in those cases we just ignore the error and keep going
-				case 'E': // error string like E4$\n
-					isDone = true;
-					m_status.isValid = false;
-					debugPrint(DBG_WARN, "recieved error: %s", buf);
-					break;
-
-				default:
-					debugPrint(DBG_WARN, "unknown string: %s", buf);
-					break;
 				}
 			}
-		}
 
-		// manually pull zOffset, if not set above
-		// use zero wait time, in case command is ignored
-		if(!zOffsetSet)
-		{
-			const char *buf = NULL;
-			if(serialSendMessage("XYZv3/config=zoffset:get"))
-				buf = waitForLine(true, 0.5f); 
-			if(*buf)
+			// manually pull zOffset, if not set above
+			// use zero wait time, in case command is ignored
+			if(!zOffsetSet)
 			{
-				if(doPrint)
-					printf("%s\n", buf);
-				m_status.zOffset = atoi(buf);
+				const char *buf = NULL;
+				if(serialSendMessage("XYZv3/config=zoffset:get"))
+					buf = waitForLine(true, 0.5f); 
+				if(*buf)
+				{
+					if(doPrint)
+						printf("%s\n", buf);
+					m_status.zOffset = atoi(buf);
+				}
 			}
-		}
 
-		success = true;
+			success = true;
+		}
 	}
 
 	ReleaseMutex(ghMutex);
@@ -1321,7 +1284,7 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 	WaitForSingleObject(ghMutex, INFINITE);
 	bool success = false;
 
-	if(path && m_serial.isOpen())
+	if(path && m_stream && m_stream->isOpen())
 	{
 		char tpath[MAX_PATH] = "";
 		char tfile[MAX_PATH] = "";
@@ -1409,7 +1372,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 	bool success = false;
 
-	if(m_serial.isOpen() && path)
+	if(m_stream && m_stream->isOpen() && path)
 	{
 		// try to load file from disk
 		char *buf = NULL;
@@ -1447,12 +1410,12 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 						if(pDat.blockBuf)
 						{
-							m_serial.clear();
+							m_stream->clear();
 
 							if(isPrint)
-								m_serial.writePrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+								m_stream->writePrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
 							else
-								m_serial.writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+								m_stream->writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
 							if(waitForVal("ok", false))
 							{
@@ -1497,7 +1460,7 @@ bool XYZV3::sendFileProcess()
 	assert(pDat.isPrintActive);
 
 	bool success = false;
-	if(m_serial.isOpen() && pDat.data && pDat.blockBuf)
+	if(m_stream && m_stream->isOpen() && pDat.data && pDat.blockBuf)
 	{
 		int i, t;
 		for(i=pDat.curBlock; i<min(pDat.curBlock + 4, pDat.blockCount); i++)
@@ -1525,7 +1488,7 @@ bool XYZV3::sendFileProcess()
 			tBuf += 4;
 
 			// write out in one shot
-			m_serial.write(pDat.blockBuf, blockLen + 12);
+			m_stream->write(pDat.blockBuf, blockLen + 12);
 			success = waitForVal("ok", false);
 			if(!success) // bail on error
 				break;
@@ -1605,7 +1568,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 	const int bodyOffset = 8192;
 
 	// encrypt to currently connected printer
-	const XYZPrinterInfo *info = (m_serial.isOpen()) ? m_info : NULL; 
+	const XYZPrinterInfo *info = (m_stream && m_stream->isOpen()) ? m_info : NULL; 
 	// unless the user requests a particular printer model
 	if(infoIdx > -1)
 		info = XYZV3::indexToInfo(infoIdx);
@@ -2022,14 +1985,14 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 	*buf = '\0';
 	bool isValid = false;
 
-	if(m_serial.isOpen())
+	if(m_stream && m_stream->isOpen())
 	{
 		// only try so many times for the answer
 		float end = msTime::getTime_s() + timeout_s;
 		do
 		{
 			// blocking call, no need to sleep
-			if(m_serial.readLine(buf, len))
+			if(m_stream->readLine(buf, len))
 			{
 				isValid = true;
 				break;
@@ -2052,7 +2015,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 			{
 				char buf2[len];
 
-				if(!m_serial.readLine(buf2, len) || buf2[0] != '$')
+				if(!m_stream->readLine(buf2, len) || buf2[0] != '$')
 					debugPrint(DBG_WARN, "waitForLine $ failed, returned %d:'%s'", len, buf2);
 			}
 			return buf;
