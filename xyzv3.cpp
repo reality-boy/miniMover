@@ -2396,10 +2396,13 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				if(isHeader)
 				{
 					// strip out duplicate lines
-					if( NULL != strstr(lineBuf, "filename") || 
-						NULL != strstr(lineBuf, "machine") ||
-						NULL != (s = strstr(lineBuf, "print_time")) ||
-						NULL != (s = strstr(lineBuf, "total_filament")) )
+					if( NULL != strstr(lineBuf, "filename")		|| 
+						NULL != strstr(lineBuf, "print_time")	||
+						NULL != strstr(lineBuf, "machine")		||
+						NULL != strstr(lineBuf, "facets")		||
+						NULL != strstr(lineBuf, "total_layers")	||
+						NULL != strstr(lineBuf, "version")		||
+						NULL != strstr(lineBuf, "total_filament") )
 					{
 						// drop the line on the floor
 					}
