@@ -2315,6 +2315,10 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 		tcode = readLineFromBuf(tcode, lineBuf, lineLen);
 		while(*lineBuf)
 		{
+			//****FixMe, this only really works with cura and xyz files
+			// to properly handle slic3r and KISSlicer we need to parse
+			// the file and estimate everyting.
+			// but is that worth the effort?
 			if(checkLineIsHeader(lineBuf))
 			{
 				// strip out the following parameters
@@ -2334,20 +2338,26 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					printTime = atoi(s + strlen("TIME:"));
 
 				// total facets
-				//****FixMe, fill in totalFacets
+				if(NULL != (s = strstr(lineBuf, "facets = ")))
+					totalFacets = atoi(s + strlen("facets = "));
 
 				// total layers
-				// ;LAYER_COUNT:356
-				//****FixMe, fill in totalLayers
+				if(NULL != (s = strstr(lineBuf, "total_layers = ")))
+					totalLayers = atoi(s + strlen("total_layers = "));
+				else if(NULL != (s = strstr(lineBuf, "LAYER_COUNT:")))
+					totalLayers = atoi(s + strlen("LAYER_COUNT:"));
 
 				// filament used
 				else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
 					totalFilament = (float)atof(s + strlen("total_filament = "));
 				else if(NULL != (s = strstr(lineBuf, "filament_used = ")))
 					totalFilament = (float)atof(s + strlen("filament_used = "));
+				else if(NULL != (s = strstr(lineBuf, "filament used = ")))
+					totalFilament = (float)atof(s + strlen("filament used = "));
 				else if(NULL != (s = strstr(lineBuf, "Filament used: ")))
 					totalFilament = 1000.0f * (float)atof(s + strlen("Filament used: ")); // m to mm
 			}
+			//****Note, probably should not early out, some put there header at the bottom
 			else
 				break;
 
