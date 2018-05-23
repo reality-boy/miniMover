@@ -649,7 +649,7 @@ XYZv3/query=W
 //     1, 77, 82
 //       nozzle diameter 0.4 mm
 //     2
-//       nozzle diameter 0.4 mm, could be dual extruder
+//       nozzle diameter 0.4 mm, dual extruder
 //     54
 //       nozzle diameter 0.6 mm
 //     56 

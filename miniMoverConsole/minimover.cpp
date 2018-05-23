@@ -194,7 +194,7 @@ bool printStatus()
 				printf("Wireless Security: %s\n", st->WSecurity);
 			}
 
-			printf("nozzle: %0.2f mm sn: %s", st->XNozzleDiameter_mm, st->XNozzle1SerialNumber);
+			printf("nozzle: %0.2f laser %d mm sn: %s", st->XNozzleDiameter_mm, st->XNozzleIsLaser, st->XNozzle1SerialNumber);
 			if(st->XNozzle2SerialNumber[0])
 				printf(", %s", st->XNozzle2SerialNumber);
 			printf("\n");

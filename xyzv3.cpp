@@ -563,6 +563,7 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &isDone, bool &zOffsetSet
 				//   sn2 is optional second serial number for second nozzle
 				sscanf(str, "X:%d,%s,%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
 				m_status.XNozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.XNozzleID);
+				m_status.XNozzleIsLaser = XYZV3::nozzleIDIsLaser(m_status.XNozzleID);
 				found = true;
 				break;
 
@@ -660,6 +661,20 @@ float XYZV3::nozzleIDToDiameter(int id)
 	}
 
 	return -1.0f;
+}
+
+bool XYZV3::nozzleIDIsLaser(int id)
+{
+	switch(id)
+	{
+	case 'L':
+	case 'N':
+	case 'H':
+	case 'Q':
+		return true;
+	}
+
+	return false;
 }
 
 const char* XYZV3::stateCodesToStr(int state, int subState)

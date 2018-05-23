@@ -135,7 +135,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		if(st->XNozzle2SerialNumber[0])
 			listAddLine(hwndListInfo, "Nozzle 2 serial: %s", st->XNozzle2SerialNumber);
 		listAddLine(hwndListInfo, "Firmware ver: %s", st->vFirmwareVersion);
-		listAddLine(hwndListInfo, "Nozzle ID: %d, Diam %0.2f mm", st->XNozzleID, st->XNozzleDiameter_mm);
+		listAddLine(hwndListInfo, "Nozzle ID: %d, Diam %0.2f mm, Laser %d", st->XNozzleID, st->XNozzleDiameter_mm, st->XNozzleIsLaser);
 
 		listAddLine(hwndListInfo, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
 		if(inf->fileIsV5)

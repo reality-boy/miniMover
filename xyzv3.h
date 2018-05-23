@@ -154,6 +154,7 @@ struct XYZPrinterStatus
 
 	int XNozzleID;
 	float XNozzleDiameter_mm;
+	bool XNozzleIsLaser;
 	char XNozzle1SerialNumber[64]; //32
 	char XNozzle2SerialNumber[64]; //32
 
@@ -368,6 +369,7 @@ protected:
 
 	const char* stateCodesToStr(int state, int subState);
 	static float nozzleIDToDiameter(int id);
+	static bool nozzleIDIsLaser(int id);
 	const char* errorCodeToStr(int code);
 	const char* filamentMaterialTypeToStr(int materialType);
 	const char* filamentColorIdToStr(int colorId);
