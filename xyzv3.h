@@ -173,16 +173,20 @@ struct XYZPrinterInfo
 	const char *serialNum;	// first part of serial number
 	const char *webNum;		// used when querying website for firmware
 
+	// file format properties
 	bool fileIsV5;			// v2 is 'normal' file format, v5 is for 'pro' systems
 	bool fileIsZip;			// older file format, zips header
 	bool comIsV3;			// old or new serial protocol, v3 is new
 
+	// machine capabilities
+	bool hasTuningMenu;		// has lcd tuning menu on printer
+	bool hasHeatedBed;		// has heated bed
+	bool dualExtruders;		// has two extruders
+	bool hasWifi;			// has wifi support
+	bool hasScanner;		// has built in 3d scanner
+	bool supportsLaser;		// supports optional laser engraver
+
 	// misc machine info, fill in at some point
-	//bool dualExtruders;
-	//bool hasWifi;
-	//bool hasScanner;
-	//bool supportsLazer;
-	//bool hasHeatedBed;
 	//bool hasLEDs;
 	//bool hasCamera; // can we access this?
 
@@ -191,7 +195,7 @@ struct XYZPrinterInfo
 	int width;
 	int height;
 
-	const char *screenName;
+	const char *screenName;	// user friendly name of device
 };
 
 struct XYZPrinterLangSt
