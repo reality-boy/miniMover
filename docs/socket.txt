@@ -90,7 +90,14 @@ public void Query_Parse(string parse_data)
 				UI_MiniMenu.mydalegate errorValueD = Main.main.threedview.ui.UI_MiniMenu.ErrorValueD;
 				object[] objArray = new object[] { "0" };
 				Main.main.Invoke(errorValueD, objArray);
-				if ((Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FM1W || Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FM1X || Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FN1X) && Main.main.threedview.ui.UI_Advertisement.Visibility != Visibility.Visible && Main.conn.Check_Status != "0" && (Main.conn.Check_Status != "1073742342" || Main.conn.Check_Status != "1073742345" || Main.conn.Check_Status != "1073742342,1073742345"))
+				if((Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FM1W || 
+					Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FM1X || 
+					Main.conn.P_informat.new_module_name == Main.main.New_print_type_define.FN1X) && 
+					Main.main.threedview.ui.UI_Advertisement.Visibility != Visibility.Visible && 
+					Main.conn.Check_Status != "0" && 
+					(Main.conn.Check_Status != "1073742342" || 
+					Main.conn.Check_Status != "1073742345" || 
+					Main.conn.Check_Status != "1073742342,1073742345"))
 				{
 					UI_MiniMenu.mydalegate _mydalegate = Main.main.threedview.ui.UI_MiniMenu.ErrorValueD;
 					object[] checkStatus = new object[] { Main.conn.Check_Status };
