@@ -1,12 +1,15 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# pragma warning(disable:4996) // live on the edge!
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-//#include <Setupapi.h>
+#include <string.h>
 #include <assert.h>
-//#include <winioctl.h>
 
 #include "debug.h"
 #include "stream.h"
@@ -110,13 +113,12 @@ int Stream::writePrintf(const char *fmt, ...)
 		char tstr[tstrLen];
 
 		va_list arglist;
+
 		va_start(arglist, fmt);
-
-		//customized operations...
-		vsnprintf_s(tstr, tstrLen, fmt, arglist);
-		tstr[tstrLen-1] = '\0';
-
+		vsnprintf(tstr, tstrLen, fmt, arglist);
 		va_end(arglist);
+
+		tstr[tstrLen-1] = '\0';
 
 		return writeStr(tstr);
 	}

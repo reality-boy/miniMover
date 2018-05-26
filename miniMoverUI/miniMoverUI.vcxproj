@@ -96,7 +96,7 @@
     <ClCompile Include="..\miniz.c" />
     <ClCompile Include="..\network.cpp" />
     <ClCompile Include="..\serial.cpp" />
-    <ClCompile Include="..\sream.cpp" />
+    <ClCompile Include="..\stream.cpp" />
     <ClCompile Include="..\timer.cpp" />
     <ClCompile Include="..\xyzv3.cpp" />
     <ClCompile Include="miniMoverUI.cpp" />

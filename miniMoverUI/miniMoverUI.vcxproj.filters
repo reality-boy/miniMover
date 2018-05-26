@@ -77,7 +77,7 @@
     <ClCompile Include="..\network.cpp">
       <Filter>Shared Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\sream.cpp">
+    <ClCompile Include="..\stream.cpp">
       <Filter>Shared Files</Filter>
     </ClCompile>
   </ItemGroup>
