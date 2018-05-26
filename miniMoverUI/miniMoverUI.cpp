@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
@@ -75,7 +76,7 @@ void listAddLine(HWND hList, const char *format, ...)
 	if(hList)
 	{
 		va_start(arglist, format);
-		_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+		vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
@@ -310,20 +311,21 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	if(count >= g_maxPorts)
 		count = g_maxPorts;
 
+	char tstr[256];
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_RESETCONTENT, 0, 0);
 	for(int i=0; i<= count; i++)
 	{
-		int port = -1;
-		const char *name = "Auto";
-		if(i > 0)
+		if(i == 0)
 		{
-			port = SerialHelper::getPortNumber(i-1);
-			name = SerialHelper::getPortName(i-1);
+			g_comIDtoPort[i] = -1;
+			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)"Auto");
 		}
-
-		g_comIDtoPort[i] = port;
-		
-		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)name);
+		else
+		{
+			g_comIDtoPort[i] = SerialHelper::getPortNumber(i-1);
+			sprintf(tstr, "%s (COM%d)", SerialHelper::getPortName(i-1), g_comIDtoPort[i]);
+			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
+		}
 	}
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
 }
