@@ -1,9 +1,16 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# include <conio.h> 
+# pragma warning(disable:4996) // live on the edge!
+#else
+# include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h> 
+#include <ctype.h>
 #include <time.h>
 
 #include "timer.h"
@@ -12,7 +19,86 @@
 #include "debug.h"
 #include "xyzv3.h"
 
-#pragma warning(disable:4996) // live on the edge!
+//****FixMe, move somewhere else
+#ifndef _WIN32
+//-------------------
+// from https://jakash3.wordpress.com/2011/12/23/conio-h-for-linux/
+ 
+#include <unistd.h>
+#include <termios.h>
+#include <sys/select.h>
+ 
+// Set cursor position
+void gotoxy(int x, int y) { printf("\x1B[%d;%df", y, x); }
+ 
+// Clear terminal screen and set cursor to top left
+void clrscr() { printf("\x1B[2J\x1B[0;0f"); }
+ 
+void setTerminal(bool useBuf, bool doEcho) 
+{
+	struct termios oldt, newt;
+
+	tcgetattr(0, &oldt);
+	newt = oldt;
+
+	// turn terminal line buffering on or off
+	// on waits for enter before returning data
+	if (!useBuf) 
+		newt.c_lflag &= ~ICANON;
+	else 
+		newt.c_lflag |= ICANON;
+
+	// turn terminal keyboard echo on or off
+	if (!doEcho) 
+		newt.c_lflag &= ~ECHO;
+	else 
+		newt.c_lflag |= ECHO;
+
+	tcsetattr(0, TCSANOW, &newt);
+}
+ 
+// Get next immediate character input (no echo)
+int getch() 
+{
+	setTerminal(false, false);
+	int ch = getchar();
+	setTerminal(true, true);
+
+	return ch;
+}
+ 
+// Get next immediate character input (with echo)
+int getche() 
+{
+	setTerminal(false, true);
+	int ch = getchar();
+	setTerminal(true, true);
+
+	return ch;
+}
+ 
+// Check if a key has been pressed at terminal
+int kbhit() 
+{
+	setTerminal(false, false);
+
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	fd_set fds;
+	FD_ZERO(&fds);
+
+	FD_SET(0, &fds);
+	select(1, &fds, 0, 0, &tv);
+	int ret = FD_ISSET(0, &fds);
+
+	setTerminal(true, true);
+
+	return ret;
+}
+//-------------------
+#endif
 
 XYZV3 xyz;
 Serial serial;
@@ -319,7 +405,11 @@ bool handlePrintFile(const char *path)
 					}
 				}
 
+#ifdef _WIN32
 				Sleep(10); // don't spin too fast
+#else
+				usleep(10 * 1000);
+#endif
 			}
 
 			return true;

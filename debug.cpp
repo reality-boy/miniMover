@@ -1,12 +1,15 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# pragma warning(disable:4996) // live on the edge!
+#endif
+
 #include <stdio.h>
+#include <stdarg.h>
 #include <time.h>
 
 #include "debug.h"
-
-#pragma warning(disable:4996) // live on the edge!
 
 FILE *g_debugLog = NULL;
 debugLevel g_debugLevel = DBG_REPORT;
@@ -58,18 +61,18 @@ void debugPrint(debugLevel l, const char *format, ...)
 	va_list arglist;
 
 	va_start(arglist, format);
-	_vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+	vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
 	msgBuf[sizeof(msgBuf)-1] = '\0';
 	va_end(arglist);
 
 	// regular debug print
 	if(l <= g_debugLevel)
 	{
-#ifdef _CONSOLE
-		printf("%s\n", msgBuf);
-#else
+#if defined(_WIN32) && !defined(_CONSOLE)
 		OutputDebugString(msgBuf);
 		OutputDebugString("\n");
+#else
+		printf("%s\n", msgBuf);
 #endif
 	}
 
@@ -86,11 +89,7 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 		// regular debug print
 		if(l <= g_debugLevel)
 		{
-#ifdef _CONSOLE
-			for(int i=0; i<len; i++)
-				printf(" %02x", data[i]);
-			printf("\n");
-#else
+#if defined(_WIN32) && !defined(_CONSOLE)
 			char tstr[25];
 			for(int i=0; i<len; i++)
 			{
@@ -98,6 +97,10 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 				OutputDebugString(tstr);
 			}
 			OutputDebugString("\n");
+#else
+			for(int i=0; i<len; i++)
+				printf(" %02x", data[i]);
+			printf("\n");
 #endif
 		}
 

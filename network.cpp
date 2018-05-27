@@ -1,20 +1,34 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# include <Wlanapi.h>
+# pragma comment(lib, "Wlanapi.lib")
+# include <Winsock2.h>
+# include <ws2tcpip.h>
+# pragma comment(lib, "ws2_32.lib")
+# pragma warning(disable:4996)
+# define IS_VALID(s) ((s) != INVALID_SOCKET)
+#else
+# include <sys/socket.h>
+# include <arpa/inet.h>
+# include <netdb.h>  // Needed for getaddrinfo() and freeaddrinfo()
+# include <unistd.h> // Needed for close()
+# include <errno.h>
+//****FixMe, make better versions of these
+# define IS_VALID(s) ((s) > 0)
+# define WSAGetLastError() errno 
+# define INVALID_SOCKET -1
+# define SOCKET_ERROR -1
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <Wlanapi.h>
-#pragma comment(lib, "Wlanapi.lib")
-
-#include <Winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
+#include <string.h>
 
 #include "debug.h"
 #include "network.h"
 
-#pragma warning(disable:4996)
 
 bool getXMLValue(const char *xml, const char* key, char *val)
 {
@@ -54,6 +68,10 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 		*ssid = '\0';
 		*password = '\0';
 		channel = -1;
+
+#ifdef _WIN32
+
+		//---------------------
 
 		DWORD ver;
 		HANDLE handle;
@@ -113,6 +131,42 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 			}
 			WlanCloseHandle(handle, NULL);
 		}
+
+		//---------------------
+
+#else
+
+		//---------------------
+
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <linux/wireless.h>
+
+		iwreq wreq;
+
+		memset(&wreq, 0, sizeof(iwreq));
+		sprintf(wreq.ifr_name, "wlan0");
+		int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+		if(sockfid >= 0) 
+		{
+			char buffer[IW_ESSID_MAX_SIZE];
+			buffer[0] = '\0';
+			wreq.u.essid.pointer = buffer;
+			wreq.u.essid.length = IW_ESSID_MAX_SIZE;
+			if(ioctl(sockfd, SIOCGIWESSID, &wreq) >= 0) 
+			{
+				printf("IOCTL Successfull\n");
+				printf("ESSID is %s\n", wreq.u.essid.pointer);
+			}
+		}
+		//****FixMe, fill this in
+
+		//---------------------
+
+#endif
 	}
 
 	return success;
@@ -121,6 +175,7 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 Socket::Socket()
 	: soc(INVALID_SOCKET)
 {
+#ifdef _WIN32
 	isInit = false;
 
 	// Initialize Winsock
@@ -131,14 +186,19 @@ Socket::Socket()
 	}
 	else
 		debugPrint(DBG_WARN, "WSAStartup failed with error: %d\n", iResult);
+#else
+	isInit = true;
+#endif
 }
 
 Socket::~Socket()
 {
 	if(isInit)
 	{
-		closeSocket();
+		Socket::closeSocket();
+#ifdef _WIN32
 		WSACleanup();
+#endif
 	}
 
 	isInit = false;
@@ -152,7 +212,7 @@ bool Socket::openSocket(const char *ip, int port)
 	if(isInit)
 	{
 		addrinfo hints;
-		ZeroMemory(&hints, sizeof(hints));
+		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = IPPROTO_TCP;
@@ -171,7 +231,7 @@ bool Socket::openSocket(const char *ip, int port)
 			{
 				// Create a SOCKET for connecting to server
 				soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
-				if(soc != INVALID_SOCKET) 
+				if(IS_VALID(soc)) 
 				{
 					// Connect to server.
 					//****FixMe, deal with blocking?
@@ -181,15 +241,14 @@ bool Socket::openSocket(const char *ip, int port)
 						break; // success we found a connection
 					}
 
-					closesocket(soc);
-					soc = INVALID_SOCKET;
+					Socket::closeSocket();
 				}
 				else
 					debugPrint(DBG_WARN, "socket failed with error: %ld\n", WSAGetLastError());
 			}
 			freeaddrinfo(adrInf);
 
-			if(soc != INVALID_SOCKET) 
+			if(IS_VALID(soc)) 
 			{
 				success = true;
 			}
@@ -209,9 +268,16 @@ bool Socket::closeSocket()
 {
 	bool success = false;
 
-	if(isInit && soc != INVALID_SOCKET) 
+	if(isInit && IS_VALID(soc)) 
 	{
+#ifdef _WIN32
+		//shutdown(soc, SD_BOTH);
 		closesocket(soc);
+#else
+		shutdown(soc, SHUT_RDWR);
+		close(soc);
+#endif
+		soc = INVALID_SOCKET;
 		success = true;
 	}
 	else
@@ -224,7 +290,7 @@ int Socket::write(const char *buf, const int bufLen)
 {
 	int bytesWritten = 0;
 
-	if(isInit && soc != INVALID_SOCKET) 
+	if(isInit && IS_VALID(soc)) 
 	{
 		// Send an initial buffer
 		//****FixMe, do we need to loop to send it all?
@@ -253,7 +319,7 @@ int Socket::read(char *buf, int bufLen)
 	{
 		*buf = '\0';
 
-		if(isInit && soc != INVALID_SOCKET) 
+		if(isInit && IS_VALID(soc)) 
 		{
 			int iResult = -1;
 			//****FixMe, deal with blocking
@@ -272,6 +338,16 @@ int Socket::read(char *buf, int bufLen)
 
 	return count;
 }
+
+bool Socket::isOpen() 
+{ 
+	return isInit && IS_VALID(soc); 
+}
+
+void Socket::clear() // is this ever needed?
+{
+}
+
 
 /*
 const static int dataLen = 512;

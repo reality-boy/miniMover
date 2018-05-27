@@ -87,6 +87,30 @@ XYZv3/query=a
 	l:en
 	z:321
 
+// da Vinci mini w
+XYZv3/query=a
+	b:20
+	c:{369,379,365,382,382,360,386,380,346}
+	d:0,0,0
+	w:1,--------------
+	e:1073742342,1073742345
+	f:1,-1
+	i:3FM1WPUS5CA6750022
+	j:9511,0
+	L:1,236340,28233,5
+	m:0,0,0
+	o:p8,t1,c1,a+
+	p:dv1MW0A000
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}
+	t:1,10,0
+	v:1.1.9
+	n:Davinci         
+	X:2,GB-0002-0000-TH-674-0293-28387
+	l:en
+	z:266
+	V:5.0.8
+	4:{"wlan":{"ip":"192.168.1.117","ssid":"TUCKER_HOME","channel":"0","rssiValue":"0","MAC":"54:8c:a0:06:7e:48"}}
+
 // da Vinci 1.0 Pro
 XYZv3/query=a
 	b:21
@@ -624,7 +648,7 @@ XYZv3/query=S
 XYZv3/query=T
 XYZv3/query=U
 
-// firmware version?
+// wireless adapter firmware version?
 XYZv3/query=V
 	V:5.1.5
 
@@ -763,9 +787,13 @@ XYZv3/query=os							// send to get status
 o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}<nl>$<nl>  // returns status
 
 
-
+//-----------------
 // connect wifi
 XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
+XYZv3/config=ssid:[TUCKER_HOME,aidanandcorianna,1]	// send
+ok<nl>$<nl>											// recieve
+XYZv3/query=4										// send to get status
+4:{"wlan":{"ip":"192.168.1.117","ssid":"TUCKER_HOME","channel":"0","rssiValue":"0","MAC":"54:8c:a0:06:7e:48"}}<nl>$<nl> // recieve
 
 //-----------------
 // get/set z offset or adjusts z offset up or down

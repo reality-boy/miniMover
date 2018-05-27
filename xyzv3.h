@@ -399,7 +399,7 @@ protected:
 	bool checkLineIsHeader(const char* lineBuf);
 	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
 
-	bool parseStatusSubstring(const char *str, bool &isDone, bool &zOffsetSet, bool doPrint = false);
+	bool parseStatusSubstring(const char *str, bool &zOffsetSet);
 
 	Stream *m_stream;
 	XYZPrinterStatus m_status;
@@ -408,7 +408,9 @@ protected:
 	static const int m_infoArrayLen = 21;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
+#ifdef _WIN32
 	HANDLE ghMutex;
+#endif
 };
 
 #endif // XYZV3_H

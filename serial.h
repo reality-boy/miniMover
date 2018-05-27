@@ -7,6 +7,10 @@ Serial class that hides win32 serial api in a nicely
 wrapped package.
 */
 
+#ifndef HANDLE
+#define HANDLE void*
+#endif
+
 
 class Serial : public Stream
 {
@@ -48,7 +52,7 @@ public:
 	static int queryForPorts(const char *hint = NULL);
 
 	static int getPortCount() { return portCount; }
-	static int getPortNumber(int id) { return (id >= 0 && id < portCount) ? portNumbers[id] : NULL; }
+	static int getPortNumber(int id) { return (id >= 0 && id < portCount) ? portNumbers[id] : -1; }
 	static const char* getPortName(int id) { return (id >= 0 && id < portCount) ? portNames[id] : NULL; }
 
 protected:

@@ -1,18 +1,23 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# include <Setupapi.h>
+# include <winioctl.h>
+# pragma comment(lib, "Setupapi.lib")
+# pragma warning(disable:4996)
+#else
+//****FixMe, linux stuff
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <Setupapi.h>
+#include <ctype.h>
 #include <assert.h>
-#include <winioctl.h>
 
 #include "serial.h"
 #include "debug.h"
-
-#pragma comment(lib, "Setupapi.lib")
-#pragma warning(disable:4996)
 
 // static class data
 

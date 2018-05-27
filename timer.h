@@ -1,10 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
-
 // get time using high resolution clock
 class msTime
 {
@@ -15,8 +11,8 @@ public:
 	static float getTime_micro();	// microseconds
 
 protected:
-	static LARGE_INTEGER StartingTime;
-	static LARGE_INTEGER Frequency;
+	static long long StartingTime;
+	static long long Frequency; // only used in win32
 	static bool init;
 };
 

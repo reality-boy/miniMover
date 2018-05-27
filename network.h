@@ -1,7 +1,10 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <Winsock2.h>
+#ifdef _WIN32
+# include <Winsock2.h>
+#endif
+
 #include "stream.h"
 
 // detect wifi network windows is using
@@ -16,8 +19,8 @@ public:
 	bool openSocket(const char *ip, int port);
 	bool closeSocket();
 
-	bool isOpen() { return isInit && soc != INVALID_SOCKET; }
-	void clear() {} // is this ever needed?
+	bool isOpen();
+	void clear();
 	int read(char *buf, int bufLen);
 	int write(const char *buf, int bufLen);
 
@@ -27,8 +30,14 @@ public:
 	//int writePrintf(const char *fmt, ...);
 
 protected:
+
+#ifdef _WIN32
 	WSADATA wsaData;
 	SOCKET soc;
+#else
+	int soc;
+#endif
+
 	bool isInit;
 };
 

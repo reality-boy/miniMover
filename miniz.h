@@ -1,3 +1,6 @@
+#ifndef MINI_Z_H
+#define MINI_Z_H
+
 /* miniz.c 2.0.7 - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
    See "unlicense" statement at the end of this file.
    Rich Geldreich <richgel99@gmail.com>, last updated Oct. 13, 2013
@@ -110,7 +113,6 @@
      uses the 64-bit variants: fopen64(), stat64(), etc. Otherwise you won't be able to process large files
      (i.e. 32-bit stat() fails for me on files > 0x7FFFFFFF bytes).
 */
-#pragma once
 
 
 
@@ -467,7 +469,7 @@ typedef void *const voidpc;
 #ifdef __cplusplus
 }
 #endif
-#pragma once
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -558,7 +560,6 @@ extern void *miniz_def_realloc_func(void *opaque, void *address, size_t items, s
 #ifdef __cplusplus
 }
 #endif
-#pragma once
 
 
 #ifdef __cplusplus
@@ -746,7 +747,6 @@ void tdefl_compressor_free(tdefl_compressor *pComp);
 #ifdef __cplusplus
 }
 #endif
-#pragma once
 
 /* ------------------- Low-level Decompression API Definitions */
 
@@ -889,8 +889,6 @@ struct tinfl_decompressor_tag
 #ifdef __cplusplus
 }
 #endif
-
-#pragma once
 
 
 /* ------------------- ZIP archive reading/writing */
@@ -1326,3 +1324,6 @@ void *mz_zip_extract_archive_file_to_heap_v2(const char *pZip_filename, const ch
 #endif
 
 #endif /* MINIZ_NO_ARCHIVE_APIS */
+
+#endif // MINI_Z_H
+#define MINI_Z_H
