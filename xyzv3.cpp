@@ -217,7 +217,7 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 			sscanf(str, "j:%d,%d", (int*)&m_status.jPrinterState, &m_status.jPrinterSubState);
 
 			// translate old printer status codes
-			switch(m_status.jPrinterState)
+			switch((int)m_status.jPrinterState)
 			{
 			case 0:
 				m_status.jPrinterState = PRINT_INITIAL;
@@ -1323,8 +1323,8 @@ bool XYZV3::readyPrint()
 	return success;
 }
 
-/*
 //****FixMe, implement these
+/*
 XYZv3/config=pda:[1591]
 XYZv3/config=pdb:[4387]
 XYZv3/config=pdc:[7264]
@@ -1447,7 +1447,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 					// firmware has 16 byte header as a string
 					char header[17];
 					if((isPrint || 16 == fread(header, 1, 16, f)) &&
-						len == fread(buf, 1, len, f)) // read whole file into bufer
+						len == (int)fread(buf, 1, len, f)) // read whole file into bufer
 					{
 						// zero terminate header string
 						//****Note, only valid if !isPrint
@@ -1824,9 +1824,10 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					// id should be 1, what does this mean?
 					// file format version is 2 or 5
 					fread(buf, 1, 4, f);
-					int id, fv;
-					id = buf[0];
-					fv = buf[1];
+					int id = buf[0];
+					(void)id; // currently not used
+
+					int fv = buf[1];
 
 					bool fileIsV5 = (fv == 5);
 
@@ -1845,6 +1846,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 					// optional header len
 					int headerLen = (fileIsV5) ? readWord(f) : -1;
+					(void)headerLen;
 
 					// offset to header
 					int headerOffset = readWord(f);
@@ -1853,6 +1855,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 					//?? 
 					int id2 = (fileIsV5) ? readWord(f) : -1;
+					(void)id2;
 
 					int crc32 = readWord(f);
 
@@ -1920,7 +1923,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						fread(bbuf, 1, bodyLen, f);
 						bbuf[bodyLen] = '\0';
 
-						if(crc32 != calcXYZcrc32(bbuf, bodyLen))
+						if(crc32 != (int)calcXYZcrc32(bbuf, bodyLen))
 							debugPrint(DBG_WARN, "crc's don't match!!!");
 
 						if(fileIsZip)
@@ -2154,16 +2157,16 @@ bool XYZV3::getJsonVal(const char *str, const char *key, char *val)
 
 unsigned int XYZV3::swap16bit(unsigned int in)
 {
-	return (in >> 8) & 0x00FF | (in << 8) & 0xFF00;
+	return ((in >> 8) & 0x00FF) | ((in << 8) & 0xFF00);
 }
 
 unsigned int XYZV3::swap32bit(unsigned int in)
 {
 	return 
-		(in >> 24) & 0x000000FF |
-		(in >> 8)  & 0x0000FF00 |
-		(in << 8)  & 0x00FF0000 |
-		(in << 24) & 0xFF000000 ;
+		((in >> 24) & 0x000000FF) |
+		((in >> 8)  & 0x0000FF00) |
+		((in << 8)  & 0x00FF0000) |
+		((in << 24) & 0xFF000000) ;
 }
 
 // read a word from a file, in big endian format
