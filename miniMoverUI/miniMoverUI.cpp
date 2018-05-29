@@ -311,21 +311,13 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	if(count >= g_maxPorts)
 		count = g_maxPorts;
 
-	char tstr[256];
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_RESETCONTENT, 0, 0);
 	for(int i=0; i<= count; i++)
 	{
 		if(i == 0)
-		{
-			g_comIDtoPort[i] = -1;
 			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)"Auto");
-		}
 		else
-		{
-			g_comIDtoPort[i] = SerialHelper::getPortNumber(i-1);
-			sprintf(tstr, "%s (COM%d)", SerialHelper::getPortName(i-1), g_comIDtoPort[i]);
-			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
-		}
+			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)SerialHelper::getPortDisplayName(i-1));
 	}
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
 }
@@ -435,10 +427,9 @@ void MainDlgConnect(HWND hDlg)
 	if(comID == CB_ERR)
 		comID = 0;
 
-	int port = g_comIDtoPort[comID];
-	if(port < 0)
-		port = SerialHelper::queryForPorts("XYZ");
-	if( serial.openSerial(port, 115200))
+	if(comID == 0)
+		comID = SerialHelper::queryForPorts("XYZ") + 1;
+	if(comID > 0 &&  serial.openSerial(SerialHelper::getPortDeviceName(comID-1), 115200))
 	{
 		xyz.setStream(&serial);
 		MainDlgSetStatus(hDlg, "connected");

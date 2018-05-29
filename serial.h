@@ -7,41 +7,10 @@ Serial class that hides win32 serial api in a nicely
 wrapped package.
 */
 
-#ifndef HANDLE
-#define HANDLE void*
-#endif
 
+const static int SERIAL_MAX_DEV_NAME_LEN = 256;
 
-class Serial : public Stream
-{
-public:
-	Serial(); 
-	~Serial();
-
-	bool verifyPort(int port);
-	bool openSerial(int port, int baudRate);
-	void closeSerial();
-
-	int getPort(); // return current port or -1 if not connected
-	int getBaudRate(); // return current baudRate or -1 if not connected
-
-	bool isOpen() { return m_serial != NULL; }
-	void clear();
-	int read(char *buf, int len);
-	int write(const char *buf, int len);
-
-	// from base class
-	//int readLine(char *buf, int bufLen);
-	//int writeStr(const char *buf);
-	//int writePrintf(const char *fmt, ...);
-
-protected:
-	HANDLE m_serial;
-	int m_port;
-	int m_baudRate;
-
-	static const int m_max_serial_buf = 256;
-};
+//-----------------
 
 class SerialHelper
 {
@@ -52,19 +21,64 @@ public:
 	static int queryForPorts(const char *hint = NULL);
 
 	static int getPortCount() { return portCount; }
-	static int getPortNumber(int id) { return (id >= 0 && id < portCount) ? portNumbers[id] : -1; }
-	static const char* getPortName(int id) { return (id >= 0 && id < portCount) ? portNames[id] : NULL; }
+	static const char* getPortDeviceName(int id) { return (id >= 0 && id < portCount) ? portInfo[id].deviceName : NULL; }
+	static const char* getPortDisplayName(int id) { return (id >= 0 && id < portCount) ? portInfo[id].displayName : NULL; }
 
 protected:
-	const static int maxPortName = 512;
 	const static int maxPortCount = 24;
 
 	static int portCount;
-	static int defaultPortNum;
 	static int defaultPortID;
 
-	static int portNumbers[maxPortCount];
-	static char portNames[maxPortCount][maxPortName];
+	struct PortInfo
+	{
+		// string used to open port for read/write
+		char deviceName[SERIAL_MAX_DEV_NAME_LEN];
+		// user friendly string
+		char displayName[SERIAL_MAX_DEV_NAME_LEN];
+	};
+
+	static PortInfo portInfo[maxPortCount];
 };
+
+//-----------------
+
+class Serial : public Stream
+{
+public:
+	Serial(); 
+	~Serial();
+
+	bool openSerial(const char *deviceName, int baudRate);
+	void closeSerial();
+
+	const char* getDeviceName(); // return current connected device
+	int getBaudRate(); // return current baudRate or -1 if not connected
+
+	bool isOpen();
+	void clear();
+	int read(char *buf, int len);
+	int write(const char *buf, int len);
+
+	// from base class
+	//int readLine(char *buf, int bufLen);
+	//int writeStr(const char *buf);
+	//int writePrintf(const char *fmt, ...);
+
+protected:
+
+#ifdef _WIN32
+	HANDLE m_handle;
+#else
+	int m_handle;
+#endif
+
+	char m_deviceName[SERIAL_MAX_DEV_NAME_LEN];
+	int m_baudRate;
+
+	static const int m_max_serial_recieve_buf = 256;
+};
+
+//-----------------
 
 #endif //SERIAL_H

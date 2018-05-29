@@ -9,6 +9,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
@@ -102,7 +103,7 @@ int kbhit()
 
 XYZV3 xyz;
 Serial serial;
-int port = -1;
+char deviceName[SERIAL_MAX_DEV_NAME_LEN] = "";
 
 void updateStatus(float pct)
 {
@@ -129,7 +130,7 @@ void postHelp()
 	printf("  -h - home printer\n");
 	printf("  -l - load filament\n");
 	printf("  -o num - increment/decrement z offset by num\n");
-	printf("  -po num - set serial port number, -1 auto detects port\n");
+	printf("  -po devName - set serial port device name, -1 auto detects port\n");
 	printf("  -p file - print file\n");
 	printf("  -r - print raw status\n");
 	printf("  -s - print status\n");
@@ -143,18 +144,21 @@ void postHelp()
 bool checkCon()
 {
 	//****FixMe, is this called frequently?
-	int tPort = port;
-	if(tPort < 0)
-		tPort = SerialHelper::queryForPorts("XYZ");
-	if(serial.openSerial(port, 115200))
+	const char *tDevice = deviceName;
+	if(!deviceName[0])
+	{
+		int id = SerialHelper::queryForPorts("XYZ");
+		tDevice = SerialHelper::getPortDeviceName(id);
+	}
+	if(tDevice && serial.openSerial(tDevice, 115200))
 	{
 		xyz.setStream(&serial);
 		return true;
 	}
 
 	xyz.setStream(NULL);
-	if(port >= 0)
-		printf("printer not found on port: %d\n", port);
+	if(tDevice)
+		printf("printer not found on port: %s\n", tDevice);
 	else
 		printf("printer not found\n");
 
@@ -324,7 +328,6 @@ bool monitorPrintJob()
 	if(xyz.queryStatus())
 	{
 		const XYZPrinterStatus *st = xyz.getPrinterStatus();
-		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 		if(st->isValid)
 		{
 			printf("S: %s", st->jPrinterStateStr);
@@ -614,10 +617,13 @@ int main(int argc, char **argv)
 					{
 						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
-							port = atoi(argv[i+1]);
+							strcpy(deviceName, argv[i+1]);
+							// if -1 then zero out device name to indicate auto detect
+							if(deviceName[0] == '-')
+								deviceName[0] = '\0';
 							i++;
 						} else 
-							printf("port needs a number\n");
+							printf("port needs a name\n");
 					}
 					else
 					{

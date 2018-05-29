@@ -348,15 +348,15 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 			//s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
 			//****FixMe, need to detect if status is available or not, and indicate if feature is present
 			if(getJsonVal(str, "buzzer", s1))
-				m_status.sBuzzerEnabled = (0==strcmp(s1, "\"on\"")) ? true : false;
+				m_status.sBuzzerEnabled = (0==strcmp(s1, "on")) ? true : false;
 			if(getJsonVal(str, "button", s1))
-				m_status.sButton = (0==strcmp(s1, "\"yes\"")) ? true : false;
+				m_status.sButton = (0==strcmp(s1, "yes")) ? true : false;
 			if(getJsonVal(str, "top", s1))
-				m_status.sFrontDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
+				m_status.sFrontDoor = (0==strcmp(s1, "on")) ? true : false;
 			if(getJsonVal(str, "front", s1))
-				m_status.sTopDoor = (0==strcmp(s1, "\"on\"")) ? true : false;
+				m_status.sTopDoor = (0==strcmp(s1, "on")) ? true : false;
 			if(getJsonVal(str, "sd", s1))
-				m_status.sSDCard = (0==strcmp(s1, "\"yes\"")) ? true : false;
+				m_status.sSDCard = (0==strcmp(s1, "yes")) ? true : false;
 			if(getJsonVal(str, "eh", s1))
 				m_status.sHasLazer = (s1[0] == '1') ? true : false;
 			if(getJsonVal(str, "fd", s1))
