@@ -56,3 +56,5 @@ debug.txt
 *.res
 *.tlog
 
+*.swp
+miniMoverConsole/minimover
