@@ -1389,7 +1389,8 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 {
-	return false; // probably don't want to run this!
+	if(true)
+		return false; // probably don't want to run this!
 
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 
@@ -2241,7 +2242,7 @@ int XYZV3::pkcs7pad(char *buf, int len)
 		if(count > 0 && count <= 16)
 		{
 			for(int i=0; i<count; i++)
-				buf[len+i] = count;
+				buf[len+i] = (char)count;
 		}
 
 		return newLen;
@@ -2298,7 +2299,7 @@ unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 		601450431, 3009837614, 3294710456, 1567103746, 711928724, 3020668471, 
 		3272380065, 1510334235, 755167117 };
 
-	unsigned int num = -1;
+	unsigned int num = (unsigned int)-1;
 
 	if(buf && len > 0)
 	{

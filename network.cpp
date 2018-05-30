@@ -226,7 +226,6 @@ bool Socket::openSocket(const char *ip, int port)
 		{
 			// Attempt to connect to an address until one succeeds
 			// in our case this could be either an ipv4 or ipv6 address
-			addrinfo *pInfo = NULL;
 			for(addrinfo *pInfo = adrInf; pInfo != NULL; pInfo = pInfo->ai_next) 
 			{
 				// Create a SOCKET for connecting to server

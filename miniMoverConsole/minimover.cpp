@@ -107,6 +107,9 @@ char deviceName[SERIAL_MAX_DEV_NAME_LEN] = "";
 
 void updateStatus(float pct)
 {
+	//****FixMe, could output dots based on pct complete
+	(void)pct;
+
 	// notify the user that we are still uploading
 	static int printCount = 0;
 	if(printCount % 4 == 0)
@@ -370,6 +373,7 @@ bool handlePrintFile(const char *path)
 			// check status and wait for user to pause/cancel print
 			bool isPrintPaused = false;
 			int count = 0;
+
 			while(true)
 			{
 				count++;
@@ -377,7 +381,7 @@ bool handlePrintFile(const char *path)
 				if(kbhit())
 				{
 					// get first key
-					char c = getch();
+					char c = (char)getch();
 
 					// eat any other keys
 					while(kbhit())

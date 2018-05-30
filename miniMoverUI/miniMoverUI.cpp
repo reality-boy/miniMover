@@ -86,6 +86,8 @@ void listAddLine(HWND hList, const char *format, ...)
 
 void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPrinterInfo *inf)
 {
+	(void)hDlg;
+
 	int d, h, m;
 
 	if(hwndListInfo && st && inf)

@@ -131,7 +131,7 @@ static void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key, bool isAES256)
 			tempa[0] = tempa[1];
 			tempa[1] = tempa[2];
 			tempa[2] = tempa[3];
-			tempa[3] = k;
+			tempa[3] = (uint8_t)k;
 
 			// SubWord() is a function that takes a four-byte input word and 
 			// applies the S-box to each of the four bytes to produce an output word.

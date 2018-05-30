@@ -105,7 +105,7 @@ bool handleConvertFile(HWND hDlg, XYZV3 &xyz, int infoIdx)
 			if(getFilePath(hDlg, d.out, sizeof(d.out), false))
 			{
 				// Create the thread to begin execution on its own.
-				HANDLE bgThreadHandle = CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
+				CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
 
 				return true;
 			}
@@ -126,7 +126,7 @@ bool handlePrintFile(HWND hDlg, XYZV3 &xyz)
 	if(getFilePath(hDlg, d.in, sizeof(d.in), true))
 	{
 		// Create the thread to begin execution on its own.
-		HANDLE bgThreadHandle = CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
+		CreateThread( NULL, 0, threadHandler, &d, 0, NULL);
 
 		return true;
 	}
