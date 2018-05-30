@@ -15,6 +15,13 @@
 # include <netdb.h>  // Needed for getaddrinfo() and freeaddrinfo()
 # include <unistd.h> // Needed for close()
 # include <errno.h>
+
+# include <sys/ioctl.h>
+# include <sys/stat.h>
+# include <sys/types.h>
+# include <fcntl.h>
+# include <linux/wireless.h>
+
 //****FixMe, make better versions of these
 # define IS_VALID(s) ((s) > 0)
 # define WSAGetLastError() errno 
@@ -138,19 +145,12 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 
 		//---------------------
 
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <linux/wireless.h>
-
 		iwreq wreq;
 
 		memset(&wreq, 0, sizeof(iwreq));
 		sprintf(wreq.ifr_name, "wlan0");
 		int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-		if(sockfid >= 0) 
+		if(sockfd >= 0) 
 		{
 			char buffer[IW_ESSID_MAX_SIZE];
 			buffer[0] = '\0';
@@ -159,7 +159,7 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 			if(ioctl(sockfd, SIOCGIWESSID, &wreq) >= 0) 
 			{
 				printf("IOCTL Successfull\n");
-				printf("ESSID is %s\n", wreq.u.essid.pointer);
+				printf("ESSID is %s\n", (const char*)wreq.u.essid.pointer);
 			}
 		}
 		//****FixMe, fill this in
