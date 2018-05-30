@@ -1,15 +1,16 @@
-#ifdef _WIN32
-# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-# include <SDKDDKVer.h>
-# include <Windows.h>
-# include <Setupapi.h>
-# include <winioctl.h>
-# pragma comment(lib, "Setupapi.lib")
-# pragma warning(disable:4996)
-#else
-#include <assert.h>
-assert(false); // link to serial_linux.cpp for now!!!
+//****Note, windows only!
+#ifndef _WIN32
+# include <assert.h>
+  assert(false);
 #endif
+
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <SDKDDKVer.h>
+#include <Windows.h>
+#include <Setupapi.h>
+#include <winioctl.h>
+#pragma comment(lib, "Setupapi.lib")
+#pragma warning(disable:4996)
 
 #include <stdio.h>
 #include <string.h>

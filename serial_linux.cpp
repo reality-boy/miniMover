@@ -1,3 +1,9 @@
+//****Note, linux only!
+#ifdef _WIN32
+# include <assert.h>
+  assert(false);
+#endif
+
 // based on code from https://github.com/Marzac/rs232
 // and http://www.cmrr.umn.edu/~strupp/serial.html
 // and http://kirste.userpage.fu-berlin.de/chemnet/use/info/libc/libc_12.html

@@ -1,19 +1,24 @@
-//****Note, windows only!
-#ifndef _WIN32
+//****Note, linux only!
+#ifdef _WIN32
 # include <assert.h>
   assert(false);
 #endif
 
-# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-# include <SDKDDKVer.h>
-# include <Windows.h>
-# include <Wlanapi.h>
-# pragma comment(lib, "Wlanapi.lib")
-# include <Winsock2.h>
-# include <ws2tcpip.h>
-# pragma comment(lib, "ws2_32.lib")
-# pragma warning(disable:4996)
-# define IS_VALID(s) ((s) != INVALID_SOCKET)
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>  // Needed for getaddrinfo() and freeaddrinfo()
+#include <unistd.h> // Needed for close()
+#include <errno.h>
+
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <linux/wireless.h>
+
+#define IS_VALID(s) ((s) > 0)
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +26,7 @@
 
 #include "debug.h"
 #include "network.h"
+
 
 bool getXMLValue(const char *xml, const char* key, char *val)
 {
@@ -60,65 +66,24 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 		*ssid = '\0';
 		*password = '\0';
 		channel = -1;
+		iwreq wreq;
 
-		DWORD ver;
-		HANDLE handle;
-		if(ERROR_SUCCESS == WlanOpenHandle(WLAN_API_MAKE_VERSION(2,0), NULL, &ver, &handle))
+		memset(&wreq, 0, sizeof(iwreq));
+		sprintf(wreq.ifr_name, "wlan0");
+		int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+		if(sockfd >= 0) 
 		{
-			PWLAN_INTERFACE_INFO_LIST ilist;
-			if(ERROR_SUCCESS == WlanEnumInterfaces(handle, NULL, &ilist))
+			char buffer[IW_ESSID_MAX_SIZE];
+			buffer[0] = '\0';
+			wreq.u.essid.pointer = buffer;
+			wreq.u.essid.length = IW_ESSID_MAX_SIZE;
+			if(ioctl(sockfd, SIOCGIWESSID, &wreq) >= 0) 
 			{
-				//for(int i=0; i<(int)ilist->dwNumberOfItems; i++)
-				// stash off first wifi network found
-				if(ilist->dwNumberOfItems > 0)
-				{
-					int i = 0;
-					bool isConnected = (ilist->InterfaceInfo[i].isState == wlan_interface_state_connected);
-					GUID *guid = &ilist->InterfaceInfo[i].InterfaceGuid;
-					DWORD size;
-
-					ULONG *pChNum;
-					if(ERROR_SUCCESS == WlanQueryInterface (handle, guid, 
-						wlan_intf_opcode_channel_number, NULL, &size, (PVOID*)&pChNum, NULL))
-					{
-						channel = *pChNum;
-						WlanFreeMemory(pChNum);
-					}
-
-					WLAN_CONNECTION_ATTRIBUTES *conn;
-					if(ERROR_SUCCESS == WlanQueryInterface (handle, guid, 
-						wlan_intf_opcode_current_connection, NULL, &size, (PVOID*)&conn, NULL))
-					{
-						strncpy(ssid, (const char*)conn->wlanAssociationAttributes.dot11Ssid.ucSSID, DOT11_SSID_MAX_LENGTH);
-
-						// mark as succes, even if we can't get the password
-						success = true;
-
-						DWORD dwFlags = WLAN_PROFILE_GET_PLAINTEXT_KEY;
-						DWORD dwGranted = 0;
-						LPWSTR pProfileXML = NULL;
-	
-						if(ERROR_SUCCESS == WlanGetProfile(handle, guid, conn->strProfileName, NULL, &pProfileXML, &dwFlags, &dwGranted))
-						{
-							int len = wcslen(pProfileXML);
-							char *tstr = new char[len * 2];
-							wcstombs(tstr, pProfileXML, len);
-
-							getXMLValue(tstr, "<keyMaterial>", password);
-							//OutputDebugStringW(pProfileXML);
-
-							delete []tstr;
-							WlanFreeMemory(pProfileXML);
-						}
-
-						WlanFreeMemory(conn);
-					}
-				}
-
-				WlanFreeMemory(ilist);
+				printf("IOCTL Successfull\n");
+				printf("ESSID is %s\n", (const char*)wreq.u.essid.pointer);
 			}
-			WlanCloseHandle(handle, NULL);
 		}
+		//****FixMe, fill this in
 	}
 
 	return success;
@@ -127,26 +92,13 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 Socket::Socket()
 	: soc(INVALID_SOCKET)
 {
-	isInit = false;
-
-	// Initialize Winsock
-	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if(iResult == 0) 
-	{
-		isInit = true;
-	}
-	else
-		debugPrint(DBG_WARN, "WSAStartup failed with error: %d\n", iResult);
+	isInit = true;
 }
 
 Socket::~Socket()
 {
 	if(isInit)
-	{
 		Socket::closeSocket();
-		WSACleanup();
-	}
-
 	isInit = false;
 }
 
@@ -189,7 +141,7 @@ bool Socket::openSocket(const char *ip, int port)
 					Socket::closeSocket();
 				}
 				else
-					debugPrint(DBG_WARN, "socket failed with error: %ld\n", WSAGetLastError());
+					debugPrint(DBG_WARN, "socket failed with error: %ld\n", errno);
 			}
 			freeaddrinfo(adrInf);
 
@@ -215,8 +167,8 @@ bool Socket::closeSocket()
 
 	if(isInit && IS_VALID(soc)) 
 	{
-		//shutdown(soc, SD_BOTH);
-		closesocket(soc);
+		shutdown(soc, SHUT_RDWR);
+		close(soc);
 
 		soc = INVALID_SOCKET;
 		success = true;
@@ -244,7 +196,7 @@ int Socket::write(const char *buf, const int bufLen)
 			//if(bytesWritten == strlen(buf))
 		}
 		else
-			debugPrint(DBG_WARN, "send failed with error: %d\n", WSAGetLastError());
+			debugPrint(DBG_WARN, "send failed with error: %d\n", errno);
 	}
 	else
 		debugPrint(DBG_WARN, "Not connected to server!\n");
@@ -271,7 +223,7 @@ int Socket::read(char *buf, int bufLen)
 				count = iResult;
 			}
 			else
-				debugPrint(DBG_WARN, "recv failed with error: %d\n", WSAGetLastError());
+				debugPrint(DBG_WARN, "recv failed with error: %d\n", errno);
 		}
 		else
 			debugPrint(DBG_WARN, "Not connected to server!\n");
