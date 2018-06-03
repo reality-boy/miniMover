@@ -170,7 +170,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 	{
 		// if already connected just return
 		if(0 == strcmp(deviceName, m_deviceName) && 
-			getBaudRate() == baudRate)
+			m_baudRate == baudRate)
 			return true;
 
 		// close out any previous connection
@@ -238,6 +238,7 @@ void Serial::closeSerial()
 	m_deviceName[0] = '\0';
 }
 
+/*
 const char* Serial::getDeviceName() // return current connected device
 {
 	return (m_handle) ? m_deviceName : NULL;
@@ -247,6 +248,7 @@ int Serial::getBaudRate()
 {
 	return (m_handle) ? m_baudRate : -1;
 }
+*/
 
 bool Serial::isOpen() 
 { 
@@ -270,9 +272,6 @@ void Serial::clear()
 		if(read(buf, len))
 			debugPrint(DBG_REPORT, "leftover data: %s", buf);
 	}
-
-	//if(m_handle)
-	//	PurgeComm (m_handle, PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR);
 }
 
 int Serial::read(char *buf, int len)
@@ -281,7 +280,6 @@ int Serial::read(char *buf, int len)
 
 	if(m_handle && buf && len > 0)
 	{
-		//****FixMe, drain readLine buffer first!
 		buf[0] = '\0';
 		if(ReadFile(m_handle, buf, len-1, &bytesRead, NULL) && bytesRead > 0)
 		{
@@ -306,7 +304,6 @@ int Serial::write(const char *buf, int len)
 		if(WriteFile(m_handle, buf, len, &bytesWritten, NULL))
 		{
 			// success
-
 			debugPrint(DBG_LOG, "write array: %d bytes", len);
 			debugPrintArray(DBG_VERBOSE, buf, len);
 		}

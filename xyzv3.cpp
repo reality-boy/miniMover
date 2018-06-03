@@ -31,7 +31,7 @@
 #include "timer.h"
 #include "aes.h"
 #include "serial.h"
-//#include "network.h"
+#include "network.h"
 #include "xyzv3.h"
 
 //****FixMe, keep track of 'end' messages and fire them
@@ -504,7 +504,7 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 			getJsonVal(str, "ssid", m_status.WSSID);
 			getJsonVal(str, "bssid", m_status.WBSSID);
 			getJsonVal(str, "channel", m_status.WChannel);
-			getJsonVal(str, "rssiValue", m_status.WRssiValue);
+			getJsonVal(str, "rssiValue", m_status.WRssiValue); //****FixMe, match N4NetRssiValue
 			getJsonVal(str, "PHY", m_status.WPHY);
 			getJsonVal(str, "security", m_status.WSecurity);
 			break;
@@ -542,7 +542,16 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 			getJsonVal(str, "ssid", m_status.N4NetSSID);
 			getJsonVal(str, "channel", m_status.N4NetChan);
 			getJsonVal(str, "MAC", m_status.N4NetMAC);
-			getJsonVal(str, "rssiValue", m_status.N4NetRssiValue);
+			if(getJsonVal(str, "rssiValue", s1))
+			{
+				m_status.N4NetRssiValue = -atoi(s1);
+				m_status.N4NetRssiValuePct = rssiToPct(m_status.N4NetRssiValue);
+			}
+			else
+			{
+				m_status.N4NetRssiValue = -100;
+				m_status.N4NetRssiValuePct = 0;
+			}
 			break;
 
 		// case '5' to '9' unused
@@ -948,6 +957,15 @@ const char* XYZV3::filamentColorIdToStr(int colorId)
 	case 'Z': return "Nature";
 	default: return "---";
 	}
+}
+
+int XYZV3::rssiToPct(int rssi)
+{
+	if(rssi >= -50)
+		return 100;
+	if(rssi <= -100)
+		return 0;
+	return (rssi + 100) * 2;
 }
 
 // call to start calibration

@@ -42,6 +42,7 @@ bool getFilePath(HWND hDlg, char *path, int len, bool isOpen)
 	return false;
 }
 
+// from miniMoverUI.cpp
 extern int g_printPct;
 void printFileCallback(float pct)
 {

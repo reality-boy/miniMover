@@ -5,15 +5,15 @@
 #endif
 
 # define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-# include <SDKDDKVer.h>
-# include <Windows.h>
-# include <Wlanapi.h>
-# pragma comment(lib, "Wlanapi.lib")
-# include <Winsock2.h>
-# include <ws2tcpip.h>
-# pragma comment(lib, "ws2_32.lib")
-# pragma warning(disable:4996)
-# define IS_VALID(s) ((s) != INVALID_SOCKET)
+#include <SDKDDKVer.h>
+#include <Windows.h>
+#include <Wlanapi.h>
+#pragma comment(lib, "Wlanapi.lib")
+#include <Winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#pragma warning(disable:4996)
+#define IS_VALID(s) ((s) != INVALID_SOCKET)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,6 +124,7 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 	return success;
 }
 
+//FormatMessage() 
 Socket::Socket()
 	: soc(INVALID_SOCKET)
 {
@@ -148,6 +149,20 @@ Socket::~Socket()
 	}
 
 	isInit = false;
+}
+
+void Socket::setSocetTimeout(int readTimeout_ms, int writeTimeout_ms)
+{
+	timeval timeout = {0};
+
+	if(IS_VALID(soc))
+	{
+		timeout.tv_usec = readTimeout_ms * 1000;
+		setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+
+		timeout.tv_usec = writeTimeout_ms * 1000;
+		setsockopt(soc, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+	}
 }
 
 bool Socket::openSocket(const char *ip, int port) 
@@ -178,8 +193,9 @@ bool Socket::openSocket(const char *ip, int port)
 				soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
 				if(IS_VALID(soc)) 
 				{
+					setSocetTimeout(50, 5000);
+
 					// Connect to server.
-					//****FixMe, deal with blocking?
 					iResult = connect(soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
 					if(iResult != SOCKET_ERROR) 
 					{
@@ -227,32 +243,29 @@ bool Socket::closeSocket()
 	return success;
 }
 
-int Socket::write(const char *buf, const int bufLen)
-{
-	int bytesWritten = 0;
-
-	if(isInit && IS_VALID(soc)) 
-	{
-		// Send an initial buffer
-		//****FixMe, do we need to loop to send it all?
-		//****FixMe, deal with blocking
-		bytesWritten = send(soc, buf, bufLen, 0);
-		if(bytesWritten != SOCKET_ERROR)
-		{
-			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", bytesWritten);
-
-			//if(bytesWritten == strlen(buf))
-		}
-		else
-			debugPrint(DBG_WARN, "send failed with error: %d\n", WSAGetLastError());
-	}
-	else
-		debugPrint(DBG_WARN, "Not connected to server!\n");
-
-	return bytesWritten;
+bool Socket::isOpen() 
+{ 
+	return isInit && IS_VALID(soc); 
 }
 
-int Socket::read(char *buf, int bufLen)
+void Socket::clear() // is this ever needed?
+{
+	// call parrent
+	Stream::clear();
+
+	// check if we have data waiting, without stalling
+	//****FixMe, check if data before calling read()
+	{
+		// log any leftover data
+		const int len = 4096;
+		char buf[len];
+		if(read(buf, len))
+			debugPrint(DBG_REPORT, "leftover data: %s", buf);
+	}
+}
+
+
+int Socket::read(char *buf, int len)
 {
 	int count = -1;
 
@@ -263,8 +276,7 @@ int Socket::read(char *buf, int bufLen)
 		if(isInit && IS_VALID(soc)) 
 		{
 			int iResult = -1;
-			//****FixMe, deal with blocking
-			iResult = recv(soc, buf, bufLen, 0);
+			iResult = recv(soc, buf, len, 0);
 			if(iResult >= 0)
 			{
 				debugPrint(DBG_LOG, "Bytes received: %d\n", iResult);
@@ -280,31 +292,27 @@ int Socket::read(char *buf, int bufLen)
 	return count;
 }
 
-bool Socket::isOpen() 
-{ 
-	return isInit && IS_VALID(soc); 
-}
-
-void Socket::clear() // is this ever needed?
+int Socket::write(const char *buf, const int len)
 {
-}
+	int bytesWritten = 0;
 
-
-/*
-const static int dataLen = 512;
-char data[dataLen];
-Socket socket;
-if(socket.openSocket("216.58.216.14", 80))
-{
-	if(socket.writeSocket("GET\n\n")) 
+	if(isInit && IS_VALID(soc)) 
 	{
-		int count;
-		while(count = socket.read(data, dataLen) > 0)
+		// Send an initial buffer
+		bytesWritten = send(soc, buf, len, 0);
+		if(bytesWritten != SOCKET_ERROR)
 		{
-			// do something with the data
-			count = count;
+			debugPrint(DBG_LOG, "write array: %d bytes\n", bytesWritten);
+			debugPrintArray(DBG_VERBOSE, buf, len);
+
+			//if(bytesWritten == strlen(buf))
 		}
+		else
+			debugPrint(DBG_WARN, "failed to write bytes: %d\n", WSAGetLastError());
 	}
-	socket.closeSocket();
+	else
+		debugPrint(DBG_WARN, "Not connected to server!\n");
+
+	return bytesWritten;
 }
-*/
+

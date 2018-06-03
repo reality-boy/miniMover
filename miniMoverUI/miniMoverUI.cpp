@@ -44,17 +44,17 @@
 
 XYZV3 xyz;
 Serial serial;
+Socket soc;
+XYZPrinterStatus prSt = { 0 };
 
 int g_timerInterval = 500;
+UINT_PTR g_timer = 0;
+
+// set by XYZV3Thread.cpp
+int g_printPct = 0;
 
 bool g_threadRunning = false;
 bool g_wifiOptionsEdited = false;
-
-const int g_maxPorts = 24;
-int g_comIDtoPort[g_maxPorts] = {-1};
-
-UINT_PTR g_timer = 0;
-int g_printPct = 0;
 
 // controls
 HWND hwndListInfo = NULL;
@@ -62,7 +62,6 @@ HWND hwndListInfo = NULL;
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
 
-XYZPrinterStatus prSt = { 0 };
 
 //-------------------------------------------
 // main dialog
@@ -138,7 +137,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		if(st->XNozzle2SerialNumber[0])
 			listAddLine(hwndListInfo, "Nozzle 2 serial: %s", st->XNozzle2SerialNumber);
 		listAddLine(hwndListInfo, "Firmware ver: %s", st->vFirmwareVersion);
-		listAddLine(hwndListInfo, "Nozzle ID: %d, Diam %0.2f mm, Laser %d", st->XNozzleID, st->XNozzleDiameter_mm, st->XNozzleIsLaser);
+		listAddLine(hwndListInfo, "Nozzle ID: %d, Diam %0.2f mm%s", st->XNozzleID, st->XNozzleDiameter_mm, (st->XNozzleIsLaser) ? ", laser" : "");
 
 		listAddLine(hwndListInfo, "Build volume: %d l %d w %d h", inf->length, inf->width, inf->height);
 		if(inf->fileIsV5)
@@ -219,7 +218,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 			listAddLine(hwndListInfo, "Wifi SSID: %s", st->N4NetSSID);
 			listAddLine(hwndListInfo, "Wifi Chan: %s", st->N4NetChan);
 			listAddLine(hwndListInfo, "Wifi MAC: %s", st->N4NetMAC);
-			listAddLine(hwndListInfo, "Wifi Rssi: %s", st->N4NetRssiValue);
+			listAddLine(hwndListInfo, "Wifi Rssi: %d dB - %d %%", st->N4NetRssiValue, st->N4NetRssiValuePct);
 		}
 
 		// print status info
@@ -258,7 +257,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		if(st->eErrorStatus != 0)
 			listAddLine(hwndListInfo, "Error: (0x%08x) %s", st->eErrorStatus, st->eErrorStatusStr);
 		listAddLine(hwndListInfo, "Status: (%d:%d) %s", st->jPrinterState, st->jPrinterSubState, st->jPrinterStateStr);
-
 
 		ListBox_SetTopIndex(hwndListInfo, index);
 		// now repaint all at once
@@ -310,8 +308,8 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	SerialHelper::queryForPorts("XYZ");
 	int count = SerialHelper::getPortCount();
 
-	if(count >= g_maxPorts)
-		count = g_maxPorts;
+	//if(count > 24)
+	//	count = 24;
 
 	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_RESETCONTENT, 0, 0);
 	for(int i=0; i<= count; i++)
@@ -428,6 +426,10 @@ void MainDlgConnect(HWND hDlg)
 	int comID = SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_GETCURSEL, 0, 0);
 	if(comID == CB_ERR)
 		comID = 0;
+
+	// clear out cache of printer previous status
+	memset(&prSt, 0, sizeof(prSt));
+	g_wifiOptionsEdited = false;
 
 	if(comID == 0)
 		comID = SerialHelper::queryForPorts("XYZ") + 1;

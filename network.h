@@ -21,15 +21,16 @@ public:
 
 	bool isOpen();
 	void clear();
-	int read(char *buf, int bufLen);
-	int write(const char *buf, int bufLen);
+	int read(char *buf, int len);
+	int write(const char *buf, int len);
 
 	// from base class
-	//int readLine(char *buf, int bufLen);
+	//int readLine(char *buf, int len);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 
 protected:
+	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);
 
 #ifdef _WIN32
 	WSADATA wsaData;

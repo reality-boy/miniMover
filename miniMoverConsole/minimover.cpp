@@ -103,6 +103,7 @@ int kbhit()
 
 XYZV3 xyz;
 Serial serial;
+Socket soc;
 char deviceName[SERIAL_MAX_DEV_NAME_LEN] = "";
 
 void updateStatus(float pct)
@@ -153,11 +154,21 @@ bool checkCon()
 		int id = SerialHelper::queryForPorts("XYZ");
 		tDevice = SerialHelper::getPortDeviceName(id);
 	}
+#if 0
 	if(tDevice && serial.openSerial(tDevice, 115200))
 	{
 		xyz.setStream(&serial);
 		return true;
 	}
+#else
+	const char *ip = "192.168.1.118";
+	int port = 9100;
+	if(soc.openSocket(ip, port))
+	{
+		xyz.setStream(&soc);
+		return true;
+	}
+#endif
 
 	xyz.setStream(NULL);
 	if(tDevice)
@@ -298,7 +309,7 @@ bool printStatus()
 				printf("Wireless IP: %s\n", st->N4NetIP);
 				printf("Wireless Channel: %s\n", st->N4NetChan);
 				printf("Wireless MAC: %s\n", st->N4NetMAC);
-				printf("Wireless RssiValue: %s\n", st->N4NetRssiValue);
+				printf("Wireless RssiValue: %d dB - %d %%\n", st->N4NetRssiValue, st->N4NetRssiValuePct);
 			}
 
 			if(inf)
@@ -722,7 +733,11 @@ int main(int argc, char **argv)
 	
 	// disconnect just in case
 	xyz.setStream(NULL);
+#if 0
 	serial.closeSerial();
+#else
+	soc.closeSocket();
+#endif
 
 	debugFinalize();
 

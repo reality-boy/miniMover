@@ -179,32 +179,28 @@ bool Socket::closeSocket()
 	return success;
 }
 
-int Socket::write(const char *buf, const int bufLen)
-{
-	int bytesWritten = 0;
-
-	if(isInit && IS_VALID(soc)) 
-	{
-		// Send an initial buffer
-		//****FixMe, do we need to loop to send it all?
-		//****FixMe, deal with blocking
-		bytesWritten = send(soc, buf, bufLen, 0);
-		if(bytesWritten != SOCKET_ERROR)
-		{
-			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", bytesWritten);
-
-			//if(bytesWritten == strlen(buf))
-		}
-		else
-			debugPrint(DBG_WARN, "send failed with error: %d\n", errno);
-	}
-	else
-		debugPrint(DBG_WARN, "Not connected to server!\n");
-
-	return bytesWritten;
+bool Socket::isOpen() 
+{ 
+	return isInit && IS_VALID(soc); 
 }
 
-int Socket::read(char *buf, int bufLen)
+void Socket::clear() // is this ever needed?
+{
+	// call parrent
+	Stream::clear();
+
+	// check if we have data waiting, without stalling
+	//****FixMe, check if data before calling read()
+	{
+		// log any leftover data
+		const int len = 4096;
+		char buf[len];
+		if(read(buf, len))
+			debugPrint(DBG_REPORT, "leftover data: %s", buf);
+	}
+}
+
+int Socket::read(char *buf, int len)
 {
 	int count = -1;
 
@@ -216,7 +212,7 @@ int Socket::read(char *buf, int bufLen)
 		{
 			int iResult = -1;
 			//****FixMe, deal with blocking
-			iResult = recv(soc, buf, bufLen, 0);
+			iResult = recv(soc, buf, len, 0);
 			if(iResult >= 0)
 			{
 				debugPrint(DBG_LOG, "Bytes received: %d\n", iResult);
@@ -232,31 +228,28 @@ int Socket::read(char *buf, int bufLen)
 	return count;
 }
 
-bool Socket::isOpen() 
-{ 
-	return isInit && IS_VALID(soc); 
-}
-
-void Socket::clear() // is this ever needed?
+int Socket::write(const char *buf, const int len)
 {
-}
+	int bytesWritten = 0;
 
-
-/*
-const static int dataLen = 512;
-char data[dataLen];
-Socket socket;
-if(socket.openSocket("216.58.216.14", 80))
-{
-	if(socket.writeSocket("GET\n\n")) 
+	if(isInit && IS_VALID(soc)) 
 	{
-		int count;
-		while(count = socket.read(data, dataLen) > 0)
+		// Send an initial buffer
+		//****FixMe, do we need to loop to send it all?
+		//****FixMe, deal with blocking
+		bytesWritten = send(soc, buf, len, 0);
+		if(bytesWritten != SOCKET_ERROR)
 		{
-			// do something with the data
-			count = count;
+			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", bytesWritten);
+
+			//if(bytesWritten == strlen(buf))
 		}
+		else
+			debugPrint(DBG_WARN, "send failed with error: %d\n", errno);
 	}
-	socket.closeSocket();
+	else
+		debugPrint(DBG_WARN, "Not connected to server!\n");
+
+	return bytesWritten;
 }
-*/
+

@@ -14,9 +14,6 @@ that XYZMaker does do is slice a model for you.  You will need
 to use a third party slicing tool to generate the gcode.
 */
 
-class Serial; // from serial.h
-class Socket; // from network.h
-
 // printer state word
 // items marked with state have substatus words as well.
 enum XYZPrintStateCode
@@ -162,7 +159,8 @@ struct XYZPrinterStatus
 	char N4NetSSID[64];			// network name
 	char N4NetChan[64];			// wifi channel 1-14
 	char N4NetMAC[64];			// mac address of machine, basically a unique id
-	char N4NetRssiValue[64];	// signal strength 0-100 ?
+	int N4NetRssiValue;			// signal strength -100 dB to 0 dB
+	int N4NetRssiValuePct;		// signal strength as a percent
 };
 
 // info on each printer type
@@ -373,6 +371,7 @@ protected:
 	const char* errorCodeToStr(int code);
 	const char* filamentMaterialTypeToStr(int materialType);
 	const char* filamentColorIdToStr(int colorId);
+	int rssiToPct(int rssi);
 	bool getJsonVal(const char *str, const char *key, char *val);
 
 	// serial functions

@@ -189,19 +189,17 @@ void Serial::closeSerial()
 	}
 }
 
+/*
 const char* Serial::getDeviceName()
 {
-    if(m_handle > 0)
-		return m_deviceName;
-	return "";
+    return (m_handle > 0) ? m_deviceName : NULL;
 }
 
 int Serial::getBaudRate()
 {
-    if(m_handle > 0)
-		return m_baudRate;
-	return -1;
+    return (m_handle > 0) ? m_baudRate : NULL;
 }
+*/
 
 bool Serial::isOpen()
 {

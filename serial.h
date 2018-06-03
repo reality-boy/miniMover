@@ -2,11 +2,8 @@
 #define SERIAL_H
 
 #include "stream.h"
-/*
-Serial class that hides win32 serial api in a nicely 
-wrapped package.
-*/
 
+//Serial class that hides win32 serial api in a nicely wrapped package.
 
 const static int SERIAL_MAX_DEV_NAME_LEN = 256;
 
@@ -52,8 +49,8 @@ public:
 	bool openSerial(const char *deviceName, int baudRate);
 	void closeSerial();
 
-	const char* getDeviceName(); // return current connected device
-	int getBaudRate(); // return current baudRate or -1 if not connected
+	//const char* getDeviceName(); // return current connected device
+	//int getBaudRate(); // return current baudRate or -1 if not connected
 
 	bool isOpen();
 	void clear();
