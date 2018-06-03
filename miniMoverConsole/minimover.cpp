@@ -101,6 +101,9 @@ int kbhit()
 //-------------------
 #endif
 
+// comment out to try network connection
+#define USE_SERIAL
+
 XYZV3 xyz;
 Serial serial;
 Socket soc;
@@ -154,13 +157,13 @@ bool checkCon()
 		int id = SerialHelper::queryForPorts("XYZ");
 		tDevice = SerialHelper::getPortDeviceName(id);
 	}
-#if 0
+#ifdef USE_SERIAL
 	if(tDevice && serial.openSerial(tDevice, 115200))
 	{
 		xyz.setStream(&serial);
 		return true;
 	}
-#else
+#else // network
 	const char *ip = "192.168.1.118";
 	int port = 9100;
 	if(soc.openSocket(ip, port))
@@ -733,9 +736,10 @@ int main(int argc, char **argv)
 	
 	// disconnect just in case
 	xyz.setStream(NULL);
-#if 0
+
+#ifdef USE_SERIAL
 	serial.closeSerial();
-#else
+#else // network
 	soc.closeSocket();
 #endif
 
