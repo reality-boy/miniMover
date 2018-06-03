@@ -626,7 +626,7 @@ bool XYZV3::queryStatus(bool doPrint)
 			{
 				const char *buf = NULL;
 				if(serialSendMessage("XYZv3/config=zoffset:get"))
-					buf = waitForLine(true, 0.5f); 
+					buf = waitForLine(true, 0.5f, false); 
 				if(*buf)
 				{
 					if(doPrint)
@@ -2056,7 +2056,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 //****Note, errors can be E0\n$\n or E4$\n, success is often just $\n or ok\n$\n
 // need to deal with all variants
-const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
+const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 {
 	static const int len = 1024;
 	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
@@ -2078,7 +2078,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s)
 		}
 		while(msTime::getTime_s() < end);
 
-		if(!isValid)
+		if(!isValid && report)
 			debugPrint(DBG_WARN, "waitForLine, timeout triggered %0.2f", timeout_s);
 		else
 		{
