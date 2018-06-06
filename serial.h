@@ -49,9 +49,6 @@ public:
 	bool openSerial(const char *deviceName, int baudRate);
 	void closeSerial();
 
-	//const char* getDeviceName(); // return current connected device
-	//int getBaudRate(); // return current baudRate or -1 if not connected
-
 	bool isOpen();
 	void clear();
 	int read(char *buf, int len);

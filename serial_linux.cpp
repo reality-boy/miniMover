@@ -189,18 +189,6 @@ void Serial::closeSerial()
 	}
 }
 
-/*
-const char* Serial::getDeviceName()
-{
-    return (m_handle > 0) ? m_deviceName : NULL;
-}
-
-int Serial::getBaudRate()
-{
-    return (m_handle > 0) ? m_baudRate : NULL;
-}
-*/
-
 bool Serial::isOpen()
 {
 	return m_handle >= 0;
@@ -229,20 +217,55 @@ void Serial::clear()
 
 int Serial::read(char *buf, int len)
 {
-    if(m_handle >= 0)
+	int bytesRead = 0;
+
+	if(buf)
 	{
-	    int res = ::read(m_handle, buf, len);
-	    return (res < 0) ? -1 : res;
+		buf[0] = '\0';
+	    if(m_handle >= 0 && len > 0)
+		{
+		    int tLen = ::read(m_handle, buf, len-1);
+		    if (tLen > 0)
+			{
+				// success
+				bytesRead = tLen;
+
+				if(bytesRead > (len-1))
+					bytesRead = len-1;
+				buf[bytesRead] = '\0';
+
+				//debugPrint(DBG_LOG, "Bytes received: %d - %s", tLen, buf);
+				debugPrint(DBG_LOG, "Bytes received: %d", tLen);
+				debugPrintArray(DBG_VERBOSE, buf, tLen);
+			}
+			else
+				debugPrint(DBG_WARN, "read failed");
+		}
 	}
-	return -1;
+
+	return bytesRead;
 }
 
 int Serial::write(const char *buf, int len)
 {
-    if(m_handle >= 0)
+	int bytesWritten = 0;
+
+    if(m_handle >= 0 && buf && len > 0)
 	{
-	    int res = ::write(m_handle, buf, len);
-	    return (res < 0) ? -1 : res;
+	    int tLen = ::write(m_handle, buf, len);
+	    if(tLen > 0)
+		{
+			// success
+			bytesWritten = tLen;
+			//if(buf[len-1] == '\0')
+			//	debugPrint(DBG_LOG, "Bytes sent: %d:%d - %s", len, tLen, buf);
+			//else
+				debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, tLen);
+			debugPrintArray(DBG_VERBOSE, buf, len);
+		}
+		else
+			debugPrint(DBG_ERR, "failed to write bytes: %d", tLen);
 	}
-	return -1;
+
+	return bytesWritten;
 }

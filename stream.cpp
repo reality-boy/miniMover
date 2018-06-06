@@ -38,6 +38,7 @@ int Stream::readLine(char *buf, int bufLen)
 		const char *bufEnd = &buf[bufLen-1];
 
 		// check if we already have a newline terminated string
+		// do it here so we don't block if data already waiting
 		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
 		{
 			*bufStart = *m_lineBufStart;
@@ -67,7 +68,7 @@ int Stream::readLine(char *buf, int bufLen)
 		len = read(m_lineBufEnd, len);
 		m_lineBufEnd += len;
 
-		// try once more for a newline
+		// try once more for a newline in buffer
 		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
 		{
 			*bufStart = *m_lineBufStart;
@@ -81,17 +82,6 @@ int Stream::readLine(char *buf, int bufLen)
 			}
 			bufStart++;
 		}
-
-		// null terminate the string
-		*bufStart = '\0';
-
-		// log the error
-		debugPrint(DBG_LOG, "recieved partial: %s", buf);
-
-		// but return true if we got a partial string
-		// length of 1 is just a blank terminator, so return zero...
-		len = bufStart - buf + 1;
-		return (len > 1) ? len : 0; // length
 	}
 
 	return 0;

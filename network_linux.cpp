@@ -27,36 +27,6 @@
 #include "debug.h"
 #include "network.h"
 
-
-bool getXMLValue(const char *xml, const char* key, char *val)
-{
-	if(val)
-	{
-		*val = '\0';
-
-		if(key && xml)
-		{
-			const char *t = strstr(xml, key);
-			if(t)
-			{
-				t += strlen(key);
-				while(t && *t != '<')
-				{
-					*val = *t;
-					t++;
-					val++;
-				}
-
-				*val = '\0';
-
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel)
 {
@@ -87,6 +57,144 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 	}
 
 	return success;
+}
+
+const char* errorNumToStr(int num)
+{
+	switch(num)
+	{
+	case 0: return "No error";
+	case EINTR: return "Interrupted system call";
+	case EBADF: return "Bad file number";
+	case EACCES: return "Permission denied";
+	case EFAULT: return "Bad address";
+	case EINVAL: return "Invalid argument";
+	case EMFILE: return "Too many open sockets";
+	case EWOULDBLOCK: return "Operation would block";
+	case EINPROGRESS: return "Operation now in progress";
+	case EALREADY: return "Operation already in progress";
+	case ENOTSOCK: return "Socket operation on non-socket";
+	case EDESTADDRREQ: return "Destination address required";
+	case EMSGSIZE: return "Message too long";
+	case EPROTOTYPE: return "Protocol wrong type for socket";
+	case ENOPROTOOPT: return "Bad protocol option";
+	case EPROTONOSUPPORT: return "Protocol not supported";
+	case ESOCKTNOSUPPORT: return "Socket type not supported";
+	case EOPNOTSUPP: return "Operation not supported on socket";
+	case EPFNOSUPPORT: return "Protocol family not supported";
+	case EAFNOSUPPORT: return "Address family not supported";
+	case EADDRINUSE: return "Address already in use";
+	case EADDRNOTAVAIL: return "Can't assign requested address";
+	case ENETDOWN: return "Network is down";
+	case ENETUNREACH: return "Network is unreachable";
+	case ENETRESET: return "Net connection reset";
+	case ECONNABORTED: return "Software caused connection abort";
+	case ECONNRESET: return "Connection reset by peer";
+	case ENOBUFS: return "No buffer space available";
+	case EISCONN: return "Socket is already connected";
+	case ENOTCONN: return "Socket is not connected";
+	case ESHUTDOWN: return "Can't send after socket shutdown";
+	case ETOOMANYREFS: return "Too many references, can't splice";
+	case ETIMEDOUT: return "Connection timed out";
+	case ECONNREFUSED: return "Connection refused";
+	case ELOOP: return "Too many levels of symbolic links";
+	case ENAMETOOLONG: return "File name too long";
+	case EHOSTDOWN: return "Host is down";
+	case EHOSTUNREACH: return "No route to host";
+	case ENOTEMPTY: return "Directory not empty";
+//	case EPROCLIM: return "Too many processes";
+	case EUSERS: return "Too many users";
+	case EDQUOT: return "Disc quota exceeded";
+	case ESTALE: return "Stale NFS file handle";
+	case EREMOTE: return "Too many levels of remote in path";
+//	case SYSNOTREADY: return "Network system is unavailable";
+//	case VERNOTSUPPORTED: return "Winsock version out of range";
+//	case NOTINITIALISED: return "WSAStartup not yet called";
+//	case EDISCON: return "Graceful shutdown in progress";
+	case HOST_NOT_FOUND: return "Host not found";
+//	case NO_DATA: return "No host data of that type was found";
+	}
+
+	return "unknown error";
+}
+
+const char* getLastErrorMessage(int errNum = 0)
+{
+	static char tstr[256];
+
+	if(errNum == 0)
+		errNum = errno;
+	sprintf(tstr, "%s (%d)", errorNumToStr(errNum), errNum);
+	tstr[sizeof(tstr)-1] = '\0';
+
+	return tstr;
+}
+
+// given a dotted or host name, get inet_addr
+unsigned long lookupAddress(const char* pcHost)
+{
+	unsigned long addr = INADDR_NONE;
+
+	if(pcHost)
+	{
+		// try dotted address
+		addr = inet_addr(pcHost);
+		if (addr == INADDR_NONE) 
+		{
+			// if that fails try dns
+			hostent* pHE = gethostbyname(pcHost);
+			if (pHE != 0) 
+				addr = *((unsigned long*)pHE->h_addr_list[0]);
+		}
+	}
+
+	return addr;
+}
+
+bool waitOnSocketConnect(int soc, int timeout_ms)
+{
+	fd_set fdread;
+    FD_ZERO(&fdread);
+    FD_SET(soc, &fdread);
+
+	fd_set fdwrite;
+    FD_ZERO(&fdwrite);
+    FD_SET(soc, &fdwrite);
+
+	timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+
+	int res = select(soc + 1, &fdread, &fdwrite, NULL, &tv);
+	if(res == 1)
+    {
+		int iResult;
+        socklen_t len = sizeof iResult;
+        getsockopt(soc, SOL_SOCKET, SO_ERROR, (char*)&iResult, &len);
+
+		if(iResult != SOCKET_ERROR) 
+			return true; // success, connected with no timeout
+		else // failed with error
+			debugPrint(DBG_WARN, "wait failed with error: %s", getLastErrorMessage());
+    }
+	else
+		debugPrint(DBG_LOG, "wait failed with timeout, %d:%s", res, getLastErrorMessage());
+
+	return false;
+}
+
+// -1 - error, 0 - timeout, 1 - data ready
+int waitOnSocketReciev(int soc, int timeout_ms)
+{
+	fd_set fdread;
+    FD_ZERO(&fdread);
+    FD_SET(soc, &fdread);
+
+	timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+
+	return select(soc + 1, &fdread, NULL, NULL, &tv);
 }
 
 Socket::Socket()
@@ -141,7 +249,7 @@ bool Socket::openSocket(const char *ip, int port)
 					Socket::closeSocket();
 				}
 				else
-					debugPrint(DBG_WARN, "socket failed with error: %ld\n", errno);
+					debugPrint(DBG_WARN, "socket failed with error: %ld", errno);
 			}
 			freeaddrinfo(adrInf);
 
@@ -150,13 +258,13 @@ bool Socket::openSocket(const char *ip, int port)
 				success = true;
 			}
 			else
-				debugPrint(DBG_WARN, "Unable to connect to server!\n");
+				debugPrint(DBG_WARN, "Unable to connect to server!");
 		}
 		else
-			debugPrint(DBG_WARN, "getaddrinfo failed with error: %d\n", iResult);
+			debugPrint(DBG_WARN, "getaddrinfo failed with error: %d", iResult);
 	}
 	else
-		debugPrint(DBG_WARN, "winsock not initialized\n");
+		debugPrint(DBG_WARN, "winsock not initialized");
 
 	return success;
 }
@@ -174,7 +282,7 @@ bool Socket::closeSocket()
 		success = true;
 	}
 	else
-		debugPrint(DBG_WARN, "Not connected to server!\n");
+		debugPrint(DBG_LOG, "Not connected to server!");
 
 	return success;
 }
@@ -189,14 +297,17 @@ void Socket::clear() // is this ever needed?
 	// call parrent
 	Stream::clear();
 
-	// check if we have data waiting, without stalling
-	//****FixMe, check if data before calling read()
+	if(isInit && IS_VALID(soc))
 	{
-		// log any leftover data
-		const int len = 4096;
-		char buf[len];
-		if(read(buf, len))
-			debugPrint(DBG_REPORT, "leftover data: %s", buf);
+		// check if we have data waiting, without stalling
+		if(1 == waitOnSocketReciev(soc, 50))
+		{
+			// log any leftover data
+			const int len = 4096;
+			char buf[len];
+			if(read(buf, len))
+				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+		}
 	}
 }
 
@@ -215,14 +326,14 @@ int Socket::read(char *buf, int len)
 			iResult = recv(soc, buf, len, 0);
 			if(iResult >= 0)
 			{
-				debugPrint(DBG_LOG, "Bytes received: %d\n", iResult);
+				debugPrint(DBG_LOG, "Bytes received: %d", iResult);
 				count = iResult;
 			}
 			else
-				debugPrint(DBG_WARN, "recv failed with error: %d\n", errno);
+				debugPrint(DBG_WARN, "recv failed with error: %d", errno);
 		}
 		else
-			debugPrint(DBG_WARN, "Not connected to server!\n");
+			debugPrint(DBG_LOG, "Not connected to server!");
 	}
 
 	return count;
@@ -232,24 +343,22 @@ int Socket::write(const char *buf, const int len)
 {
 	int bytesWritten = 0;
 
-	if(isInit && IS_VALID(soc)) 
+	if(isInit && IS_VALID(soc) && buf && len > 0) 
 	{
-		// Send an initial buffer
-		//****FixMe, do we need to loop to send it all?
-		//****FixMe, deal with blocking
-		bytesWritten = send(soc, buf, len, 0);
-		if(bytesWritten != SOCKET_ERROR)
+		int tLen = send(soc, buf, len, 0);
+		if(tLen != SOCKET_ERROR)
 		{
-			debugPrint(DBG_LOG, "Bytes Sent: %ld\n", bytesWritten);
-
-			//if(bytesWritten == strlen(buf))
+			// success
+			bytesWritten = tLen;
+			//if(buf[len-1] == '\0')
+			//	debugPrint(DBG_LOG, "Bytes sent: %d:%d - %s", len, tLen, buf);
+			//else
+				debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, tLen);
+			debugPrintArray(DBG_VERBOSE, buf, len);
 		}
 		else
-			debugPrint(DBG_WARN, "send failed with error: %d\n", errno);
+			debugPrint(DBG_WARN, "failed to write bytes: %s", getLastErrorMessage());
 	}
-	else
-		debugPrint(DBG_WARN, "Not connected to server!\n");
 
 	return bytesWritten;
 }
-

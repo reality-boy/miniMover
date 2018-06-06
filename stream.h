@@ -33,6 +33,9 @@ public:
 	// write a string formatted by printf
 	virtual int writePrintf(const char *fmt, ...);
 
+	// default communication timeout
+	virtual float getDefaultSleep() { return 5.0f; }
+
 protected:
 
 	// readLine data

@@ -590,7 +590,7 @@ bool XYZV3::queryStatus(bool doPrint)
 			char buf[len];
 			bool zOffsetSet = false;
 			bool isDone = false; // only try so many times for the answer
-			float end = msTime::getTime_s() + 0.5f; // wait a second or two
+			float end = msTime::getTime_s() + m_stream->getDefaultSleep(); // wait a second or two
 			while(msTime::getTime_s() < end && !isDone)
 			{
 				if(m_stream->readLine(buf, len))
@@ -2065,6 +2065,10 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 
 	if(m_stream && m_stream->isOpen())
 	{
+		// set default sleep
+		if(timeout_s < 0)
+			timeout_s = m_stream->getDefaultSleep();
+
 		// only try so many times for the answer
 		float end = msTime::getTime_s() + timeout_s;
 		do

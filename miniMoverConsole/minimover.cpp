@@ -150,6 +150,7 @@ void postHelp()
 
 bool checkCon()
 {
+#ifdef USE_SERIAL
 	//****FixMe, is this called frequently?
 	const char *tDevice = deviceName;
 	if(!deviceName[0])
@@ -157,16 +158,16 @@ bool checkCon()
 		int id = SerialHelper::queryForPorts("XYZ");
 		tDevice = SerialHelper::getPortDeviceName(id);
 	}
-#ifdef USE_SERIAL
+
 	if(tDevice && serial.openSerial(tDevice, 115200))
 	{
 		xyz.setStream(&serial);
 		return true;
 	}
 #else // network
-	const char *ip = "192.168.1.118";
+	const char *tDevice = "192.168.1.118";
 	int port = 9100;
-	if(soc.openSocket(ip, port))
+	if(soc.openSocket(tDevice, port))
 	{
 		xyz.setStream(&soc);
 		return true;
@@ -201,13 +202,13 @@ bool printStatus()
 			printf("Bed temperature: %d C, target temp: %d C\n", 
 				st->bBedActualTemp_C, st->OBedTargetTemp_C);
 
-			printf("Bed calibration\n");
+			printf("Bed calibration:\n");
 			printf(" %d, %d, %d\n", st->cCalib[0], st->cCalib[1], st->cCalib[2]);
 			printf(" %d, %d, %d\n", st->cCalib[3], st->cCalib[4], st->cCalib[5]);
 			printf(" %d, %d, %d\n", st->cCalib[6], st->cCalib[7], st->cCalib[8]);
 
 			if(st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
-				printf("No job running\n");
+				printf("Printer status: No job running\n");
 			else
 				printf("Printer status: %d %% %d m %d m\n", st->dPrintPercentComplete, st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
 
@@ -228,7 +229,7 @@ bool printStatus()
 			printf("Package size: %d bytes\n", st->oPacketSize);
 			printf("ot: %d bytes\n", st->oT);
 			printf("oc: %d bytes\n", st->oC);
-			printf("Auto level %s\n", (st->oAutoLevelEnabled) ? "enabled" : "disabled");
+			printf("Auto level: %s\n", (st->oAutoLevelEnabled) ? "enabled" : "disabled");
 
 			printf("Model number: %s\n", st->pMachineModelNumber);
 
@@ -280,7 +281,7 @@ bool printStatus()
 			if(st->GLastUsed[0])
 				printf("Filament last used: %s m\n", st->GLastUsed);
 
-			printf("Z-Offset %d\n", st->zOffset);
+			printf("Z-Offset: %d\n", st->zOffset);
 
 			printf("Lifetime power on time: %d min\n", st->LPrinterLifetimePowerOnTime_min);
 			if(st->LPrinterLastPowerOnTime_min > 0)

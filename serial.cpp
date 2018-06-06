@@ -238,18 +238,6 @@ void Serial::closeSerial()
 	m_deviceName[0] = '\0';
 }
 
-/*
-const char* Serial::getDeviceName() // return current connected device
-{
-	return (m_handle) ? m_deviceName : NULL;
-}
-
-int Serial::getBaudRate()
-{
-	return (m_handle) ? m_baudRate : -1;
-}
-*/
-
 bool Serial::isOpen() 
 { 
 	return m_handle != NULL; 
@@ -260,33 +248,51 @@ void Serial::clear()
 	// call parrent
 	Stream::clear();
 
-	// check if we have data waiting, without stalling
-	DWORD dwErrorFlags;
-	COMSTAT ComStat;
-	ClearCommError(m_handle, &dwErrorFlags, &ComStat);
-	if(ComStat.cbInQue)
+	if(m_handle)
 	{
-		// log any leftover data
-		const int len = 4096;
-		char buf[len];
-		if(read(buf, len))
-			debugPrint(DBG_REPORT, "leftover data: %s", buf);
+		// check if we have data waiting, without stalling
+		DWORD dwErrorFlags;
+		COMSTAT ComStat;
+		ClearCommError(m_handle, &dwErrorFlags, &ComStat);
+		if(ComStat.cbInQue)
+		{
+			// log any leftover data
+			const int len = 4096;
+			char buf[len];
+			if(read(buf, len))
+				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+		}
 	}
 }
 
 int Serial::read(char *buf, int len)
 {
-	DWORD bytesRead = 0;
+	int bytesRead = 0;
 
-	if(m_handle && buf && len > 0)
+	if(buf)
 	{
 		buf[0] = '\0';
-		if(ReadFile(m_handle, buf, len-1, &bytesRead, NULL) && bytesRead > 0)
+		if(m_handle && len > 0)
 		{
-			if(bytesRead > (DWORD)(len-1))
-				bytesRead = len-1;
+			DWORD tLen;
+			if(ReadFile(m_handle, buf, len-1, &tLen, NULL))
+			{
+				if(tLen > 0)
+				{
+					// success
+					bytesRead = (int)tLen;
 
-			buf[bytesRead] = '\0';
+					if(bytesRead > (len-1))
+						bytesRead = len-1;
+					buf[bytesRead] = '\0';
+
+					//debugPrint(DBG_LOG, "Bytes received: %d - %s", tLen, buf);
+					debugPrint(DBG_LOG, "Bytes received: %d", tLen);
+					debugPrintArray(DBG_VERBOSE, buf, tLen);
+				}
+			}
+			else
+				debugPrint(DBG_WARN, "read failed");
 		}
 	}
 
@@ -297,14 +303,19 @@ int Serial::read(char *buf, int len)
 
 int Serial::write(const char *buf, int len)
 {
-	DWORD bytesWritten = 0;
+	int bytesWritten = 0;
 
 	if(m_handle && buf && len > 0)
 	{
-		if(WriteFile(m_handle, buf, len, &bytesWritten, NULL))
+		DWORD tLen;
+		if(WriteFile(m_handle, buf, len, &tLen, NULL))
 		{
 			// success
-			debugPrint(DBG_LOG, "write array: %d bytes", len);
+			bytesWritten = tLen;
+			//if(buf[len-1] == '\0')
+			//	debugPrint(DBG_LOG, "Bytes sent: %d:%d - %s", len, bytesWritten, buf);
+			//else
+				debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, bytesWritten);
 			debugPrintArray(DBG_VERBOSE, buf, len);
 		}
 		else
