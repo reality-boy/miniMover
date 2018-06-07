@@ -218,15 +218,16 @@ bool Socket::openSocket(const char *ip, int port)
 	if(isInit)
 	{
 		addrinfo hints;
+		addrinfo *adrInf = NULL;
+
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_protocol = IPPROTO_TCP;
+		//hints.ai_protocol = IPPROTO_TCP;
 
-		// Resolve the server address and port
 		char portStr[32];
 		sprintf(portStr, "%d", port);
-		addrinfo *adrInf = NULL;
+
 		iResult = getaddrinfo(ip, portStr, &hints, &adrInf);
 		if(iResult == 0) 
 		{
@@ -238,30 +239,39 @@ bool Socket::openSocket(const char *ip, int port)
 				soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
 				if(IS_VALID(soc)) 
 				{
+					// turn on non blocking mode
+					unsigned long arg = 1;
+					ioctl(soc, FIONBIO, &arg);
+
 					// Connect to server.
-					//****FixMe, deal with blocking?
 					iResult = connect(soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
+					/*
 					if(iResult != SOCKET_ERROR) 
-					{
 						break; // success we found a connection
-					}
+					else
+						debugPrint(DBG_WARN, "connect failed with error: %s", getLastErrorMessage());
+					*/
+
+					if(waitOnSocketConnect(soc, 5000))
+						break;
 
 					Socket::closeSocket();
 				}
 				else
-					debugPrint(DBG_WARN, "socket failed with error: %ld", errno);
+					debugPrint(DBG_WARN, "socket failed with error: %s", getLastErrorMessage());
 			}
 			freeaddrinfo(adrInf);
 
 			if(IS_VALID(soc)) 
 			{
+				usleep(500 * 1000); // spin for a bit
 				success = true;
 			}
 			else
 				debugPrint(DBG_WARN, "Unable to connect to server!");
 		}
 		else
-			debugPrint(DBG_WARN, "getaddrinfo failed with error: %d", iResult);
+			debugPrint(DBG_WARN, "getaddrinfo failed with error: %d:%s", iResult, gai_strerror(iResult));
 	}
 	else
 		debugPrint(DBG_WARN, "winsock not initialized");
@@ -275,14 +285,39 @@ bool Socket::closeSocket()
 
 	if(isInit && IS_VALID(soc)) 
 	{
-		shutdown(soc, SHUT_RDWR);
-		close(soc);
+		// tell server we are exiting
+		if(shutdown(soc, SHUT_WR) != SOCKET_ERROR) 
+		{
+			// wait for close signal, and drain connection
+			char tbuf[1024];
+			while(true)
+			{
+				int bytes = recv(soc, tbuf, 1024, 0);
+				if (bytes == SOCKET_ERROR)
+				{
+					//debugPrint(DBG_WARN, "close socket drain failed!");
+					//return false;
+					break;
+				}
+				else if (bytes != 0)
+					debugPrint(DBG_WARN, "extra bytes recieved at close: %d", bytes);
+				else
+					break;
+			}
 
-		soc = INVALID_SOCKET;
-		success = true;
+			// actually close the socket
+			if(close(soc) != SOCKET_ERROR)
+				success = true;
+			else
+				debugPrint(DBG_WARN, "close socket failed!");
+		}
+		else
+			debugPrint(DBG_LOG, "shutdown failed!");
 	}
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
+
+	soc = INVALID_SOCKET;
 
 	return success;
 }
@@ -313,30 +348,45 @@ void Socket::clear() // is this ever needed?
 
 int Socket::read(char *buf, int len)
 {
-	int count = -1;
+	int bytesRead = 0;
 
 	if(buf)
 	{
 		*buf = '\0';
-
-		if(isInit && IS_VALID(soc)) 
+		if(isInit && IS_VALID(soc) && len > 0) 
 		{
-			int iResult = -1;
-			//****FixMe, deal with blocking
-			iResult = recv(soc, buf, len, 0);
-			if(iResult >= 0)
+			if(1 == waitOnSocketReciev(soc, 50))
 			{
-				debugPrint(DBG_LOG, "Bytes received: %d", iResult);
-				count = iResult;
+				int tLen = recv(soc, buf, len-1, 0);
+				if(tLen != SOCKET_ERROR)
+				{
+					if(tLen > 0)
+					{
+						// success
+						bytesRead = tLen;
+
+						if(bytesRead > (len-1))
+							bytesRead = len-1;
+						buf[bytesRead] = '\0';
+
+						//debugPrint(DBG_LOG, "Bytes received: %d - %s", tLen, buf);
+						debugPrint(DBG_LOG, "Bytes received: %d", tLen);
+						debugPrintArray(DBG_VERBOSE, buf, tLen);
+					}
+					else
+						debugPrint(DBG_LOG, "Connection closed by peer");
+				}
+				else
+					debugPrint(DBG_WARN, "read failed with error: %s", getLastErrorMessage());
 			}
-			else
-				debugPrint(DBG_WARN, "recv failed with error: %d", errno);
+			//else
+			//	debugPrint(DBG_WARN, "read timeout");
 		}
 		else
 			debugPrint(DBG_LOG, "Not connected to server!");
 	}
 
-	return count;
+	return bytesRead;
 }
 
 int Socket::write(const char *buf, const int len)
