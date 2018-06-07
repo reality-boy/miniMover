@@ -1,6 +1,6 @@
 PROG = minimover
 CC = g++
-CPPFLAGS = -g -Wall -I../ -D _DEBUG
+CPPFLAGS = -g -Wall -I../miniMoverLib/ -D _DEBUG
 LDFLAGS = 
 OBJS = minimover.o xyzv3.o serial_linux.o stream.o miniz.o debug.o aes.o timer.o network_linux.o 
 
@@ -10,29 +10,29 @@ $(PROG) : $(OBJS)
 minimover.o:
 	$(CC) $(CPPFLAGS) -c minimover.cpp
 
-xyzv3.o: ../xyzv3.cpp ../xyzv3.h
-	$(CC) $(CPPFLAGS) -c ../xyzv3.cpp
+xyzv3.o: ../miniMoverLib/xyzv3.cpp ../miniMoverLib/xyzv3.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/xyzv3.cpp
 
-serial_linux.o: ../serial_linux.cpp ../serial.h
-	$(CC) $(CPPFLAGS) -c ../serial_linux.cpp
+serial_linux.o: ../miniMoverLib/serial_linux.cpp ../miniMoverLib/serial.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/serial_linux.cpp
 
-stream.o: ../stream.cpp ../stream.h
-	$(CC) $(CPPFLAGS) -c ../stream.cpp
+stream.o: ../miniMoverLib/stream.cpp ../miniMoverLib/stream.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/stream.cpp
 
-network_linux.o: ../network_linux.cpp ../network.h
-	$(CC) $(CPPFLAGS) -c ../network_linux.cpp
+network_linux.o: ../miniMoverLib/network_linux.cpp ../miniMoverLib/network.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/network_linux.cpp
 
-miniz.o: ../miniz.c ../miniz.h
-	$(CC) $(CPPFLAGS) -c ../miniz.c
+miniz.o: ../miniMoverLib/miniz.c ../miniMoverLib/miniz.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/miniz.c
 
-debug.o: ../debug.cpp ../debug.h
-	$(CC) $(CPPFLAGS) -c ../debug.cpp
+debug.o: ../miniMoverLib/debug.cpp ../miniMoverLib/debug.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/debug.cpp
 
-aes.o: ../aes.cpp ../aes.h
-	$(CC) $(CPPFLAGS) -c ../aes.cpp
+aes.o: ../miniMoverLib/aes.cpp ../miniMoverLib/aes.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/aes.cpp
 
-timer.o: ../timer.cpp ../timer.h
-	$(CC) $(CPPFLAGS) -c ../timer.cpp
+timer.o: ../miniMoverLib/timer.cpp ../miniMoverLib/timer.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/timer.cpp
 
 clean:
 	rm -f core $(PROG) $(OBJS)

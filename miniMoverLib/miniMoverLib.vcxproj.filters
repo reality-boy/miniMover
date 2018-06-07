@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="aes.cpp" />
+    <ClCompile Include="debug.cpp" />
+    <ClCompile Include="miniz.c" />
+    <ClCompile Include="network.cpp" />
+    <ClCompile Include="serial.cpp" />
+    <ClCompile Include="stream.cpp" />
+    <ClCompile Include="timer.cpp" />
+    <ClCompile Include="xyzv3.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="aes.h" />
+    <ClInclude Include="debug.h" />
+    <ClInclude Include="miniz.h" />
+    <ClInclude Include="network.h" />
+    <ClInclude Include="serial.h" />
+    <ClInclude Include="stream.h" />
+    <ClInclude Include="timer.h" />
+    <ClInclude Include="xyzv3.h" />
+  </ItemGroup>
+</Project>

@@ -1,85 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Shared Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\aes.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\serial.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\timer.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\xyzv3.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
+    <ClInclude Include="XYZV3Thread.h" />
     <ClInclude Include="Resource.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="XYZV3Thread.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\miniz.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\debug.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\network.h">
-      <Filter>Shared Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\stream.h">
-      <Filter>Shared Files</Filter>
+      <Filter>Resource Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="miniMoverUI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\serial.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\xyzv3.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\aes.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="XYZV3Thread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\timer.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\miniz.c">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\debug.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\network.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\stream.cpp">
-      <Filter>Shared Files</Filter>
-    </ClCompile>
+    <ClCompile Include="miniMoverUI.cpp" />
+    <ClCompile Include="XYZV3Thread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="miniMoverUI.rc">

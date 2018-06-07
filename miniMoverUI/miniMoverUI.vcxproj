@@ -52,7 +52,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\miniMoverLib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -68,7 +68,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\miniMoverLib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -78,27 +78,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\aes.h" />
-    <ClInclude Include="..\debug.h" />
-    <ClInclude Include="..\miniz.h" />
-    <ClInclude Include="..\network.h" />
-    <ClInclude Include="..\serial.h" />
-    <ClInclude Include="..\stream.h" />
-    <ClInclude Include="..\timer.h" />
-    <ClInclude Include="..\xyzv3.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="XYZV3Thread.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\aes.cpp" />
-    <ClCompile Include="..\debug.cpp" />
-    <ClCompile Include="..\miniz.c" />
-    <ClCompile Include="..\network.cpp" />
-    <ClCompile Include="..\serial.cpp" />
-    <ClCompile Include="..\stream.cpp" />
-    <ClCompile Include="..\timer.cpp" />
-    <ClCompile Include="..\xyzv3.cpp" />
     <ClCompile Include="miniMoverUI.cpp" />
     <ClCompile Include="XYZV3Thread.cpp" />
   </ItemGroup>
@@ -107,6 +90,11 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\miniMover.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\miniMoverLib\miniMoverLib.vcxproj">
+      <Project>{a49661c7-6b3f-4106-b0b5-450d8022219b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

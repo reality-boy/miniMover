@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMoverUI", "miniMoverUI\miniMoverUI.vcxproj", "{4D3F714C-0BE5-4FCE-909B-0E6D7A6D7F87}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A49661C7-6B3F-4106-B0B5-450D8022219B} = {A49661C7-6B3F-4106-B0B5-450D8022219B}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{36F1FD98-C9EC-44B2-B0C7-C5DE03F375CD}"
 	ProjectSection(SolutionItems) = preProject
@@ -18,13 +21,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMover", "miniMoverConsole\miniMover.vcxproj", "{E91D031F-5BF3-4567-A69E-F19413754505}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A49661C7-6B3F-4106-B0B5-450D8022219B} = {A49661C7-6B3F-4106-B0B5-450D8022219B}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Linux", "Linux", "{B7BF3534-77D4-442A-82E7-3D10EF75DE50}"
 	ProjectSection(SolutionItems) = preProject
 		miniMoverConsole\makefile = miniMoverConsole\makefile
-		network_linux.cpp = network_linux.cpp
-		serial_linux.cpp = serial_linux.cpp
+		miniMoverLib\network_linux.cpp = miniMoverLib\network_linux.cpp
+		miniMoverLib\serial_linux.cpp = miniMoverLib\serial_linux.cpp
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMoverLib", "miniMoverLib\miniMoverLib.vcxproj", "{A49661C7-6B3F-4106-B0B5-450D8022219B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +48,10 @@ Global
 		{E91D031F-5BF3-4567-A69E-F19413754505}.Debug|Win32.Build.0 = Debug|Win32
 		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.ActiveCfg = Release|Win32
 		{E91D031F-5BF3-4567-A69E-F19413754505}.Release|Win32.Build.0 = Release|Win32
+		{A49661C7-6B3F-4106-B0B5-450D8022219B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A49661C7-6B3F-4106-B0B5-450D8022219B}.Debug|Win32.Build.0 = Debug|Win32
+		{A49661C7-6B3F-4106-B0B5-450D8022219B}.Release|Win32.ActiveCfg = Release|Win32
+		{A49661C7-6B3F-4106-B0B5-450D8022219B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
