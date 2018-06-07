@@ -492,13 +492,13 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_CLOSE:
 		{
-		DestroyWindow(hDlg);
-		Stream *s = xyz.setStream(NULL);
-		if(s) s->closeStream();
+			DestroyWindow(hDlg);
+			Stream *s = xyz.setStream(NULL);
+			if(s) s->closeStream();
 
-		KillTimer(hDlg, g_timer);
-		return TRUE;
+			KillTimer(hDlg, g_timer);
 		}
+		return TRUE;
 
 	case WM_ACTIVATE:
 		break;
