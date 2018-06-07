@@ -206,7 +206,7 @@ Socket::Socket()
 Socket::~Socket()
 {
 	if(isInit)
-		Socket::closeSocket();
+		Socket::closeStream();
 	isInit = false;
 }
 
@@ -255,7 +255,7 @@ bool Socket::openSocket(const char *ip, int port)
 					if(waitOnSocketConnect(soc, 5000))
 						break;
 
-					Socket::closeSocket();
+					closeStream();
 				}
 				else
 					debugPrint(DBG_WARN, "socket failed with error: %s", getLastErrorMessage());
@@ -279,10 +279,8 @@ bool Socket::openSocket(const char *ip, int port)
 	return success;
 }
 
-bool Socket::closeSocket()
+void Socket::closeStream()
 {
-	bool success = false;
-
 	if(isInit && IS_VALID(soc)) 
 	{
 		// tell server we are exiting
@@ -307,7 +305,9 @@ bool Socket::closeSocket()
 
 			// actually close the socket
 			if(close(soc) != SOCKET_ERROR)
-				success = true;
+			{
+				// success
+			}
 			else
 				debugPrint(DBG_WARN, "close socket failed!");
 		}
@@ -318,8 +318,6 @@ bool Socket::closeSocket()
 		debugPrint(DBG_LOG, "Not connected to server!");
 
 	soc = INVALID_SOCKET;
-
-	return success;
 }
 
 bool Socket::isOpen() 

@@ -100,10 +100,11 @@ XYZV3::~XYZV3()
 	MTX(CloseHandle(ghMutex));
 } 
 
-void XYZV3::setStream(Stream *s)
+Stream* XYZV3::setStream(Stream *s)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 
+	Stream *old_stream = m_stream;
 	m_stream = s;
 	memset(&m_status, 0, sizeof(m_status));
 
@@ -114,6 +115,8 @@ void XYZV3::setStream(Stream *s)
 	}
 
 	MTX(ReleaseMutex(ghMutex));
+
+	return old_stream;
 }
 
 bool XYZV3::serialSendMessage(const char *format, ...)

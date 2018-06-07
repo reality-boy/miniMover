@@ -17,8 +17,8 @@ public:
 	~Socket();
 
 	bool openSocket(const char *ip, int port);
-	bool closeSocket();
 
+	void closeStream();
 	bool isOpen();
 	void clear();
 	int read(char *buf, int len);

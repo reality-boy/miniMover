@@ -84,7 +84,7 @@ Serial::Serial()
 
 Serial::~Serial()
 {
-	closeSerial();
+	closeStream();
 }
 
 int baudFlag(int BaudRate)
@@ -115,7 +115,7 @@ int baudFlag(int BaudRate)
 bool Serial::openSerial(const char *deviceName, int baudRate)
 {
 	// Close if already open
-	closeSerial();
+	closeStream();
 
 	// Open port
     m_handle = open(deviceName, O_RDWR | O_NOCTTY);
@@ -185,7 +185,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 	return false;
 }
 
-void Serial::closeSerial()
+void Serial::closeStream()
 {
     if(m_handle > 0)
 	{

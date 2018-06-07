@@ -140,7 +140,7 @@ Serial::Serial()
 
 Serial::~Serial() 
 { 
-	closeSerial(); 
+	closeStream(); 
 }
 
 /*
@@ -174,7 +174,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 			return true;
 
 		// close out any previous connection
-		closeSerial();
+		closeStream();
 	
 		// open serial port
 		m_handle = CreateFileA( deviceName, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -225,11 +225,11 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 		}
 	}
 
-	closeSerial();
+	closeStream();
 	return false;
 }
 
-void Serial::closeSerial()
+void Serial::closeStream()
 {
 	if(m_handle)
 		CloseHandle(m_handle);

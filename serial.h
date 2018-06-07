@@ -47,8 +47,8 @@ public:
 	~Serial();
 
 	bool openSerial(const char *deviceName, int baudRate);
-	void closeSerial();
 
+	void closeStream();
 	bool isOpen();
 	void clear();
 	int read(char *buf, int len);

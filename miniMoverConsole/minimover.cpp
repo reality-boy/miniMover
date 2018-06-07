@@ -102,7 +102,6 @@ int kbhit()
 #endif
 
 // comment out to try network connection
-#define USE_SERIAL
 
 XYZV3 xyz;
 Serial serial;
@@ -148,33 +147,58 @@ void postHelp()
 	printf("  file - print file if .gcode, otherwise convert to gcode if .3w\n");
 }
 
+bool isNetworkAddress(const char *addr)
+{
+	// auto detect serial port if no addres defined
+	if(!addr || !addr[0] || (addr[0] == '-' && addr[1] == '1'))
+		return false;
+
+	// linux serial port
+	if(0 == strncmp("/dev/tty", addr, strlen("/dev/tty")))
+		return false;
+
+	// windows serial port
+	if(0 == strncmp(addr, "\\\\.\\COM", strlen("\\\\.\\COM")) ||
+	   0 == strncmp(addr, "COM", strlen("COM")) )
+		return false;
+
+	// else assume some sort of ip or dns name
+	return true;
+}
+
 bool checkCon()
 {
-#ifdef USE_SERIAL
-	//****FixMe, is this called frequently?
-	const char *tDevice = deviceName;
-	if(!deviceName[0])
+	const char *tDevice = NULL;
+	if(isNetworkAddress(deviceName))
 	{
-		int id = SerialHelper::queryForPorts("XYZ");
-		tDevice = SerialHelper::getPortDeviceName(id);
+		tDevice = "192.168.1.118";
+		if(soc.openSocket(tDevice, 9100))
+		{
+			Stream *s = xyz.setStream(&soc);
+			if(s) s->closeStream();
+			return true;
+		}
+	}
+	else // serial port
+	{
+		if(!deviceName[0])
+		{
+			int id = SerialHelper::queryForPorts("XYZ");
+			tDevice = SerialHelper::getPortDeviceName(id);
+		}
+		else
+			tDevice = deviceName;
+
+		if(tDevice && serial.openSerial(tDevice, 115200))
+		{
+			Stream *s = xyz.setStream(&serial);
+			if(s) s->closeStream();
+			return true;
+		}
 	}
 
-	if(tDevice && serial.openSerial(tDevice, 115200))
-	{
-		xyz.setStream(&serial);
-		return true;
-	}
-#else // network
-	const char *tDevice = "192.168.1.118";
-	int port = 9100;
-	if(soc.openSocket(tDevice, port))
-	{
-		xyz.setStream(&soc);
-		return true;
-	}
-#endif
-
-	xyz.setStream(NULL);
+	Stream *s = xyz.setStream(NULL);
+	if(s) s->closeStream();
 	if(tDevice)
 		printf("printer not found on port: %s\n", tDevice);
 	else
@@ -736,13 +760,8 @@ int main(int argc, char **argv)
 	}
 	
 	// disconnect just in case
-	xyz.setStream(NULL);
-
-#ifdef USE_SERIAL
-	serial.closeSerial();
-#else // network
-	soc.closeSocket();
-#endif
+	Stream *s = xyz.setStream(NULL);
+	if(s) s->closeStream(); 
 
 	debugFinalize();
 

@@ -15,6 +15,11 @@ public:
 
 	~Stream() {}
 
+	// open connection is defined by the sub class
+
+	// close connection
+	virtual void closeStream() = 0;
+
 	// are we currently connected
 	virtual bool isOpen() = 0;
 

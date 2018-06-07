@@ -229,7 +229,8 @@ public:
 
 	// attach to a serial stream
 	// pass in NULL to disconnect from stream
-	void setStream(Stream *s);
+	// old stream is returned so you can deal with closing it
+	Stream* setStream(Stream *s);
 
 	// === query commands ===
 

@@ -435,12 +435,14 @@ void MainDlgConnect(HWND hDlg)
 		comID = SerialHelper::queryForPorts("XYZ") + 1;
 	if(comID > 0 &&  serial.openSerial(SerialHelper::getPortDeviceName(comID-1), 115200))
 	{
-		xyz.setStream(&serial);
+		Stream *s = xyz.setStream(&serial);
+		if(s) s->closeStream();
 		MainDlgSetStatus(hDlg, "connected");
 	}
 	else
 	{
-		xyz.setStream(NULL);
+		Stream *s = xyz.setStream(NULL);
+		if(s) s->closeStream();
 		MainDlgSetStatus(hDlg, "not connected");
 	}
 }
@@ -489,12 +491,14 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_CLOSE:
+		{
 		DestroyWindow(hDlg);
-		xyz.setStream(NULL);
-		serial.closeSerial();
+		Stream *s = xyz.setStream(NULL);
+		if(s) s->closeStream();
 
 		KillTimer(hDlg, g_timer);
 		return TRUE;
+		}
 
 	case WM_ACTIVATE:
 		break;
