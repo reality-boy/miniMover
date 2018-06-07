@@ -20,6 +20,7 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #include <sys/ioctl.h>
 
@@ -35,6 +36,7 @@ SerialHelper::PortInfo SerialHelper::portInfo[maxPortCount] = {0};
 
 int SerialHelper::queryForPorts(const char *hint)
 {
+	isdigit('c');
 	portCount = 0;
 	defaultPortID = -1;
 
@@ -44,20 +46,24 @@ int SerialHelper::queryForPorts(const char *hint)
 	{
         if(0 == strncmp("tty", ent->d_name, 3)) 
 		{
-            sprintf(portInfo[portCount].deviceName, "/dev/%s", ent->d_name);
-
-		    int handle = open(portInfo[portCount].deviceName, O_RDWR | O_NOCTTY | O_NDELAY /*| O_NONBLOCK*/);
-			if(handle >= 0)
+			// reject /dev/tty, those are terminals not serial ports
+			if(ent->d_name[3] != '\0' && !isdigit(ent->d_name[3]))
 			{
-				//printf("found %s\n", portInfo[portCount].deviceName);
-				//serial_struct serinfo;
-				//if(0 == ioctl(handle, TIOCGSERIAL, &serinfo))
+	            sprintf(portInfo[portCount].deviceName, "/dev/%s", ent->d_name);
+
+			    int handle = open(portInfo[portCount].deviceName, O_RDWR | O_NOCTTY | O_NDELAY /*| O_NONBLOCK*/);
+				if(handle >= 0)
 				{
-					//****FixMe, find proper display name somehow
-		            sprintf(portInfo[portCount].displayName, "%s", ent->d_name);
-					//****FixMe, search for device
-					defaultPortID = portCount;
-					portCount++;
+					//printf("found %s\n", portInfo[portCount].deviceName);
+					//serial_struct serinfo;
+					//if(0 == ioctl(handle, TIOCGSERIAL, &serinfo))
+					{
+						//****FixMe, find proper display name somehow
+			            sprintf(portInfo[portCount].displayName, "%s", ent->d_name);
+						//****FixMe, search for device
+						defaultPortID = portCount;
+						portCount++;
+					}
 				}
 			}
         }
