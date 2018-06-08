@@ -382,6 +382,7 @@ public:
 	static int getInfoCount();
 	static const XYZPrinterInfo* indexToInfo(int index);
 	static const XYZPrinterInfo* modelToInfo(const char *modelNum);
+	static const XYZPrinterInfo* serialToInfo(const char *serialNum);
 
 protected:
 

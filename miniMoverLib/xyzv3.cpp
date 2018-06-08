@@ -2695,3 +2695,23 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 
 	return NULL;
 }
+
+const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
+{
+	if(serialNum)
+	{
+		//****Note, mini w has two model numbers
+		// see above
+
+		for(int i=0; i<m_infoArrayLen; i++)
+		{
+			// first 6 digits of serial number is a machine id
+			if(0 == strncmp(serialNum, m_infoArray[i].serialNum, 6))
+			{
+				return &m_infoArray[i];
+			}
+		}
+	}
+
+	return NULL;
+}
