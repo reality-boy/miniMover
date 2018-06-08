@@ -1248,7 +1248,7 @@ bool XYZV3::setEnergySaving(int level)
 	return success;
 }
 
-bool XYZV3::sendDisconnectApp()
+bool XYZV3::sendDisconnectWifi()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 

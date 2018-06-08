@@ -203,8 +203,9 @@ struct XYZPrinterLangSt
 	const char *desc;
 }; 
 
-// language extensions from xyprinting website
 /*
+ from xyprinting website
+
  Asia
    th		thailand
    ko-kr	korean
@@ -227,6 +228,20 @@ struct XYZPrinterLangSt
    pt-pt	portuguese
  Global
    global-en	english
+
+ From language packs
+   de	german
+   en	english
+   es	spanish
+   fr	french
+   gb	chinese
+   it	italian
+   ja	japanese
+   kr	korean
+   pt	portuguese
+   ru	russian
+   zh	chinese
+   
 */
 const int XYZPrintingLangCount = 9;
 const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
@@ -328,12 +343,9 @@ public:
 	bool setAutoLevel(bool enable);
 	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
 	bool setEnergySaving(int level); // level is 0-9 minutes till lights turn off?
-	//****FixMe, what does this do?
-	bool sendDisconnectApp();
-	//****FixMe, what does this do?
-	bool sendEngraverPlaceObject();
-	//****FixMe, what does this do?
-	bool setMachineLife(int time_s);
+	bool sendDisconnectWifi(); // send before setWifi?
+	bool sendEngraverPlaceObject(); //****FixMe, what does this do?
+	bool setMachineLife(int time_s); //****FixMe, what does this do?
 	bool setMachineName(const char *name);
 	bool setWifi(const char *ssid, const char *password, int channel);
 

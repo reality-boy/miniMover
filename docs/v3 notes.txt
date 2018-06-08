@@ -742,7 +742,7 @@ XYZv3/query=os						// send to get status
 o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}<nl>$<nl> // recieve, get state of buzzer, why o?
 
 
-//???
+// disconnect from the wifi router
 XYZv3/config=disconnectap
 
 //???
