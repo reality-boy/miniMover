@@ -203,7 +203,32 @@ struct XYZPrinterLangSt
 	const char *desc;
 }; 
 
-const int XYZPrintingLangCount = 6;
+// language extensions from xyprinting website
+/*
+ Asia
+   th		thailand
+   ko-kr	korean
+   ja-jp	japan
+   cn		china
+   zh-hk	hong kong
+   zh-tw	taiwan
+ Americas
+   en-us	english
+   la-pt-br	portuguese
+   la-es	spanish
+ Europe
+   en-gb	english
+   fr-fr	french
+   de-de	german
+   nl-nl	duch
+   es-es	spanish
+   it-it	italian
+   ru-ru	russian
+   pt-pt	portuguese
+ Global
+   global-en	english
+*/
+const int XYZPrintingLangCount = 9;
 const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
 {
 	{ "en", "English" },
@@ -212,6 +237,11 @@ const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] =
 	{ "de", "German" },
 	{ "es", "Spanish" },
 	{ "jp", "Japanese" },
+	// dont really know if these exist
+	// found refference to them in pdf document
+	{ "tw", "Taiwanese" }, // Guoyu?
+	{ "cn", "Chinese" }, // Mandarin?
+	{ "kr", "Korean" },
 };
 
 typedef void (*XYZCallback)(float pct);

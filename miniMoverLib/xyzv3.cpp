@@ -300,7 +300,7 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 
 			break;
 
-		case 'l': // language, l:ln - one of en, fr, it, de, es, jp
+		case 'l': // language, l:ln - one of en, fr, it, de, es, jp, tw, cn, kr
 			sscanf(str, "l:%s", m_status.lLang);
 			break;
 
