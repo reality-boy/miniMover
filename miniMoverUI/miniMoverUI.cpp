@@ -29,6 +29,7 @@
 #include "serial.h"
 #include "network.h"
 #include "xyzv3.h"
+#include "XYZPrinterList.h"
 #include "XYZV3Thread.h"
 
 // tell windows to give us a more modern look
@@ -40,12 +41,17 @@
 #pragma comment(lib, "Winmm.lib")
 #pragma comment(lib, "Comctl32.lib")
 
+//-------------------------------------------
 // globals
 
 XYZV3 xyz;
-Serial serial;
-Socket soc;
-XYZPrinterStatus prSt = { 0 };
+Serial g_serial;
+Socket g_soc;
+
+WifiList g_wifiList;
+int g_listWifiOffset = -1;
+int g_listSerialOffset = -1;
+XYZPrinterStatus g_prSt = { 0 };
 
 int g_timerInterval = 500;
 UINT_PTR g_timer = 0;
@@ -61,7 +67,6 @@ HWND hwndListInfo = NULL;
 
 HCURSOR waitCursor;
 HCURSOR defaultCursor;
-
 
 //-------------------------------------------
 // main dialog
@@ -305,21 +310,36 @@ int getMoveDist(HWND hDlg)
 
 void MainDlgUpdateComDropdown(HWND hDlg)
 {
+	int ent = 0;
+	// clear out dropdown
+	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_RESETCONTENT, 0, 0);
+
+	// add the 'auto' entry
+	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)"Auto");
+	ent++;
+
+	// and default to the auto entry
+	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
+
+	// add in network printers
+	g_listWifiOffset = ent;
+	char tstr[512];
+	for(int i=0; i<g_wifiList.m_count; i++)
+	{
+		sprintf(tstr, "%s (%s)", g_wifiList.m_list[i].m_name, g_wifiList.m_list[i].m_ip);
+		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
+		ent++;
+	}
+
+	// add in serial printers
+	g_listSerialOffset = ent;
 	SerialHelper::queryForPorts("XYZ");
 	int count = SerialHelper::getPortCount();
-
-	//if(count > 24)
-	//	count = 24;
-
-	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_RESETCONTENT, 0, 0);
-	for(int i=0; i<= count; i++)
+	for(int i=0; i< count; i++)
 	{
-		if(i == 0)
-			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)"Auto");
-		else
-			SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)SerialHelper::getPortDisplayName(i-1));
+		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)SerialHelper::getPortDisplayName(i));
+		ent++;
 	}
-	SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_SETCURSEL, 0, 0);
 }
 
 void MainDlgUpdateModelDropdown(HWND hDlg)
@@ -348,7 +368,7 @@ void MainDlgUpdate(HWND hDlg)
 			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
 
 			// only update if changed
-			if(prSt.zOffset != st->zOffset)
+			if(g_prSt.zOffset != st->zOffset)
 				SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
 
 			//****FixMe, save these off in the registry so we can
@@ -369,13 +389,13 @@ void MainDlgUpdate(HWND hDlg)
 			// and 4 functions represent the network as connected
 			if(!g_wifiOptionsEdited)
 			{
-				const char *prSSID = (prSt.WSSID[0]) ? prSt.WSSID : prSt.N4NetSSID;
+				const char *prSSID = (g_prSt.WSSID[0]) ? g_prSt.WSSID : g_prSt.N4NetSSID;
 				const char *SSID = (st->WSSID[0]) ? st->WSSID : st->N4NetSSID;
 				// only update if changed
 				if(0!=strcmp(prSSID, SSID))
 					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
 
-				const char *prChan = (prSt.WChannel[0]) ? prSt.WChannel : prSt.N4NetChan;
+				const char *prChan = (g_prSt.WChannel[0]) ? g_prSt.WChannel : g_prSt.N4NetChan;
 				const char *chan = (st->WChannel[0]) ? st->WChannel : st->N4NetChan;
 				// only update if changed
 				if(0!=strcmp(prChan, chan))
@@ -393,13 +413,13 @@ void MainDlgUpdate(HWND hDlg)
 			//SetDlgItemTextA(hDlg, IDC_COMBO_ENERGY_SAVING, st->???);
 
 			// only update if changed
-			if(0 != strcmp(prSt.nMachineName, st->nMachineName))
+			if(0 != strcmp(g_prSt.nMachineName, st->nMachineName))
 				SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
 
 			int pct = max(g_printPct, st->dPrintPercentComplete);
 			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
 
-			if(0 != strcmp(prSt.lLang, st->lLang))
+			if(0 != strcmp(g_prSt.lLang, st->lLang))
 			{
 				int id = 0;
 				for(id=0; id<XYZPrintingLangCount; id++)
@@ -412,8 +432,18 @@ void MainDlgUpdate(HWND hDlg)
 				SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
 			}
 
+			// if network info changed
+			if(0 != strcmp(g_prSt.iMachineSerialNum, st->iMachineSerialNum) ||
+			   0 != strcmp(g_prSt.N4NetIP, st->N4NetIP) )
+			{
+				// find entry, adding new if not found
+				WifiEntry *ent = g_wifiList.findEntry(st->iMachineSerialNum, true);
+				if(ent)
+					ent->set(st->iMachineSerialNum, st->N4NetIP, inf->screenName);
+			}
+
 			// copy to backup
-			memcpy(&prSt, st, sizeof(prSt));
+			memcpy(&g_prSt, st, sizeof(g_prSt));
 		}
 	}
 	else
@@ -423,27 +453,72 @@ void MainDlgUpdate(HWND hDlg)
 
 void MainDlgConnect(HWND hDlg)
 {
+	// get dropdown entry
 	int comID = SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_GETCURSEL, 0, 0);
+
+	// if error, default to auto
 	if(comID == CB_ERR)
 		comID = 0;
 
 	// clear out cache of printer previous status
-	memset(&prSt, 0, sizeof(prSt));
+	memset(&g_prSt, 0, sizeof(g_prSt));
 	g_wifiOptionsEdited = false;
 
+	// close old connection
+	Stream *s = xyz.setStream(NULL);
+	if(s) s->closeStream();
+	MainDlgSetStatus(hDlg, "not connected");
+
+	// if auto detect
 	if(comID == 0)
-		comID = SerialHelper::queryForPorts("XYZ") + 1;
-	if(comID > 0 &&  serial.openSerial(SerialHelper::getPortDeviceName(comID-1), 115200))
 	{
-		Stream *s = xyz.setStream(&serial);
-		if(s) s->closeStream();
-		MainDlgSetStatus(hDlg, "connected");
+		// try serial first
+		int id = SerialHelper::queryForPorts("XYZ");
+		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
+		{
+			Stream *s = xyz.setStream(&g_serial);
+			if(s) s->closeStream();
+			MainDlgSetStatus(hDlg, "connected");
+		}
+		// fall back to wifi if no serial
+		/*
+		else if(g_wifiList.m_count > 0)
+		{
+			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, 9100))
+			{
+				Sleep(500);
+				Stream *s = xyz.setStream(&g_soc);
+				if(s) s->closeStream();
+				MainDlgSetStatus(hDlg, "connected");
+			}
+		}
+		*/
 	}
-	else
+	// else if serial port
+	else if(comID >= g_listSerialOffset)
 	{
-		Stream *s = xyz.setStream(NULL);
-		if(s) s->closeStream();
-		MainDlgSetStatus(hDlg, "not connected");
+		int id = comID - g_listSerialOffset;
+		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
+		{
+			Stream *s = xyz.setStream(&g_serial);
+			if(s) s->closeStream();
+			MainDlgSetStatus(hDlg, "connected");
+		}
+	}
+	// else if wifi
+	else if(comID >= g_listWifiOffset && comID < g_listSerialOffset)
+	{
+		int id = comID - g_listWifiOffset;
+		if(id >=0 && id < g_wifiList.m_count)
+		{
+			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, 9100))
+			{
+				Sleep(500);
+				Stream *s = xyz.setStream(&g_soc);
+				if(s) s->closeStream();
+				MainDlgSetStatus(hDlg, "connected");
+			}
+		}
 	}
 }
 
@@ -455,6 +530,9 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		defaultCursor = LoadCursor(NULL, IDC_ARROW);    // default cursor
 		waitCursor = LoadCursor(NULL, IDC_WAIT);     // wait cursor
+
+		// only do this once at startup, before initializing the dropdown
+		g_wifiList.readWifiList();
 
 		MainDlgUpdateComDropdown(hDlg);
 		MainDlgUpdateModelDropdown(hDlg);
@@ -487,18 +565,18 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_DESTROY:
 		// Cleanup everything
+		g_wifiList.writeWifiList();
+		KillTimer(hDlg, g_timer);
+		{
+			Stream *s = xyz.setStream(NULL);
+			if(s) s->closeStream();
+		}
 		PostQuitMessage(0);
 		break;
 
 	case WM_CLOSE:
-		{
-			DestroyWindow(hDlg);
-			Stream *s = xyz.setStream(NULL);
-			if(s) s->closeStream();
-
-			KillTimer(hDlg, g_timer);
-		}
-		return TRUE;
+		DestroyWindow(hDlg);
+		return true;
 
 	case WM_ACTIVATE:
 		break;

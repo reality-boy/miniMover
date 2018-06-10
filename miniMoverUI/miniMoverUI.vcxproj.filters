@@ -11,10 +11,12 @@
     <ClInclude Include="Resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="XYZPrinterList.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp" />
     <ClCompile Include="XYZV3Thread.cpp" />
+    <ClCompile Include="XYZPrinterList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="miniMoverUI.rc">

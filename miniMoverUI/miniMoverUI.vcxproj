@@ -79,10 +79,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="XYZPrinterList.h" />
     <ClInclude Include="XYZV3Thread.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp" />
+    <ClCompile Include="XYZPrinterList.cpp" />
     <ClCompile Include="XYZV3Thread.cpp" />
   </ItemGroup>
   <ItemGroup>
