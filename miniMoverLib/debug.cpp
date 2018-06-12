@@ -12,7 +12,11 @@
 #include "debug.h"
 
 FILE *g_debugLog = NULL;
+
+// console log level
 debugLevel g_debugLevel = DBG_REPORT;
+// debug.txt log level
+debugLevel g_debugDiskLevel = DBG_LOG;
 bool g_doReduceNoise = false;
 
 void debugInit()
@@ -77,8 +81,7 @@ void debugPrint(debugLevel l, const char *format, ...)
 	}
 
 	// log to disk if error log is open
-	// log at DBG_LOG level unless g_debugLevel is set to DBG_VERBOSE
-	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= DBG_LOG)))
+	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 		fprintf(g_debugLog, "%s\n", msgBuf);
 }
 
@@ -105,8 +108,7 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 		}
 
 		// log to disk if error log is open
-		// log at DBG_LOG level unless g_debugLevel is set to DBG_VERBOSE
-		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= DBG_LOG)))
+		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 		{
 			for(int i=0; i<len; i++)
 				fprintf(g_debugLog, " %02x", data[i]);

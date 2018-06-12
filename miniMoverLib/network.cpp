@@ -445,9 +445,7 @@ int Socket::read(char *buf, int len)
 							bytesRead = len-1;
 						buf[bytesRead] = '\0';
 
-						//debugPrint(DBG_LOG, "Bytes received: %d - %s", tLen, buf);
 						debugPrint(DBG_LOG, "Bytes received: %d", tLen);
-						debugPrintArray(DBG_VERBOSE, buf, tLen);
 					}
 					else
 						debugPrint(DBG_LOG, "Connection closed by peer");
@@ -476,11 +474,7 @@ int Socket::write(const char *buf, const int len)
 		{
 			// success
 			bytesWritten = tLen;
-			//if(buf[len-1] == '\0')
-			//	debugPrint(DBG_LOG, "Bytes sent: %d:%d - %s", len, tLen, buf);
-			//else
-				debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, tLen);
-			debugPrintArray(DBG_VERBOSE, buf, len);
+			debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, tLen);
 		}
 		else
 			debugPrint(DBG_WARN, "failed to write bytes: %s", getLastErrorMessage());
