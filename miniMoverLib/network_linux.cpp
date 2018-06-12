@@ -367,7 +367,6 @@ int Socket::read(char *buf, int len)
 							bytesRead = len-1;
 						buf[bytesRead] = '\0';
 
-						//debugPrint(DBG_LOG, "Bytes received: %d - %s", tLen, buf);
 						debugPrint(DBG_LOG, "Bytes received: %d", tLen);
 					}
 					else

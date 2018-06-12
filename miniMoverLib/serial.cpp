@@ -15,11 +15,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
 
 #include "debug.h"
+#include "stream.h"
 #include "serial.h"
 
 //------------------------
@@ -296,8 +296,6 @@ int Serial::read(char *buf, int len)
 
 	return bytesRead;
 }
-
-
 
 int Serial::write(const char *buf, int len)
 {

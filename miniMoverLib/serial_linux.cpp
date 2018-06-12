@@ -12,23 +12,22 @@
 #define __USE_MISC // For CRTSCTS
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include <ctype.h>
-
 #include <sys/ioctl.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #include "debug.h"
 #include "stream.h"
 #include "serial.h"
 
-//---------------------
+//------------------------
 
 int SerialHelper::portCount = 0;
 int SerialHelper::defaultPortID = -1;
@@ -73,13 +72,13 @@ int SerialHelper::queryForPorts(const char *hint)
 	return defaultPortID;
 }
 
-//------------------
+//------------------------
 
 Serial::Serial() 
+	: m_handle(-1)
+	, m_baudRate(-1)
 {
-	m_handle = -1;
 	m_deviceName[0] = '\0';
-	m_baudRate = -1;
 }
 
 Serial::~Serial()
@@ -228,10 +227,10 @@ int Serial::read(char *buf, int len)
 	if(buf)
 	{
 		buf[0] = '\0';
-	    if(m_handle >= 0 && len > 0)
+		if(m_handle >= 0 && len > 0)
 		{
-		    int tLen = ::read(m_handle, buf, len-1);
-		    if (tLen > 0)
+			int tLen = ::read(m_handle, buf, len-1);
+			if (tLen > 0)
 			{
 				// success
 				bytesRead = tLen;
