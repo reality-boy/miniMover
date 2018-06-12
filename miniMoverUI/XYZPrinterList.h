@@ -14,11 +14,10 @@ struct WifiEntry
 	}
 
 	void reset();
-	void set(const char *serialNum, const char *ip, const char *scrName);
+	void set(const char *serialNum, const char *ip);
 
 	const static int m_len = 64;
 
-	char m_name[m_len];
 	char m_serialNum[m_len];
 	char m_ip[m_len];
 };
@@ -28,7 +27,7 @@ class WifiList
 public:
 	WifiList()
 	{
-		m_lastPrint = -1;
+		//m_lastPrint = -1;
 		m_count = 0;
 	}
 
@@ -42,7 +41,7 @@ public:
 
 	const static int m_max = 64;
 
-	int m_lastPrint;
+	//int m_lastPrint;
 	int m_count;
 	WifiEntry m_list[m_max];
 

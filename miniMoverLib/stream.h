@@ -28,8 +28,10 @@ public:
 
 	// read all data available
 	virtual int read(char *buf, int bufLen) = 0;
-	// read only to newline char, buffering rest of data
+	// read only to newline char, buffering rest of data, return immediately if not found
 	virtual int readLine(char *buf, int bufLen);
+	// block for timeout seconds before returning
+	virtual int readLineWait(char *buf, int bufLen, float timeout_s = -1, bool report = true);
 
 	// write a fixed length buffer
 	virtual int write(const char *buf, int bufLen) = 0;
@@ -38,10 +40,10 @@ public:
 	// write a string formatted by printf
 	virtual int writePrintf(const char *fmt, ...);
 
-	// default communication timeout
-	virtual float getDefaultSleep() { return 5.0f; }
-
 protected:
+
+	// default communication timeout
+	virtual float getDefaultTimeout() { return 5.0f; }
 
 	// readLine data
 	const static int m_lineBufLen = 4096;

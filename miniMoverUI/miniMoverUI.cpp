@@ -326,7 +326,14 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	char tstr[512];
 	for(int i=0; i<g_wifiList.m_count; i++)
 	{
-		sprintf(tstr, "%s (%s)", g_wifiList.m_list[i].m_name, g_wifiList.m_list[i].m_ip);
+		// fall back to serial number
+		const char *name = g_wifiList.m_list[i].m_serialNum;
+		// look for screen name
+		const XYZPrinterInfo *inf = XYZV3::serialToInfo(g_wifiList.m_list[i].m_serialNum);
+		if(inf)
+			name = inf->screenName;
+
+		sprintf(tstr, "%s (%s)", name, g_wifiList.m_list[i].m_ip);
 		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
 		ent++;
 	}
@@ -436,10 +443,14 @@ void MainDlgUpdate(HWND hDlg)
 			if(0 != strcmp(g_prSt.iMachineSerialNum, st->iMachineSerialNum) ||
 			   0 != strcmp(g_prSt.N4NetIP, st->N4NetIP) )
 			{
-				// find entry, adding new if not found
-				WifiEntry *ent = g_wifiList.findEntry(st->iMachineSerialNum, true);
-				if(ent)
-					ent->set(st->iMachineSerialNum, st->N4NetIP, inf->screenName);
+				// if contains wifi info
+				if(st->N4NetIP[0])
+				{
+					// find entry, adding new if not found
+					WifiEntry *ent = g_wifiList.findEntry(st->iMachineSerialNum, true);
+					if(ent)
+						ent->set(st->iMachineSerialNum, st->N4NetIP);
+				}
 			}
 
 			// copy to backup
@@ -486,7 +497,6 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, 9100))
 			{
-				Sleep(500);
 				Stream *s = xyz.setStream(&g_soc);
 				if(s) s->closeStream();
 				MainDlgSetStatus(hDlg, "connected");
@@ -513,7 +523,6 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, 9100))
 			{
-				Sleep(500);
 				Stream *s = xyz.setStream(&g_soc);
 				if(s) s->closeStream();
 				MainDlgSetStatus(hDlg, "connected");

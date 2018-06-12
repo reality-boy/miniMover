@@ -129,6 +129,7 @@ struct XYZPrinterStatus
 	char wFilament2Color[32];
 
 	int zOffset; // from getZOffset()
+	bool zOffsetSet; // is zOffset vaild
 
 	char GLastUsed[64];
 
@@ -442,7 +443,7 @@ protected:
 	bool checkLineIsHeader(const char* lineBuf);
 	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
 
-	bool parseStatusSubstring(const char *str, bool &zOffsetSet);
+	bool parseStatusSubstring(const char *str);
 
 	Stream *m_stream;
 	XYZPrinterStatus m_status;

@@ -11,13 +11,23 @@
 #include <string.h>
 #include <assert.h>
 
+#include "timer.h"
 #include "debug.h"
 #include "stream.h"
 
 void Stream::clear()
 {
-	// log any leftover data
-	int len = m_lineBufEnd - m_lineBufStart;
+	int len;
+	char tbuf[1024];
+
+	// poll for data
+	//len = readLineWait(tbuf, 1024, 0.005f, false);
+	len = readLine(tbuf, 1024);
+	if(len > 0)
+		debugPrint(DBG_REPORT, "leftover data: %s", tbuf);
+
+	// drain residual data in buffer
+	len = m_lineBufEnd - m_lineBufStart;
 	if(len > 0)
 		debugPrint(DBG_REPORT, "leftover data: %s", m_lineBufStart);
 
@@ -33,55 +43,91 @@ int Stream::readLine(char *buf, int bufLen)
 		// make sure we return something
 		*buf = '\0';
 
-		// setup our counters
-		char *bufStart = buf;
-		const char *bufEnd = &buf[bufLen-1];
-
-		// check if we already have a newline terminated string
-		// do it here so we don't block if data already waiting
-		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
+		if(isOpen())
 		{
-			*bufStart = *m_lineBufStart;
-			m_lineBufStart++;
+			// setup our counters
+			char *bufStart = buf;
+			const char *bufEnd = &buf[bufLen-1];
 
-			if(*bufStart == '\n')
+			// check if we already have a newline terminated string
+			// do it here so we don't block if data already waiting
+			while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
 			{
-				*bufStart = '\0';
-				debugPrint(DBG_LOG, "recieved: %s", buf);
-				return bufStart - buf + 1; // length
+				*bufStart = *m_lineBufStart;
+				m_lineBufStart++;
+
+				if(*bufStart == '\n')
+				{
+					*bufStart = '\0';
+					debugPrint(DBG_LOG, "readLine: %s", buf);
+					return bufStart - buf + 1; // length
+				}
+				bufStart++;
 			}
-			bufStart++;
-		}
 
-		int len = 0;
-		// move old data to start of buffer
-		if(m_lineBufStart < m_lineBufEnd)
-		{
-			len = m_lineBufEnd - m_lineBufStart;
-			memcpy(m_lineBuf, m_lineBufStart, len);
-			m_lineBufStart = m_lineBuf;
-			m_lineBufEnd = m_lineBuf + len;
-		}
-
-		// get new data from serial device
-		len = (m_lineBuf + m_lineBufLen) - m_lineBufStart;
-		len = read(m_lineBufEnd, len);
-		m_lineBufEnd += len;
-
-		// try once more for a newline in buffer
-		while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
-		{
-			*bufStart = *m_lineBufStart;
-			m_lineBufStart++;
-
-			if(*bufStart == '\n')
+			int len = 0;
+			// move old data to start of buffer
+			if(m_lineBufStart < m_lineBufEnd)
 			{
-				*bufStart = '\0';
-				debugPrint(DBG_LOG, "recieved: %s", buf);
-				return bufStart - buf + 1; // length
+				len = m_lineBufEnd - m_lineBufStart;
+				memcpy(m_lineBuf, m_lineBufStart, len);
+				m_lineBufStart = m_lineBuf;
+				m_lineBufEnd = m_lineBuf + len;
 			}
-			bufStart++;
+
+			// get new data from serial device
+			len = (m_lineBuf + m_lineBufLen) - m_lineBufStart;
+			len = read(m_lineBufEnd, len);
+			m_lineBufEnd += len;
+
+			// try once more for a newline in buffer
+			while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
+			{
+				*bufStart = *m_lineBufStart;
+				m_lineBufStart++;
+
+				if(*bufStart == '\n')
+				{
+					*bufStart = '\0';
+					debugPrint(DBG_LOG, "readLine: %s", buf);
+					return bufStart - buf + 1; // length
+				}
+				bufStart++;
+			}
 		}
+	}
+
+	return 0;
+}
+
+int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
+{
+	if(buf && bufLen > 0)
+	{
+		// make sure we return something
+		*buf = '\0';
+
+		if(isOpen())
+		{
+			if(timeout_s < 0)
+				timeout_s = getDefaultTimeout();
+
+			float start = msTime::getTime_s();
+			float end = start + timeout_s;
+			do
+			{
+				// blocking call, no need to sleep
+				int ret = readLine(buf, bufLen);
+				if(ret > 0)
+					return ret;
+			}
+			while(msTime::getTime_s() < end);
+
+			if(report)
+				debugPrint(DBG_WARN, "readLineWait triggered timeout %0.4f:%0.4f", timeout_s, msTime::getTime_s() - start);
+		}
+		else
+			debugPrint(DBG_WARN, "readLineWait socket not connected");
 	}
 
 	return 0;
@@ -90,7 +136,10 @@ int Stream::readLine(char *buf, int bufLen)
 int Stream::writeStr(const char *buf)
 {
 	if(buf)
+	{
+		debugPrint(DBG_LOG,"writeStr: %s", buf);
 		return write(buf, strlen(buf));
+	}
 
 	return 0;
 }

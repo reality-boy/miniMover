@@ -144,7 +144,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 	return success;
 }
 
-bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
+bool XYZV3::parseStatusSubstring(const char *str)
 {
 	//****Note, assumes parrent locked mutex
 
@@ -449,8 +449,8 @@ bool XYZV3::parseStatusSubstring(const char *str, bool &zOffsetSet)
 		//case 'y': break; // unused
 
 		case 'z': // z offset
-			sscanf(str, "z:%d", &m_status.zOffset);
-			zOffsetSet = true;
+			if(sscanf(str, "z:%d", &m_status.zOffset))
+				m_status.zOffsetSet = true;
 			break;
 
 		// case 'A' to 'F' unused
@@ -591,41 +591,39 @@ bool XYZV3::queryStatus(bool doPrint)
 
 			static const int len = 1024;
 			char buf[len];
-			bool zOffsetSet = false;
 			bool isDone = false; // only try so many times for the answer
-			float end = msTime::getTime_s() + m_stream->getDefaultSleep(); // wait a second or two
-			while(msTime::getTime_s() < end && !isDone)
+			while(!isDone && m_stream->readLineWait(buf, len))
 			{
-				if(m_stream->readLine(buf, len))
+				if(buf[0] == '$') // end of message
 				{
-					if(buf[0] == '$') // end of message
-					{
-						isDone = true;
-						m_status.isValid = true;
-					}
-					else if(buf[0] == 'E') // error string like E4$\n
-					{
-						//****FixMe, returns E4$\n or E7$\n sometimes
-						// in those cases we just ignore the error and keep going
-						isDone = true;
-						m_status.isValid = false;
-						debugPrint(DBG_WARN, "recieved error: %s", buf);
-					}
-					else if(parseStatusSubstring(buf, zOffsetSet))
-					{
-						if(doPrint)
-							printf("%s\n", buf);
-					}
-					else
-					{
-						// handle message
-					}
+					isDone = true;
+					m_status.isValid = true;
+				}
+				else if(buf[0] == 'E') // error string like E4$\n
+				{
+					//****FixMe, returns E4$\n or E7$\n sometimes
+					// in those cases we just ignore the error and keep going
+					isDone = true;
+					m_status.isValid = false;
+					debugPrint(DBG_WARN, "recieved error: %s", buf);
+				}
+				else if(parseStatusSubstring(buf))
+				{
+					if(doPrint)
+						printf("%s\n", buf);
+				}
+				else
+				{
+					// handle other messages
 				}
 			}
 
+			if(!isDone)
+				debugPrint(DBG_WARN, "queryStatus timed out");
+
 			// manually pull zOffset, if not set above
 			// use zero wait time, in case command is ignored
-			if(!zOffsetSet)
+			if(!m_status.zOffsetSet)
 			{
 				const char *buf = NULL;
 				if(serialSendMessage("XYZv3/config=zoffset:get"))
@@ -635,10 +633,11 @@ bool XYZV3::queryStatus(bool doPrint)
 					if(doPrint)
 						printf("%s\n", buf);
 					m_status.zOffset = atoi(buf);
+					m_status.zOffsetSet = true;
 				}
 			}
 
-			success = true;
+			success = isDone;
 		}
 	}
 
@@ -2064,30 +2063,10 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 	static const int len = 1024;
 	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
 	*buf = '\0';
-	bool isValid = false;
 
 	if(m_stream && m_stream->isOpen())
 	{
-		// set default sleep
-		if(timeout_s < 0)
-			timeout_s = m_stream->getDefaultSleep();
-
-		// only try so many times for the answer
-		float end = msTime::getTime_s() + timeout_s;
-		do
-		{
-			// blocking call, no need to sleep
-			if(m_stream->readLine(buf, len))
-			{
-				isValid = true;
-				break;
-			}
-		}
-		while(msTime::getTime_s() < end);
-
-		if(!isValid && report)
-			debugPrint(DBG_WARN, "waitForLine, timeout triggered %0.2f", timeout_s);
-		else
+		if(m_stream->readLineWait(buf, len, timeout_s, report))
 		{
 			if(buf[0] == '$')
 			{
@@ -2100,9 +2079,14 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 			{
 				char buf2[len];
 
-				if(!m_stream->readLine(buf2, len) || buf2[0] != '$')
-					debugPrint(DBG_WARN, "waitForLine $ failed, returned %d:'%s'", len, buf2);
+				if(m_stream->readLineWait(buf2, len, timeout_s, report))
+				{
+					// success
+				}
 			}
+
+			// return data even on failure to get terminator
+			// is this really a good idea?
 			return buf;
 		}
 	}
