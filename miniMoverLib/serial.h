@@ -1,8 +1,6 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#include "stream.h"
-
 //Serial class that hides win32 serial api in a nicely wrapped package.
 
 const static int SERIAL_MAX_DEV_NAME_LEN = 256;
@@ -17,15 +15,15 @@ public:
 	// Pass in hint string to help guide us to best port
 	static int queryForPorts(const char *hint = NULL);
 
-	static int getPortCount() { return portCount; }
-	static const char* getPortDeviceName(int id) { return (id >= 0 && id < portCount) ? portInfo[id].deviceName : NULL; }
-	static const char* getPortDisplayName(int id) { return (id >= 0 && id < portCount) ? portInfo[id].displayName : NULL; }
+	static int getPortCount() { return m_portCount; }
+	static const char* getPortDeviceName(int id) { return (id >= 0 && id < m_portCount) ? portInfo[id].deviceName : NULL; }
+	static const char* getPortDisplayName(int id) { return (id >= 0 && id < m_portCount) ? portInfo[id].displayName : NULL; }
 
 protected:
 	const static int maxPortCount = 24;
 
-	static int portCount;
-	static int defaultPortID;
+	static int m_portCount;
+	static int m_defaultPortID;
 
 	struct PortInfo
 	{
@@ -56,6 +54,7 @@ public:
 
 	// from base class
 	//int readLine(char *buf, int bufLen);
+	//int readLineWait(char *buf, int bufLen, float timeout_s, bool report);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 

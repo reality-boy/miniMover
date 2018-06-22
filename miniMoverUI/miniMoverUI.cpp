@@ -26,6 +26,7 @@
 
 #include "debug.h"
 #include "timer.h"
+#include "stream.h"
 #include "serial.h"
 #include "network.h"
 #include "xyzv3.h"
@@ -354,7 +355,9 @@ void MainDlgUpdateModelDropdown(HWND hDlg)
 	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_RESETCONTENT, 0, 0);
 	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_ADDSTRING, 0, (LPARAM)"Auto");
 	for(int i=0; i < XYZV3::getInfoCount(); i++)
+	{
 		SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_ADDSTRING, 0, (LPARAM)XYZV3::indexToInfo(i)->screenName);
+	}
 	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_SETCURSEL, 0, 0);
 }
 
@@ -430,8 +433,11 @@ void MainDlgUpdate(HWND hDlg)
 			{
 				int id = 0;
 				for(id=0; id<XYZPrintingLangCount; id++)
+				{
 					if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
 						break;
+				}
+
 				// default to en if not found
 				if(id == XYZPrintingLangCount)
 					id = 0;
@@ -548,7 +554,9 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		MainDlgConnect(hDlg);
 
 		for(int i=0; i<XYZPrintingLangCount; i++)
+		{
 			SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_ADDSTRING, 0, (LPARAM)XYZPrintingLang[i].desc);
+		}
 		SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, 0, 0); // default to something
 
 		SendDlgItemMessage(hDlg, IDC_COMBO_ENERGY_SAVING, CB_ADDSTRING, 0, (LPARAM)"off");

@@ -8,6 +8,7 @@
 #include <time.h>
 #include <commdlg.h>
 
+#include "stream.h"
 #include "serial.h"
 #include "network.h"
 #include "timer.h"

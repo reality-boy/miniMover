@@ -102,7 +102,9 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 			OutputDebugString("\n");
 #else
 			for(int i=0; i<len; i++)
+			{
 				printf(" %02x", data[i]);
+			}
 			printf("\n");
 #endif
 		}
@@ -111,7 +113,9 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 		{
 			for(int i=0; i<len; i++)
+			{
 				fprintf(g_debugLog, " %02x", data[i]);
+			}
 			fprintf(g_debugLog, "\n");
 		}
 	}

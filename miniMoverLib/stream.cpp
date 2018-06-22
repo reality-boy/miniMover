@@ -17,27 +17,62 @@
 
 void Stream::clear()
 {
-	int len;
-	char tbuf[1024];
-
-	// poll for data
-	//len = readLineWait(tbuf, 1024, 0.005f, false);
-	len = readLine(tbuf, 1024);
-	if(len > 0)
-		debugPrint(DBG_REPORT, "leftover data: %s", tbuf);
-
-	// drain residual data in buffer
-	len = m_lineBufEnd - m_lineBufStart;
-	if(len > 0)
-		debugPrint(DBG_REPORT, "leftover data: %s", m_lineBufStart);
+	// drain residual data in readline buffer
+	if(m_lineBufCount > 0)
+		debugPrint(DBG_REPORT, "Stream::clear() leftover data: %s", m_lineBuf);
 
 	m_lineBuf[0] = '\0';
-	m_lineBufStart = m_lineBuf;
-	m_lineBufEnd = m_lineBuf;
+	m_lineBufCount = 0;
+
+	// assume child class will take care of the device speciffic data
+}
+
+int Stream::readLineFromBuffer(char *buf, int bufLen)
+{
+	assert(buf);
+	assert(bufLen > 0);
+
+	if(buf && bufLen > 0)
+	{
+		int i;
+		for(i=0; i<m_lineBufCount; i++)
+		{
+			if(m_lineBuf[i] == '\n')
+				break;
+		}
+
+		// if found, copy
+		if(i < m_lineBufCount)
+		{
+			int len = i;
+			if(len > bufLen)
+			{
+				debugPrint(DBG_WARN, "Stream::readLineFromBuffer() data buffer too small, increase by %d bytes", len - bufLen);
+				len = bufLen;
+			}
+
+			strncpy(buf, m_lineBuf, len);
+			buf[len] = '\0';
+			m_lineBufCount -= len+1;
+			if(m_lineBufCount > 0)
+				memcpy(m_lineBuf, m_lineBuf+len+1, m_lineBufCount);
+			else
+				m_lineBufCount = 0;
+
+			return len;
+		}
+	}
+	else
+		debugPrint(DBG_WARN, "Stream::readLineFromBuffer() failed invalid input");
+
+	return 0;
 }
 
 int Stream::readLine(char *buf, int bufLen)
 {
+	assert(buf);
+	assert(bufLen > 0);
+
 	if(buf && bufLen > 0)
 	{
 		// make sure we return something
@@ -45,63 +80,48 @@ int Stream::readLine(char *buf, int bufLen)
 
 		if(isOpen())
 		{
-			// setup our counters
-			char *bufStart = buf;
-			const char *bufEnd = &buf[bufLen-1];
+			int len;
 
 			// check if we already have a newline terminated string
 			// do it here so we don't block if data already waiting
-			while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
+			len = readLineFromBuffer(buf, bufLen);
+			if(len > 0)
 			{
-				*bufStart = *m_lineBufStart;
-				m_lineBufStart++;
-
-				if(*bufStart == '\n')
-				{
-					*bufStart = '\0';
-					debugPrint(DBG_LOG, "readLine: %s", buf);
-					return bufStart - buf + 1; // length
-				}
-				bufStart++;
+				debugPrint(DBG_LOG, "Stream::readLine() returned %s", buf);
+				return len;
 			}
-
-			int len = 0;
-			// move old data to start of buffer
-			if(m_lineBufStart < m_lineBufEnd)
+			else // not found, pull more data
 			{
-				len = m_lineBufEnd - m_lineBufStart;
-				memcpy(m_lineBuf, m_lineBufStart, len);
-				m_lineBufStart = m_lineBuf;
-				m_lineBufEnd = m_lineBuf + len;
-			}
-
-			// get new data from serial device
-			len = (m_lineBuf + m_lineBufLen) - m_lineBufStart;
-			len = read(m_lineBufEnd, len);
-			m_lineBufEnd += len;
-
-			// try once more for a newline in buffer
-			while((bufStart+1) < bufEnd && m_lineBufStart != m_lineBufEnd)
-			{
-				*bufStart = *m_lineBufStart;
-				m_lineBufStart++;
-
-				if(*bufStart == '\n')
+				len = m_lineBufLen - m_lineBufCount;
+				len = read(m_lineBuf + m_lineBufCount, len);
+				if(len > 0)
 				{
-					*bufStart = '\0';
-					debugPrint(DBG_LOG, "readLine: %s", buf);
-					return bufStart - buf + 1; // length
+					m_lineBufCount += len;
+
+					len = readLineFromBuffer(buf, bufLen);
+					if(len > 0)
+					{
+						debugPrint(DBG_LOG, "Stream::readLine() returned %s", buf);
+						return len;
+					}
 				}
-				bufStart++;
 			}
 		}
+		else
+			debugPrint(DBG_WARN, "Stream::readLine() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Stream::readLine() failed invalid input");
+		
 
 	return 0;
 }
 
 int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 {
+	assert(buf);
+	assert(bufLen > 0);
+
 	if(buf && bufLen > 0)
 	{
 		// make sure we return something
@@ -124,28 +144,39 @@ int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 			while(msTime::getTime_s() < end);
 
 			if(report)
-				debugPrint(DBG_WARN, "readLineWait triggered timeout %0.4f:%0.4f", timeout_s, msTime::getTime_s() - start);
+			{
+				float elapsed = msTime::getTime_s() - start;
+				debugPrint(DBG_WARN, "Stream::readLineWait() triggered timeout %0.4f of %0.4f seconds", elapsed, timeout_s);
+			}
 		}
 		else
-			debugPrint(DBG_WARN, "readLineWait socket not connected");
+			debugPrint(DBG_WARN, "Stream::readLineWait() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Stream::readLineWait() failed invalid input");
 
 	return 0;
 }
 
 int Stream::writeStr(const char *buf)
 {
+	assert(buf);
+
 	if(buf)
 	{
-		debugPrint(DBG_LOG,"writeStr: %s", buf);
+		debugPrint(DBG_LOG,"Stream::writeStr() sent %s", buf);
 		return write(buf, strlen(buf));
 	}
+	else
+		debugPrint(DBG_WARN, "Stream::writeStr() failed invalid input");
 
 	return 0;
 }
 
 int Stream::writePrintf(const char *fmt, ...)
 {
+	assert(fmt);
+
 	if(fmt)
 	{
 		static const int tstrLen = 4096;
@@ -161,6 +192,8 @@ int Stream::writePrintf(const char *fmt, ...)
 
 		return writeStr(tstr);
 	}
+	else
+		debugPrint(DBG_WARN, "Stream::writePrintf() failed invalid input");
 
 	return 0;
 }

@@ -23,45 +23,48 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <errno.h>
+#include <assert.h>
+
 #include "debug.h"
 #include "stream.h"
 #include "serial.h"
 
 //------------------------
 
-int SerialHelper::portCount = 0;
-int SerialHelper::defaultPortID = -1;
+int SerialHelper::m_portCount = 0;
+int SerialHelper::m_defaultPortID = -1;
 SerialHelper::PortInfo SerialHelper::portInfo[maxPortCount] = {0};
 
 int SerialHelper::queryForPorts(const char *hint)
 {
 	isdigit('c');
-	portCount = 0;
-	defaultPortID = -1;
+	m_portCount = 0;
+	m_defaultPortID = -1;
 
     struct dirent *ent;
     DIR *dir = opendir("/dev");
-    while((ent = readdir(dir)) && portCount < maxPortCount) 
+    while((ent = readdir(dir)) && m_portCount < maxPortCount) 
 	{
         if(0 == strncmp("tty", ent->d_name, 3)) 
 		{
 			// reject /dev/tty, those are terminals not serial ports
 			if(ent->d_name[3] != '\0' && !isdigit(ent->d_name[3]))
 			{
-	            sprintf(portInfo[portCount].deviceName, "/dev/%s", ent->d_name);
+	            sprintf(portInfo[m_portCount].deviceName, "/dev/%s", ent->d_name);
 
-			    int handle = open(portInfo[portCount].deviceName, O_RDWR | O_NOCTTY | O_NDELAY /*| O_NONBLOCK*/);
+			    int handle = open(portInfo[m_portCount].deviceName, O_RDWR | O_NOCTTY | O_NDELAY /*| O_NONBLOCK*/);
 				if(handle >= 0)
 				{
-					//printf("found %s\n", portInfo[portCount].deviceName);
+					//printf("found %s\n", portInfo[m_portCount].deviceName);
 					//serial_struct serinfo;
 					//if(0 == ioctl(handle, TIOCGSERIAL, &serinfo))
 					{
 						//****FixMe, find proper display name somehow
-			            sprintf(portInfo[portCount].displayName, "%s", ent->d_name);
+			            sprintf(portInfo[m_portCount].displayName, "%s", ent->d_name);
 						//****FixMe, search for device
-						defaultPortID = portCount;
-						portCount++;
+						m_defaultPortID = m_portCount;
+						m_portCount++;
 					}
 				}
 			}
@@ -69,7 +72,7 @@ int SerialHelper::queryForPorts(const char *hint)
     }
     closedir(dir);
 
-	return defaultPortID;
+	return m_defaultPortID;
 }
 
 //------------------------
@@ -118,7 +121,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 
 	// Open port
     m_handle = open(deviceName, O_RDWR | O_NOCTTY);
-    if(m_handle >= 0)
+    if(isOpen())
 	{
 		// General configuration
 	    struct termios options;
@@ -177,21 +180,24 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 		{
 			return true;
 		}
-
-        close(m_handle);
 	}
-	m_handle = -1;
+
+	// Close if already open
+	closeStream();
+
 	return false;
 }
 
 void Serial::closeStream()
 {
-    if(m_handle > 0)
+    if(isOpen())
 	{
 	    tcdrain(m_handle);
 	    close(m_handle);
-	    m_handle = -1;
 	}
+    m_handle = -1;
+	m_baudRate = -1;
+	m_deviceName[0] = '\0';
 }
 
 bool Serial::isOpen()
@@ -201,10 +207,10 @@ bool Serial::isOpen()
 
 void Serial::clear()
 {
-	// call parrent
+	// call parent
 	Stream::clear();
 
-	if(m_handle >= 0)
+	if(isOpen())
 	{
 		// check if data waiting, without stalling
 		int bytes;
@@ -215,19 +221,24 @@ void Serial::clear()
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Serial::clear() leftover data: %s", buf);
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::clear() failed invalid connection");
 }
 
 int Serial::read(char *buf, int len)
 {
+	assert(buf);
+	assert(len > 0);
+
 	int bytesRead = 0;
 
-	if(buf)
+	if(buf && len > 0)
 	{
 		buf[0] = '\0';
-		if(m_handle >= 0 && len > 0)
+		if(isOpen())
 		{
 			int tLen = ::read(m_handle, buf, len-1);
 			if (tLen > 0)
@@ -239,32 +250,46 @@ int Serial::read(char *buf, int len)
 					bytesRead = len-1;
 				buf[bytesRead] = '\0';
 
-				debugPrint(DBG_LOG, "Bytes received: %d", tLen);
+				debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
 			}
 			else
-				debugPrint(DBG_WARN, "read failed");
+				debugPrint(DBG_WARN, "Serial::read() failed with error %d", errno);
 		}
+		else
+			debugPrint(DBG_WARN, "Serial::read() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::read() failed invalid input");
 
 	return bytesRead;
 }
 
 int Serial::write(const char *buf, int len)
 {
+	assert(buf);
+	assert(len > 0);
+
 	int bytesWritten = 0;
 
-    if(m_handle >= 0 && buf && len > 0)
+	if(buf && len > 0)
 	{
-	    int tLen = ::write(m_handle, buf, len);
-	    if(tLen > 0)
+	    if(isOpen())
 		{
-			// success
-			bytesWritten = tLen;
-			debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, tLen);
+		    int tLen = ::write(m_handle, buf, len);
+		    if(tLen > 0)
+			{
+				// success
+				bytesWritten = tLen;
+				debugPrint(DBG_LOG, "Serial::write() sent: %d of %d bytes", tLen, len);
+			}
+			else
+				debugPrint(DBG_ERR, "Serial::write() failed with error %d", errno);
 		}
 		else
-			debugPrint(DBG_ERR, "failed to write bytes: %d", tLen);
+			debugPrint(DBG_WARN, "Serial::write() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::write() failed invalid input");
 
 	return bytesWritten;
 }

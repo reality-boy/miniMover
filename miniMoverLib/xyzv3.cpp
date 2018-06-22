@@ -30,6 +30,7 @@
 
 #include "timer.h"
 #include "aes.h"
+#include "stream.h"
 #include "serial.h"
 #include "network.h"
 #include "xyzv3.h"
@@ -2217,7 +2218,9 @@ void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 	if(f)
 	{
 		for(int i=0; i<count; i++)
+		{
 			fwrite(&byte, 1, 1, f);
+		}
 	}
 }
 
@@ -2251,7 +2254,9 @@ int XYZV3::pkcs7pad(char *buf, int len)
 		if(count > 0 && count <= 16)
 		{
 			for(int i=0; i<count; i++)
+			{
 				buf[len+i] = (char)count;
+			}
 		}
 
 		return newLen;

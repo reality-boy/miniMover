@@ -9,13 +9,12 @@ class Stream
 {
 public:
 	Stream() 
-		: m_lineBufStart(m_lineBuf)
-		, m_lineBufEnd(m_lineBuf)
+		: m_lineBufCount(0)
 	{}
 
-	~Stream() {}
+	virtual ~Stream() {}
 
-	// open connection is defined by the sub class
+	// functions handled by derived class
 
 	// close connection
 	virtual void closeStream() = 0;
@@ -28,28 +27,34 @@ public:
 
 	// read all data available
 	virtual int read(char *buf, int bufLen) = 0;
-	// read only to newline char, buffering rest of data, return immediately if not found
-	virtual int readLine(char *buf, int bufLen);
-	// block for timeout seconds before returning
-	virtual int readLineWait(char *buf, int bufLen, float timeout_s = -1, bool report = true);
 
 	// write a fixed length buffer
 	virtual int write(const char *buf, int bufLen) = 0;
-	// write a null terminated string
-	virtual int writeStr(const char *buf);
-	// write a string formatted by printf
-	virtual int writePrintf(const char *fmt, ...);
 
-protected:
+	// local functions, don't override
+
+	// read only to newline char, buffering rest of data, return immediately if not found
+	int readLine(char *buf, int bufLen);
+	// block for timeout seconds before returning
+	int readLineWait(char *buf, int bufLen, float timeout_s = -1, bool report = true);
+
+	// write a null terminated string
+	int writeStr(const char *buf);
+	// write a string formatted by printf
+	int writePrintf(const char *fmt, ...);
+
+private:
 
 	// default communication timeout
-	virtual float getDefaultTimeout() { return 5.0f; }
+	float getDefaultTimeout() { return 5.0f; }
+
+	// helper function to read a line from m_lineBuf
+	int readLineFromBuffer(char *buf, int bufLen);
 
 	// readLine data
 	const static int m_lineBufLen = 4096;
+	int m_lineBufCount;
 	char m_lineBuf[m_lineBufLen];
-	char* m_lineBufStart;
-	char* m_lineBufEnd;
 };
 
 #endif // STREAM_H

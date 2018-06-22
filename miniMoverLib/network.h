@@ -5,8 +5,6 @@
 # include <Winsock2.h>
 #endif
 
-#include "stream.h"
-
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel);
 
@@ -26,6 +24,7 @@ public:
 
 	// from base class
 	//int readLine(char *buf, int len);
+	//int readLineWait(char *buf, int bufLen, float timeout_s, bool report);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 
@@ -33,13 +32,12 @@ protected:
 	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);
 
 #ifdef _WIN32
-	WSADATA wsaData;
-	SOCKET soc;
+	bool m_isInit;
+	SOCKET m_soc;
 #else
-	int soc;
+	int m_soc;
 #endif
 
-	bool isInit;
 };
 
 #endif //NETWORK_H

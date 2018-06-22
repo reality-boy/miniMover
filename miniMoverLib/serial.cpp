@@ -24,8 +24,8 @@
 
 //------------------------
 
-int SerialHelper::portCount = 0;
-int SerialHelper::defaultPortID = -1;
+int SerialHelper::m_portCount = 0;
+int SerialHelper::m_defaultPortID = -1;
 SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::maxPortCount] = {0};
 
 // enumerate all available ports and find there string name as well
@@ -33,8 +33,8 @@ SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::maxPortCount] = {0};
 // based on CEnumerateSerial http://www.naughter.com/enumser.html
 int SerialHelper::queryForPorts(const char *hint)
 {
-	portCount = 0;
-	defaultPortID = -1;
+	m_portCount = 0;
+	m_defaultPortID = -1;
 	bool hintFound = false;
 
 	HDEVINFO hDevInfoSet = SetupDiGetClassDevsA( &GUID_DEVINTERFACE_COMPORT, 
@@ -73,66 +73,89 @@ int SerialHelper::queryForPorts(const char *hint)
 						if (nPort != -1)
 						{
 							// if this triggers we need to increase maxPortCount
-							assert(portCount < maxPortCount);
-							if(portCount < maxPortCount)
+							assert(m_portCount < maxPortCount);
+							if(m_portCount < maxPortCount)
 							{
-								sprintf(portInfo[portCount].deviceName, "\\\\.\\COM%d", nPort);
+								sprintf(portInfo[m_portCount].deviceName, "\\\\.\\COM%d", nPort);
 
 								// pick highest port by default, unless already found by hint
 								if(!hintFound)
 								{
-									defaultPortID = portCount;
+									m_defaultPortID = m_portCount;
 								}
 
 								DWORD dwType = 0;
 								DWORD dwSize = SERIAL_MAX_DEV_NAME_LEN;
-								portInfo[portCount].displayName[0] = '\0';
-								if(SetupDiGetDeviceRegistryPropertyA(hDevInfoSet, &devInfo, SPDRP_DEVICEDESC, &dwType, (PBYTE)portInfo[portCount].displayName, SERIAL_MAX_DEV_NAME_LEN, &dwSize))
+								portInfo[m_portCount].displayName[0] = '\0';
+								if(SetupDiGetDeviceRegistryPropertyA(hDevInfoSet, &devInfo, SPDRP_DEVICEDESC, &dwType, (PBYTE)portInfo[m_portCount].displayName, SERIAL_MAX_DEV_NAME_LEN, &dwSize))
 								{
 									// append device name to display name
-									int len = strlen(portInfo[portCount].displayName);
-									sprintf(portInfo[portCount].displayName + len, " (%s)", portInfo[portCount].deviceName);
+									int len = strlen(portInfo[m_portCount].displayName);
+									sprintf(portInfo[m_portCount].displayName + len, " (%s)", portInfo[m_portCount].deviceName);
 
 									// check if this port matches our hint
 									// for now we take the last match
-									if(hint && strstr(portInfo[portCount].displayName, hint))
+									if(hint && strstr(portInfo[m_portCount].displayName, hint))
 									{
 										hintFound = true;
-										defaultPortID = portCount;
+										m_defaultPortID = m_portCount;
 									}
 								}
 								else
-									sprintf(portInfo[portCount].displayName, portInfo[portCount].deviceName);
+								{
+									debugPrint(DBG_REPORT, "SerialHelper::queryForPorts() failed to find display name for port %s", portInfo[m_portCount].deviceName);
+									sprintf(portInfo[m_portCount].displayName, portInfo[m_portCount].deviceName);
+								}
 
-								portCount++;
+								m_portCount++;
 							}
+							else
+								debugPrint(DBG_WARN, "SerialHelper::queryForPorts() maxPortCount exeeded %d", maxPortCount);
 						}
 					}
 				}
+				else
+					debugPrint(DBG_WARN, "SerialHelper::queryForPorts() RegQueryValueEx failed with error %d", status);
+
 				RegCloseKey(key);
 			}
+			else
+				debugPrint(DBG_WARN, "SerialHelper::queryForPorts() SetupDiOpenDevRegKey failed with error %d", GetLastError());
 
 			++nIndex;
 		}
 
-		if(SerialHelper::getPortDisplayName(defaultPortID))
-			debugPrint(DBG_LOG, "detected port: %d:%s", defaultPortID, SerialHelper::getPortDisplayName(defaultPortID));
-		else
-			debugPrint(DBG_LOG, "detected port: %d:NULL", defaultPortID);
 
-		for(int i=0; i<SerialHelper::getPortCount(); i++)
-			debugPrint(DBG_LOG, "  %d:%s", i, SerialHelper::getPortDisplayName(i));
+		if(m_portCount > 0)
+		{
+			for(int i=0; i<m_portCount; i++)
+			{
+				debugPrint(DBG_LOG, "SerialHelper::queryForPorts() found port  %d:%s", i, SerialHelper::getPortDisplayName(i));
+			}
+
+			if(m_defaultPortID >= 0)
+			{
+				if(SerialHelper::getPortDisplayName(m_defaultPortID))
+					debugPrint(DBG_LOG, "SerialHelper::queryForPorts() default port: %d:%s", m_defaultPortID, SerialHelper::getPortDisplayName(m_defaultPortID));
+				else
+					debugPrint(DBG_LOG, "SerialHelper::queryForPorts() default port: %d:NULL", m_defaultPortID);
+			}
+		}
+		else
+			debugPrint(DBG_REPORT, "SerialHelper::queryForPorts() failed to find any ports");
 
 		SetupDiDestroyDeviceInfoList(hDevInfoSet);
 	}
+	else
+		debugPrint(DBG_WARN, "SerialHelper::queryForPorts() SetupDiGetClassDevs failed with error %d", GetLastError());
 	
-	return defaultPortID;
+	return m_defaultPortID;
 }
 
 //------------------------
 
 Serial::Serial() 
-	: m_handle(NULL) 
+	: m_handle(INVALID_HANDLE_VALUE) 
 	, m_baudRate(-1)
 {
 	m_deviceName[0] = '\0';
@@ -163,6 +186,9 @@ bool setupConfig(const char *portStr, HANDLE h)
 
 bool Serial::openSerial(const char *deviceName, int baudRate)
 {
+	assert(deviceName);
+	assert(baudRate > 0);
+
 	bool blocking = false; // set to true to block till data arives
 	int timeout_ms = 50;
 
@@ -178,7 +204,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 	
 		// open serial port
 		m_handle = CreateFileA( deviceName, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(m_handle != INVALID_HANDLE_VALUE)
+		if(isOpen())
 		{
 			//if(setupConfig(deviceName, m_handle))
 			{
@@ -214,16 +240,34 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 										strcpy(m_deviceName, deviceName);
 										m_baudRate = baudRate;
 
+										debugPrint(DBG_LOG, "Serial::openSerial() connected to %s : %d", m_deviceName, m_baudRate);
+
 										return true;
 									}
+									else
+										debugPrint(DBG_WARN, "Serial::openSerial() SetupComm failed with error %d", GetLastError());
 								}
+								else
+									debugPrint(DBG_WARN, "Serial::openSerial() SetCommMask failed with error %d", GetLastError());
 							}
+							else
+								debugPrint(DBG_WARN, "Serial::openSerial() SetCommTimeouts failed with error %d", GetLastError());
 						}
+						else
+							debugPrint(DBG_WARN, "Serial::openSerial() GetCommTimeouts failed with error %d", GetLastError());
 					}
+					else
+						debugPrint(DBG_WARN, "Serial::openSerial() SetCommState failed with error %d", GetLastError());
 				}
+				else
+					debugPrint(DBG_WARN, "Serial::openSerial() GetCommState failed with error %d", GetLastError());
 			}
 		}
+		else
+			debugPrint(DBG_WARN, "Serial::openSerial() CreateFile failed with error %d", GetLastError());
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::openSerial() failed invalid input");
 
 	closeStream();
 	return false;
@@ -231,7 +275,7 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 
 void Serial::closeStream()
 {
-	if(m_handle)
+	if(isOpen())
 		CloseHandle(m_handle);
 	m_handle = NULL;
 	m_baudRate = -1;
@@ -240,15 +284,15 @@ void Serial::closeStream()
 
 bool Serial::isOpen() 
 { 
-	return m_handle != NULL; 
+	return m_handle != INVALID_HANDLE_VALUE; 
 }
  
 void Serial::clear()
 {
-	// call parrent
+	// call parent
 	Stream::clear();
 
-	if(m_handle)
+	if(isOpen())
 	{
 		// check if we have data waiting, without stalling
 		DWORD dwErrorFlags;
@@ -257,63 +301,121 @@ void Serial::clear()
 		if(ComStat.cbInQue)
 		{
 			// log any leftover data
-			const int len = 4096;
+			const int len = 1024;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Serial::clear() leftover data: '%s'", buf);
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::clear() failed invalid connection");
 }
 
 int Serial::read(char *buf, int len)
 {
-	int bytesRead = 0;
+	assert(buf);
+	assert(len > 0);
 
-	if(buf)
+	if(buf && len > 0)
 	{
 		buf[0] = '\0';
-		if(m_handle && len > 0)
+		if(isOpen())
 		{
+#if 0 
+			// debug path, dolls out data in small chuncks
+			static int tbufBytes = 0;
+			static char tbuf[512];
+			if(tbufBytes > 0)
+			{
+				int l = min(34, min(len, tbufBytes));
+				strncpy(buf, tbuf, l);
+				buf[l] = '\0';
+
+				tbufBytes -= l;
+				if(tbufBytes > 0)
+					memcpy(tbuf, tbuf+l, tbufBytes);
+
+				debugPrint(DBG_LOG, "Serial::read() cache returned %d bytes", l);
+
+				return l;
+			}
+			else
+			{
+				memset(tbuf, 0, 512);
+
+				DWORD tLen;
+				if(ReadFile(m_handle, tbuf, 512, &tLen, NULL))
+				{
+					if(tLen > 0)
+					{
+						tbufBytes = tLen;
+						int l = min(34, min(len, tbufBytes));
+						strncpy(buf, tbuf, l);
+						buf[l] = '\0';
+
+						tbufBytes -= l;
+						if(tbufBytes > 0)
+							memcpy(tbuf, tbuf+l, tbufBytes);
+
+						debugPrint(DBG_LOG, "Serial::read() returned %d bytes", l);
+
+						return l;
+					}
+					//else no data yet
+				}
+				else
+					debugPrint(DBG_WARN, "Serial::read() failed with error %d", GetLastError());
+			}
+#else
+
 			DWORD tLen;
 			if(ReadFile(m_handle, buf, len-1, &tLen, NULL))
 			{
 				if(tLen > 0)
 				{
-					// success
-					bytesRead = (int)tLen;
-
-					if(bytesRead > (len-1))
-						bytesRead = len-1;
-					buf[bytesRead] = '\0';
-
-					debugPrint(DBG_LOG, "Bytes received: %d", tLen);
+					buf[tLen] = '\0';
+					debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
+					return tLen;
 				}
 			}
 			else
-				debugPrint(DBG_WARN, "read failed");
+				debugPrint(DBG_WARN, "Serial::read() failed with error %d", GetLastError());
+#endif
 		}
+		else
+			debugPrint(DBG_WARN, "Serial::read() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::read() failed invalid input");
 
-	return bytesRead;
+	return 0;
 }
 
 int Serial::write(const char *buf, int len)
 {
-	int bytesWritten = 0;
+	assert(buf);
+	assert(len > 0);
 
-	if(m_handle && buf && len > 0)
+	if(buf && len > 0)
 	{
-		DWORD tLen;
-		if(WriteFile(m_handle, buf, len, &tLen, NULL))
+		if(isOpen())
 		{
-			// success
-			bytesWritten = tLen;
-			debugPrint(DBG_LOG, "Bytes sent: %d:%d", len, bytesWritten);
+			DWORD tLen;
+			if(WriteFile(m_handle, buf, len, &tLen, NULL))
+			{
+				// success
+				debugPrint(DBG_LOG, "Serial::write() sent: %d of %d bytes", tLen, len);
+				return tLen;
+			}
+			else
+				debugPrint(DBG_ERR, "Serial::write() failed with error %d", GetLastError());
 		}
 		else
-			debugPrint(DBG_ERR, "failed to write bytes");
+			debugPrint(DBG_WARN, "Serial::write() failed invalid connection");
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::write() failed invalid input");
 
-	return bytesWritten;
+	return 0;
 }
 

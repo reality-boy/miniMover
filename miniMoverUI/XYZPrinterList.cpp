@@ -188,8 +188,10 @@ WifiEntry* WifiList::findEntry(const char *serialNum, bool addIfNotFound)
 {
 	// return if found
 	for(int i=0; i<m_count; i++)
+	{
 		if(0 == strcmp(serialNum, m_list[i].m_serialNum))
 			return &m_list[i];
+	}
 	
 	// add if asked
 	if(addIfNotFound && (m_count+1) < m_max)

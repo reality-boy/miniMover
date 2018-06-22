@@ -15,6 +15,7 @@
 #include <time.h>
 
 #include "timer.h"
+#include "stream.h"
 #include "serial.h"
 #include "network.h"
 #include "debug.h"
@@ -424,7 +425,9 @@ bool handlePrintFile(const char *path)
 
 					// eat any other keys
 					while(kbhit())
+					{
 						getch();
+					}
 
 					// hit space to toggle pause on and off
 					if(c == ' ')

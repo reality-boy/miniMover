@@ -20,7 +20,11 @@
 #include <string.h>
 
 #include "debug.h"
+#include "stream.h"
 #include "network.h"
+
+// uncomment to enable non blocking timeouts
+//#define NON_BLOCKING
 
 bool getXMLValue(const char *xml, const char* key, char *val)
 {
@@ -263,29 +267,30 @@ int waitOnSocketReciev(SOCKET soc, int timeout_ms)
 }
 
 Socket::Socket()
-	: soc(INVALID_SOCKET)
+	: m_soc(INVALID_SOCKET)
 {
-	isInit = false;
+	m_isInit = false;
 
 	// Initialize Winsock
-	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+	WSADATA k_Data;
+	int iResult = WSAStartup(MAKEWORD(2,2), &k_Data);
 	if(iResult == 0) 
 	{
-		isInit = true;
+		m_isInit = true;
 	}
 	else
-		debugPrint(DBG_WARN, "WSAStartup failed with error: %d", iResult);
+		debugPrint(DBG_WARN, "WSAStartup failed with error: %s", getLastErrorMessage(iResult));
 }
 
 Socket::~Socket()
 {
-	if(isInit)
+	if(m_isInit)
 	{
 		closeStream();
 		WSACleanup();
 	}
 
-	isInit = false;
+	m_isInit = false;
 }
 
 bool Socket::openSocket(const char *ip, int port) 
@@ -293,7 +298,7 @@ bool Socket::openSocket(const char *ip, int port)
 	bool success = false;
 	int iResult;
 
-	if(isInit)
+	if(m_isInit)
 	{
 		addrinfo hints;
 		addrinfo *adrInf = NULL;
@@ -314,24 +319,28 @@ bool Socket::openSocket(const char *ip, int port)
 			for(addrinfo *pInfo = adrInf; pInfo != NULL; pInfo = pInfo->ai_next) 
 			{
 				// Create a SOCKET for connecting to server
-				soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
-				if(IS_VALID(soc)) 
+				m_soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
+				if(IS_VALID(m_soc)) 
 				{
+#ifdef NON_BLOCKING
 					// turn on non blocking mode
 					unsigned long arg = 1;
-					ioctlsocket(soc, FIONBIO, &arg);
+					ioctlsocket(m_soc, FIONBIO, &arg);
 
 					// Connect to server.
-					iResult = connect(soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
-					/*
+					connect(m_soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
+
+					if(waitOnSocketConnect(m_soc, 5000))
+						break;
+#else
+
+					// Connect to server.
+					iResult = connect(m_soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
 					if(iResult != SOCKET_ERROR) 
 						break; // success we found a connection
 					else
 						debugPrint(DBG_WARN, "connect failed with error: %s", getLastErrorMessage());
-					*/
-
-					if(waitOnSocketConnect(soc, 5000))
-						break;
+#endif
 
 					closeStream();
 				}
@@ -340,7 +349,7 @@ bool Socket::openSocket(const char *ip, int port)
 			}
 			freeaddrinfo(adrInf);
 
-			if(IS_VALID(soc)) 
+			if(IS_VALID(m_soc)) 
 			{
 				Sleep(500); // spin for a bit
 				success = true;
@@ -359,16 +368,16 @@ bool Socket::openSocket(const char *ip, int port)
 
 void Socket::closeStream()
 {
-	if(isInit && IS_VALID(soc)) 
+	if(isOpen()) 
 	{
 		// tell server we are exiting
-		if(shutdown(soc, SD_SEND) != SOCKET_ERROR) 
+		if(shutdown(m_soc, SD_SEND) != SOCKET_ERROR) 
 		{
 			// wait for close signal, and drain connection
 			char tbuf[1024];
 			while(true)
 			{
-				int bytes = recv(soc, tbuf, 1024, 0);
+				int bytes = recv(m_soc, tbuf, 1024, 0);
 				if (bytes == SOCKET_ERROR)
 				{
 					//debugPrint(DBG_WARN, "close socket drain failed!");
@@ -382,7 +391,7 @@ void Socket::closeStream()
 			}
 
 			// actually close the socket
-			if(closesocket(soc) != SOCKET_ERROR)
+			if(closesocket(m_soc) != SOCKET_ERROR)
 			{
 				// success
 			}
@@ -395,12 +404,12 @@ void Socket::closeStream()
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
 
-	soc = INVALID_SOCKET;
+	m_soc = INVALID_SOCKET;
 }
 
 bool Socket::isOpen() 
 { 
-	return isInit && IS_VALID(soc); 
+	return m_isInit && IS_VALID(m_soc); 
 }
 
 void Socket::clear() // is this ever needed?
@@ -408,17 +417,21 @@ void Socket::clear() // is this ever needed?
 	// call parrent
 	Stream::clear();
 
-	if(isInit && IS_VALID(soc))
+	if(isOpen())
 	{
+#ifdef NON_BLOCKING
 		// check if we have data waiting, without stalling
-		if(1 == waitOnSocketReciev(soc, 50))
+		if(1 == waitOnSocketReciev(m_soc, 50))
 		{
 			// log any leftover data
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Socket::clear() leftover data: %s", buf);
 		}
+#else
+		//****FixMe, how do we do this?
+#endif
 	}
 }
 
@@ -429,11 +442,13 @@ int Socket::read(char *buf, int len)
 	if(buf)
 	{
 		buf[0] = '\0';
-		if(isInit && IS_VALID(soc) && len > 0) 
+		if(isOpen() && len > 0) 
 		{
-			if(1 == waitOnSocketReciev(soc, 50))
+#ifdef NON_BLOCKING
+			if(1 == waitOnSocketReciev(m_soc, 50))
+#endif
 			{
-				int tLen = recv(soc, buf, len-1, 0);
+				int tLen = recv(m_soc, buf, len-1, 0);
 				if(tLen != SOCKET_ERROR)
 				{
 					if(tLen > 0)
@@ -453,8 +468,10 @@ int Socket::read(char *buf, int len)
 				else
 					debugPrint(DBG_WARN, "read failed with error: %s", getLastErrorMessage());
 			}
+#ifdef NON_BLOCKING
 			//else
 			//	debugPrint(DBG_WARN, "read timeout");
+#endif
 		}
 		else
 			debugPrint(DBG_LOG, "Not connected to server!");
@@ -467,9 +484,9 @@ int Socket::write(const char *buf, const int len)
 {
 	int bytesWritten = 0;
 
-	if(isInit && IS_VALID(soc) && buf && len > 0) 
+	if(isOpen() && buf && len > 0) 
 	{
-		int tLen = send(soc, buf, len, 0);
+		int tLen = send(m_soc, buf, len, 0);
 		if(tLen != SOCKET_ERROR)
 		{
 			// success
