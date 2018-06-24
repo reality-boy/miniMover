@@ -133,11 +133,12 @@ void postHelp()
 	printf("  -cl - clean nozzle\n");
 	printf("  -ca - calibrate bed\n");
 	printf("  -c file - convert file\n");
+	printf("  -d devName - set serial port device name or wifi ip address, -1 auto detects port\n");
 	printf("  -f file - upload firmware, experimental!\n");
 	printf("  -h - home printer\n");
 	printf("  -l - load filament\n");
 	printf("  -o num - increment/decrement z offset by num\n");
-	printf("  -po devName - set serial port device name, -1 auto detects port\n");
+	//printf("  -po devName - set serial port device name, -1 auto detects port\n");
 	printf("  -p file - print file\n");
 	printf("  -r - print raw status\n");
 	printf("  -s - print status\n");
@@ -169,43 +170,47 @@ bool isNetworkAddress(const char *addr)
 
 bool checkCon()
 {
-	const char *tDevice = NULL;
-	if(isNetworkAddress(deviceName))
+	if(!xyz.isStreamSet())
 	{
-		tDevice = "192.168.1.118";
-		if(soc.openSocket(tDevice, 9100))
+		const char *tDevice = deviceName;
+		if(isNetworkAddress(tDevice))
 		{
-			Stream *s = xyz.setStream(&soc);
-			if(s) s->closeStream();
-			return true;
+			//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
+			// this will allow us to support a custom wifi to usb adapter
+			if(soc.openSocket(tDevice, 9100))
+			{
+				xyz.setStream(&soc);
+				return true;
+			}
 		}
-	}
-	else // serial port
-	{
-		if(!deviceName[0])
+		else // serial port
 		{
-			int id = SerialHelper::queryForPorts("XYZ");
-			tDevice = SerialHelper::getPortDeviceName(id);
+			// if name not set, auto detect
+			if(!tDevice[0])
+			{
+				int id = SerialHelper::queryForPorts("XYZ");
+				tDevice = SerialHelper::getPortDeviceName(id);
+			}
+
+			// if name
+			if(tDevice && tDevice[0] && serial.openSerial(tDevice, 115200))
+			{
+				xyz.setStream(&serial);
+				return true;
+			}
 		}
+
+		// failed to find a printer, report to user
+		xyz.setStream(NULL);
+		if(tDevice)
+			printf("printer not found on port: %s\n", tDevice);
 		else
-			tDevice = deviceName;
+			printf("printer not found\n");
 
-		if(tDevice && serial.openSerial(tDevice, 115200))
-		{
-			Stream *s = xyz.setStream(&serial);
-			if(s) s->closeStream();
-			return true;
-		}
+		return false;
 	}
 
-	Stream *s = xyz.setStream(NULL);
-	if(s) s->closeStream();
-	if(tDevice)
-		printf("printer not found on port: %s\n", tDevice);
-	else
-		printf("printer not found\n");
-
-	return false;
+	return xyz.isStreamSet();
 }
 
 // accepts a 3w file formatted for this printer
@@ -595,6 +600,19 @@ int main(int argc, char **argv)
 							printf("invalid argument\n");
 					}
 					break;
+				case 'd':
+					if(i+1 < argc && !isKey(argv[i+1])) 
+					{
+						// close old connection
+						xyz.setStream(NULL);
+						strcpy(deviceName, argv[i+1]);
+						// if -1 then zero out device name to indicate auto detect
+						if(deviceName[0] == '-')
+							deviceName[0] = '\0';
+						i++;
+					} else 
+						printf("device needs a name\n");
+					break;
 				case 'f':
 					if(i+1 < argc && !isKey(argv[i+1])) 
 					{
@@ -661,15 +679,18 @@ int main(int argc, char **argv)
 				case 'p': // set port
 					if(argv[i][2] == 'o')
 					{
+						// deprecated, see -d instead
 						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
+							// close old connection
+							xyz.setStream(NULL);
 							strcpy(deviceName, argv[i+1]);
 							// if -1 then zero out device name to indicate auto detect
 							if(deviceName[0] == '-')
 								deviceName[0] = '\0';
 							i++;
 						} else 
-							printf("port needs a name\n");
+							printf("device needs a name\n");
 					}
 					else
 					{
@@ -762,8 +783,7 @@ int main(int argc, char **argv)
 	}
 	
 	// disconnect just in case
-	Stream *s = xyz.setStream(NULL);
-	if(s) s->closeStream(); 
+	xyz.setStream(NULL);
 
 	debugFinalize();
 

@@ -101,23 +101,26 @@ XYZV3::~XYZV3()
 	MTX(CloseHandle(ghMutex));
 } 
 
-Stream* XYZV3::setStream(Stream *s)
+void XYZV3::setStream(Stream *s)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 
-	Stream *old_stream = m_stream;
+	// close out old stream
+	if(m_stream)
+		m_stream->closeStream();
+	// and put new in its place
 	m_stream = s;
+
 	memset(&m_status, 0, sizeof(m_status));
 
 	if(m_stream)
 	{
 		m_stream->clear();
+		//****FixMe, do we want to force this?
 		queryStatus();
 	}
 
 	MTX(ReleaseMutex(ghMutex));
-
-	return old_stream;
 }
 
 bool XYZV3::serialSendMessage(const char *format, ...)
@@ -138,7 +141,9 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
+		Sleep(100); //****RemoveMe
 		m_stream->writeStr(msgBuf);
+		Sleep(100); //****RemoveMe
 		success = true;
 	}
 
@@ -624,6 +629,7 @@ bool XYZV3::queryStatus(bool doPrint)
 
 			// manually pull zOffset, if not set above
 			// use zero wait time, in case command is ignored
+			/*
 			if(!m_status.zOffsetSet)
 			{
 				const char *buf = NULL;
@@ -637,6 +643,7 @@ bool XYZV3::queryStatus(bool doPrint)
 					m_status.zOffsetSet = true;
 				}
 			}
+			*/
 
 			success = isDone;
 		}
@@ -2069,9 +2076,9 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 	{
 		if(m_stream->readLineWait(buf, len, timeout_s, report))
 		{
-			if(buf[0] == '$')
+			if(buf[0] == '$' || buf[0] == 'E')
 			{
-				debugPrint(DBG_WARN, "waitForLine $ failed, got early '$'");
+				debugPrint(DBG_WARN, "waitForLine $ failed, got early '%s'", buf);
 				return "";
 			}
 
@@ -2082,8 +2089,17 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 
 				if(m_stream->readLineWait(buf2, len, timeout_s, report))
 				{
-					// success
+					if(buf2[0] == '$')
+					{
+						// success
+					}
+					else if(buf2[0] == 'E')
+						debugPrint(DBG_WARN, "waitForLine $ failed, got error '%s'", buf2);
+					else
+						debugPrint(DBG_WARN, "waitForLine $ failed, instead got '%s'", buf2);
 				}
+				else
+					debugPrint(DBG_WARN, "waitForLine $ failed, got nothing");
 			}
 
 			// return data even on failure to get terminator

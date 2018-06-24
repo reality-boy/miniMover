@@ -36,6 +36,7 @@ void debugInit()
 			{
 				time_t t = time(NULL);
 				fprintf(g_debugLog, "\nLog started %s\n", ctime(&t));
+				fflush(g_debugLog);
 			}
 		}
 	}
@@ -82,7 +83,10 @@ void debugPrint(debugLevel l, const char *format, ...)
 
 	// log to disk if error log is open
 	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
+	{
 		fprintf(g_debugLog, "%s\n", msgBuf);
+		fflush(g_debugLog);
+	}
 }
 
 void debugPrintArray(debugLevel l, const char* data, int len)
@@ -117,6 +121,7 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 				fprintf(g_debugLog, " %02x", data[i]);
 			}
 			fprintf(g_debugLog, "\n");
+			fflush(g_debugLog);
 		}
 	}
 }

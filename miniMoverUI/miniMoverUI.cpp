@@ -482,8 +482,7 @@ void MainDlgConnect(HWND hDlg)
 	g_wifiOptionsEdited = false;
 
 	// close old connection
-	Stream *s = xyz.setStream(NULL);
-	if(s) s->closeStream();
+	xyz.setStream(NULL);
 	MainDlgSetStatus(hDlg, "not connected");
 
 	// if auto detect
@@ -493,8 +492,7 @@ void MainDlgConnect(HWND hDlg)
 		int id = SerialHelper::queryForPorts("XYZ");
 		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
 		{
-			Stream *s = xyz.setStream(&g_serial);
-			if(s) s->closeStream();
+			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
 		}
 		// fall back to wifi if no serial
@@ -503,8 +501,7 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, 9100))
 			{
-				Stream *s = xyz.setStream(&g_soc);
-				if(s) s->closeStream();
+				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
 			}
 		}
@@ -516,8 +513,7 @@ void MainDlgConnect(HWND hDlg)
 		int id = comID - g_listSerialOffset;
 		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
 		{
-			Stream *s = xyz.setStream(&g_serial);
-			if(s) s->closeStream();
+			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
 		}
 	}
@@ -529,8 +525,7 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, 9100))
 			{
-				Stream *s = xyz.setStream(&g_soc);
-				if(s) s->closeStream();
+				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
 			}
 		}
@@ -584,10 +579,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		// Cleanup everything
 		g_wifiList.writeWifiList();
 		KillTimer(hDlg, g_timer);
-		{
-			Stream *s = xyz.setStream(NULL);
-			if(s) s->closeStream();
-		}
+		xyz.setStream(NULL);
 		PostQuitMessage(0);
 		break;
 

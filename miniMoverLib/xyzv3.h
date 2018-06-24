@@ -276,7 +276,8 @@ public:
 	// attach to a serial stream
 	// pass in NULL to disconnect from stream
 	// old stream is returned so you can deal with closing it
-	Stream* setStream(Stream *s);
+	void setStream(Stream *s);
+	bool isStreamSet() { return m_stream != NULL; }
 
 	// === query commands ===
 

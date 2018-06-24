@@ -261,7 +261,6 @@ bool Socket::openSocket(const char *ip, int port)
 
 			if(IS_VALID(m_soc)) 
 			{
-				usleep(500 * 1000); // spin for a bit
 				success = true;
 			}
 			else
