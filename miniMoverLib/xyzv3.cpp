@@ -142,17 +142,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-#ifdef _WIN32
-				Sleep(100); //****RemoveMe
-#else
-				usleep(100 * 1000);
-#endif
 		m_stream->writeStr(msgBuf);
-#ifdef _WIN32
-				Sleep(100); //****RemoveMe
-#else
-				usleep(100 * 1000);
-#endif
 
 		success = true;
 	}

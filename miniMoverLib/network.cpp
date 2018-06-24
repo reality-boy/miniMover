@@ -464,6 +464,13 @@ int Socket::write(const char *buf, const int len)
 
 	if(isOpen() && buf && len > 0) 
 	{
+		//****FixMe, sleep is a hack that makes networking work
+		// figure out how to get around this!
+#ifdef _WIN32
+		Sleep(100);
+#else
+		usleep(100 * 1000);
+#endif
 		int tLen = send(m_soc, buf, len, 0);
 		if(tLen != SOCKET_ERROR && tLen > 0)
 		{
@@ -473,6 +480,11 @@ int Socket::write(const char *buf, const int len)
 		}
 		else
 			debugPrint(DBG_WARN, "failed to write bytes: %s", getLastErrorMessage());
+#ifdef _WIN32
+		Sleep(100);
+#else
+		usleep(100 * 1000);
+#endif
 	}
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
