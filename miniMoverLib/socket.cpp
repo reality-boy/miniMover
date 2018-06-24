@@ -21,7 +21,7 @@
 
 #include "debug.h"
 #include "stream.h"
-#include "network.h"
+#include "socket.h"
 
 // uncomment to allow socket connections to time out
 //#define USE_NON_BLOCKING

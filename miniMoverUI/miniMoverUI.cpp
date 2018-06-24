@@ -28,7 +28,7 @@
 #include "timer.h"
 #include "stream.h"
 #include "serial.h"
-#include "network.h"
+#include "socket.h"
 #include "xyzv3.h"
 #include "XYZPrinterList.h"
 #include "XYZV3Thread.h"

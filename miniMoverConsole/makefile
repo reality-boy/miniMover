@@ -2,7 +2,7 @@ PROG = minimover
 CC = g++
 CPPFLAGS = -g -Wall -I../miniMoverLib/ -D _DEBUG
 LDFLAGS = 
-OBJS = minimover.o xyzv3.o serial_linux.o stream.o miniz.o debug.o aes.o timer.o network_linux.o 
+OBJS = minimover.o xyzv3.o serial_linux.o stream.o miniz.o debug.o aes.o timer.o socket_linux.o 
 
 $(PROG) : $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS)
@@ -19,8 +19,8 @@ serial_linux.o: ../miniMoverLib/serial_linux.cpp ../miniMoverLib/serial.h
 stream.o: ../miniMoverLib/stream.cpp ../miniMoverLib/stream.h
 	$(CC) $(CPPFLAGS) -c ../miniMoverLib/stream.cpp
 
-network_linux.o: ../miniMoverLib/network_linux.cpp ../miniMoverLib/network.h
-	$(CC) $(CPPFLAGS) -c ../miniMoverLib/network_linux.cpp
+socket_linux.o: ../miniMoverLib/socket_linux.cpp ../miniMoverLib/socket.h
+	$(CC) $(CPPFLAGS) -c ../miniMoverLib/socket_linux.cpp
 
 miniz.o: ../miniMoverLib/miniz.c ../miniMoverLib/miniz.h
 	$(CC) $(CPPFLAGS) -c ../miniMoverLib/miniz.c

@@ -33,7 +33,7 @@
 #include "aes.h"
 #include "stream.h"
 #include "serial.h"
-#include "network.h"
+#include "socket.h"
 #include "xyzv3.h"
 
 //****FixMe, keep track of 'end' messages and fire them

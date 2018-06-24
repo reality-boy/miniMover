@@ -10,7 +10,7 @@
 
 #include "stream.h"
 #include "serial.h"
-#include "network.h"
+#include "socket.h"
 #include "timer.h"
 #include "xyzv3.h"
 #include "XYZV3Thread.h"

@@ -17,7 +17,7 @@
 #include "timer.h"
 #include "stream.h"
 #include "serial.h"
-#include "network.h"
+#include "socket.h"
 #include "debug.h"
 #include "xyzv3.h"
 
