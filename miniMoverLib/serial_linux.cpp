@@ -17,13 +17,12 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-
-#include <errno.h>
 #include <assert.h>
 
 #include "debug.h"
@@ -34,7 +33,7 @@
 
 int SerialHelper::m_portCount = 0;
 int SerialHelper::m_defaultPortID = -1;
-SerialHelper::PortInfo SerialHelper::portInfo[maxPortCount] = {0};
+SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0};
 
 int SerialHelper::queryForPorts(const char *hint)
 {
@@ -44,7 +43,7 @@ int SerialHelper::queryForPorts(const char *hint)
 
     struct dirent *ent;
     DIR *dir = opendir("/dev");
-    while((ent = readdir(dir)) && m_portCount < maxPortCount) 
+    while((ent = readdir(dir)) && m_portCount < m_maxPortCount) 
 	{
         if(0 == strncmp("tty", ent->d_name, 3)) 
 		{
@@ -116,71 +115,88 @@ int baudFlag(int BaudRate)
 
 bool Serial::openSerial(const char *deviceName, int baudRate)
 {
-	// Close if already open
-	closeStream();
+	assert(deviceName);
+	assert(baudRate > 0);
 
-	// Open port
-    m_handle = open(deviceName, O_RDWR | O_NOCTTY);
-    if(isOpen())
+	if(deviceName)
 	{
-		// General configuration
-	    struct termios options;
-	    tcgetattr(m_handle, &options);
+		// if already connected just return
+		if(0 == strcmp(deviceName, m_deviceName) && 
+			m_baudRate == baudRate)
+			return true;
 
-		// don't take control of the port from the os
-		options.c_cflag |= CLOCAL;
+		// close out any previous connection
+		closeStream();
 
-		// enable reading from port
-		options.c_cflag |= CREAD;
+		// Open port
+	    m_handle = open(deviceName, O_RDWR | O_NOCTTY);
+	    if(isOpen())
+		{
+			// General configuration
+		    struct termios options;
+		    tcgetattr(m_handle, &options);
 
-		// 8 bit
-		options.c_cflag &= ~CSIZE;
-		options.c_cflag |= CS8;
+			// don't take control of the port from the os
+			options.c_cflag |= CLOCAL;
 
-		// no parity
-		options.c_cflag &= ~PARENB;
-		options.c_cflag &= ~CSTOPB;
+			// enable reading from port
+			options.c_cflag |= CREAD;
 
-		// no hardware flow control
+			// 8 bit
+			options.c_cflag &= ~CSIZE;
+			options.c_cflag |= CS8;
+
+			// no parity
+			options.c_cflag &= ~PARENB;
+			options.c_cflag &= ~CSTOPB;
+
+			// no hardware flow control
 #ifdef CNEW_RTSCTS
-		options.c_cflag &= ~CNEW_RTSCTS;
+			options.c_cflag &= ~CNEW_RTSCTS;
 #endif
 #ifdef CRTSCTS
-		options.c_cflag &= ~CRTSCTS;
+			options.c_cflag &= ~CRTSCTS;
 #endif
 
-		// no software flow control
-		options.c_iflag &= ~(IXON | IXOFF | IXANY);
+			// no software flow control
+			options.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-		// baudrate, translating from a number to Bflag
-	    int flag = baudFlag(baudRate);
-	    cfsetispeed(&options, flag);
-	    cfsetospeed(&options, flag);
+			// baudrate, translating from a number to Bflag
+		    int flag = baudFlag(baudRate);
+		    cfsetispeed(&options, flag);
+		    cfsetospeed(&options, flag);
 
-		// raw mode, not canonical
-		// that is don't buffer till newline
-		options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+			// raw mode, not canonical
+			// that is don't buffer till newline
+			options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-		// raw output, don't post process outgoing strings
-		options.c_oflag &= ~OPOST;
+			// raw output, don't post process outgoing strings
+			options.c_oflag &= ~OPOST;
 
-		// Timeouts configuration
-		// wait time in 10th of a second
-	    options.c_cc[VTIME] = 1; 
+			// Timeouts configuration
+			// wait time in 10th of a second
+		    options.c_cc[VTIME] = 1; 
 
-		// minimum number of characters to read, 0 is no minimum
-	    options.c_cc[VMIN]  = 0; 
+			// minimum number of characters to read, 0 is no minimum
+		    options.c_cc[VMIN]  = 0; 
 
-		// used to setup blocking/non blocking mode
-		// redundant, already set at open
-	    //fcntl(m_handle, F_SETFL, 0);
+			// used to setup blocking/non blocking mode
+			// redundant, already set at open
+		    //fcntl(m_handle, F_SETFL, 0);
 
-		// Validate configuration
-	    if(tcsetattr(m_handle, TCSANOW, &options) >= 0) 
-		{
-			return true;
+			// Validate configuration
+		    if(tcsetattr(m_handle, TCSANOW, &options) >= 0) 
+			{
+				return true;
+			}
+			else
+				debugPrint(DBG_WARN, "Serial::openSerial() tcsetattr failed with error %d", errno);
 		}
+		else
+			debugPrint(DBG_WARN, "Serial::openSerial() open failed with error %d", errno);
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::openSerial() failed invalid input");
 
 	// Close if already open
 	closeStream();
@@ -190,12 +206,12 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 
 void Serial::closeStream()
 {
-    if(isOpen())
+	if(isOpen())
 	{
-	    tcdrain(m_handle);
-	    close(m_handle);
+		tcdrain(m_handle);
+		close(m_handle);
 	}
-    m_handle = -1;
+	m_handle = -1;
 	m_baudRate = -1;
 	m_deviceName[0] = '\0';
 }
@@ -221,7 +237,7 @@ void Serial::clear()
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "Serial::clear() leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Serial::clear() leftover data: '%s'", buf);
 		}
 	}
 	else
@@ -233,27 +249,64 @@ int Serial::read(char *buf, int len)
 	assert(buf);
 	assert(len > 0);
 
-	int bytesRead = 0;
-
 	if(buf && len > 0)
 	{
 		buf[0] = '\0';
 		if(isOpen())
 		{
+#if 0 
+			// debug path, dolls out data in small chuncks
+			static int tbufBytes = 0;
+			static char tbuf[512];
+			if(tbufBytes > 0)
+			{
+				int l = min(34, min(len, tbufBytes));
+				strncpy(buf, tbuf, l);
+				buf[l] = '\0';
+
+				tbufBytes -= l;
+				if(tbufBytes > 0)
+					memcpy(tbuf, tbuf+l, tbufBytes);
+
+				debugPrint(DBG_LOG, "Serial::read() cache returned %d bytes", l);
+
+				return l;
+			}
+			else
+			{
+				memset(tbuf, 0, sizeof(tbuf));
+
+				int tLen = ::read(m_handle, tbuf, sizeof(tbuf));
+				if(tLen > 0)
+				{
+					tbufBytes = tLen;
+					int l = min(34, min(len, tbufBytes));
+					strncpy(buf, tbuf, l);
+					buf[l] = '\0';
+
+					tbufBytes -= l;
+					if(tbufBytes > 0)
+						memcpy(tbuf, tbuf+l, tbufBytes);
+
+					debugPrint(DBG_LOG, "Serial::read() returned %d bytes", l);
+
+					return l;
+				}
+				else
+					debugPrint(DBG_WARN, "Serial::read() failed with error %d", errno);
+			}
+#else
 			int tLen = ::read(m_handle, buf, len-1);
-			if (tLen > 0)
+			if(tLen > 0)
 			{
 				// success
-				bytesRead = tLen;
-
-				if(bytesRead > (len-1))
-					bytesRead = len-1;
-				buf[bytesRead] = '\0';
-
+				buf[tLen] = '\0';
 				debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
+				return tLen;
 			}
 			else
 				debugPrint(DBG_WARN, "Serial::read() failed with error %d", errno);
+#endif
 		}
 		else
 			debugPrint(DBG_WARN, "Serial::read() failed invalid connection");
@@ -261,7 +314,7 @@ int Serial::read(char *buf, int len)
 	else
 		debugPrint(DBG_WARN, "Serial::read() failed invalid input");
 
-	return bytesRead;
+	return 0;
 }
 
 int Serial::write(const char *buf, int len)
@@ -269,18 +322,16 @@ int Serial::write(const char *buf, int len)
 	assert(buf);
 	assert(len > 0);
 
-	int bytesWritten = 0;
-
 	if(buf && len > 0)
 	{
-	    if(isOpen())
+		if(isOpen())
 		{
-		    int tLen = ::write(m_handle, buf, len);
-		    if(tLen > 0)
+			int tLen = ::write(m_handle, buf, len);
+			if(tLen > 0)
 			{
 				// success
-				bytesWritten = tLen;
 				debugPrint(DBG_LOG, "Serial::write() sent: %d of %d bytes", tLen, len);
+				return tLen;
 			}
 			else
 				debugPrint(DBG_ERR, "Serial::write() failed with error %d", errno);
@@ -291,5 +342,5 @@ int Serial::write(const char *buf, int len)
 	else
 		debugPrint(DBG_WARN, "Serial::write() failed invalid input");
 
-	return bytesWritten;
+	return 0;
 }

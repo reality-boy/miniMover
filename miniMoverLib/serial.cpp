@@ -26,7 +26,7 @@
 
 int SerialHelper::m_portCount = 0;
 int SerialHelper::m_defaultPortID = -1;
-SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::maxPortCount] = {0};
+SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0};
 
 // enumerate all available ports and find there string name as well
 // only usb serial ports have a string name, but that is most serial devices these days
@@ -72,9 +72,9 @@ int SerialHelper::queryForPorts(const char *hint)
 						nPort = atoi(tstr+3);
 						if (nPort != -1)
 						{
-							// if this triggers we need to increase maxPortCount
-							assert(m_portCount < maxPortCount);
-							if(m_portCount < maxPortCount)
+							// if this triggers we need to increase m_maxPortCount
+							assert(m_portCount < m_maxPortCount);
+							if(m_portCount < m_maxPortCount)
 							{
 								sprintf(portInfo[m_portCount].deviceName, "\\\\.\\COM%d", nPort);
 
@@ -110,7 +110,7 @@ int SerialHelper::queryForPorts(const char *hint)
 								m_portCount++;
 							}
 							else
-								debugPrint(DBG_WARN, "SerialHelper::queryForPorts() maxPortCount exeeded %d", maxPortCount);
+								debugPrint(DBG_WARN, "SerialHelper::queryForPorts() m_maxPortCount exeeded %d", m_maxPortCount);
 						}
 					}
 				}
@@ -269,24 +269,28 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 	else
 		debugPrint(DBG_WARN, "Serial::openSerial() failed invalid input");
 
+	// Close if already open
 	closeStream();
+
 	return false;
 }
 
 void Serial::closeStream()
 {
 	if(isOpen())
+	{
 		CloseHandle(m_handle);
+	}
 	m_handle = NULL;
 	m_baudRate = -1;
 	m_deviceName[0] = '\0';
 }
 
-bool Serial::isOpen() 
-{ 
+bool Serial::isOpen()
+{
 	return m_handle != INVALID_HANDLE_VALUE; 
 }
- 
+
 void Serial::clear()
 {
 	// call parent
@@ -301,7 +305,7 @@ void Serial::clear()
 		if(ComStat.cbInQue)
 		{
 			// log any leftover data
-			const int len = 1024;
+			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
 				debugPrint(DBG_REPORT, "Serial::clear() leftover data: '%s'", buf);
@@ -341,10 +345,10 @@ int Serial::read(char *buf, int len)
 			}
 			else
 			{
-				memset(tbuf, 0, 512);
+				memset(tbuf, 0, sizeof(tbuf));
 
 				DWORD tLen;
-				if(ReadFile(m_handle, tbuf, 512, &tLen, NULL))
+				if(ReadFile(m_handle, tbuf, sizeof(tbuf), &tLen, NULL))
 				{
 					if(tLen > 0)
 					{
@@ -373,6 +377,7 @@ int Serial::read(char *buf, int len)
 			{
 				if(tLen > 0)
 				{
+					// success
 					buf[tLen] = '\0';
 					debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
 					return tLen;

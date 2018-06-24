@@ -20,7 +20,7 @@ public:
 	static const char* getPortDisplayName(int id) { return (id >= 0 && id < m_portCount) ? portInfo[id].displayName : NULL; }
 
 protected:
-	const static int maxPortCount = 24;
+	const static int m_maxPortCount = 24;
 
 	static int m_portCount;
 	static int m_defaultPortID;
@@ -33,7 +33,7 @@ protected:
 		char displayName[SERIAL_MAX_DEV_NAME_LEN];
 	};
 
-	static PortInfo portInfo[maxPortCount];
+	static PortInfo portInfo[m_maxPortCount];
 };
 
 //-----------------

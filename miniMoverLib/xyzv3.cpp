@@ -5,6 +5,7 @@
 # pragma warning(disable:4996) // live on the edge!
 # define MTX(a)(a)
 #else
+#include <unistd.h>
 //****FixMe, deal with these more properly!
 # define MTX(a)
 # define MAX_PATH 260
@@ -141,9 +142,18 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		Sleep(100); //****RemoveMe
+#ifdef _WIN32
+				Sleep(100); //****RemoveMe
+#else
+				usleep(100 * 1000);
+#endif
 		m_stream->writeStr(msgBuf);
-		Sleep(100); //****RemoveMe
+#ifdef _WIN32
+				Sleep(100); //****RemoveMe
+#else
+				usleep(100 * 1000);
+#endif
+
 		success = true;
 	}
 

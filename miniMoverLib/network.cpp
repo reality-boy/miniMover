@@ -271,7 +271,7 @@ int Socket::waitOnSocketReciev(int timeout_ms)
 	    tv.tv_sec = timeout_ms / 1000;
 	    tv.tv_usec = (timeout_ms % 1000) * 1000;
 
-		return select(m_soc + 1, &fdread, NULL, NULL, &tv);
+		ret = select(m_soc + 1, &fdread, NULL, NULL, &tv);
 	}
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
@@ -398,7 +398,7 @@ void Socket::clear() // is this ever needed?
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Socket::clear() leftover data: %s", buf);
 		}
 		*/
 	}

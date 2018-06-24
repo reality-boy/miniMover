@@ -25,7 +25,11 @@
 #include <string.h>
 
 #include "debug.h"
+#include "stream.h"
 #include "network.h"
+
+// uncomment to allow socket connections to time out
+//#define USE_NON_BLOCKING
 
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel)
@@ -151,50 +155,63 @@ unsigned long lookupAddress(const char* pcHost)
 	return addr;
 }
 
-bool waitOnSocketConnect(int soc, int timeout_ms)
+bool Socket::waitOnSocketConnect(int timeout_ms)
 {
-	fd_set fdread;
-    FD_ZERO(&fdread);
-    FD_SET(soc, &fdread);
+	if(IS_VALID(m_soc)) //really same as isOpen() 
+	{
+		fd_set fdread;
+	    FD_ZERO(&fdread);
+	    FD_SET(m_soc, &fdread);
 
-	fd_set fdwrite;
-    FD_ZERO(&fdwrite);
-    FD_SET(soc, &fdwrite);
+		fd_set fdwrite;
+	    FD_ZERO(&fdwrite);
+	    FD_SET(m_soc, &fdwrite);
 
-	timeval tv;
-    tv.tv_sec = timeout_ms / 1000;
-    tv.tv_usec = (timeout_ms % 1000) * 1000;
+		timeval tv;
+	    tv.tv_sec = timeout_ms / 1000;
+	    tv.tv_usec = (timeout_ms % 1000) * 1000;
 
-	int res = select(soc + 1, &fdread, &fdwrite, NULL, &tv);
-	if(res == 1)
-    {
-		int iResult;
-        socklen_t len = sizeof iResult;
-        getsockopt(soc, SOL_SOCKET, SO_ERROR, (char*)&iResult, &len);
+		int res = select(m_soc + 1, &fdread, &fdwrite, NULL, &tv);
+		if(res == 1)
+	    {
+			int iResult;
+	        socklen_t len = sizeof iResult;
+	        getsockopt(m_soc, SOL_SOCKET, SO_ERROR, (char*)&iResult, &len);
 
-		if(iResult != SOCKET_ERROR) 
-			return true; // success, connected with no timeout
-		else // failed with error
-			debugPrint(DBG_WARN, "wait failed with error: %s", getLastErrorMessage());
-    }
+			if(iResult != SOCKET_ERROR) 
+				return true; // success, connected with no timeout
+			else // failed with error
+				debugPrint(DBG_WARN, "wait failed with error: %s", getLastErrorMessage());
+	    }
+		else
+			debugPrint(DBG_LOG, "wait failed with timeout, %d:%s", res, getLastErrorMessage());
+	}
 	else
-		debugPrint(DBG_LOG, "wait failed with timeout, %d:%s", res, getLastErrorMessage());
+		debugPrint(DBG_LOG, "Not connected to server!");
 
 	return false;
 }
 
 // -1 - error, 0 - timeout, 1 - data ready
-int waitOnSocketReciev(int soc, int timeout_ms)
+int Socket::waitOnSocketReciev(int timeout_ms)
 {
-	fd_set fdread;
-    FD_ZERO(&fdread);
-    FD_SET(soc, &fdread);
+	int ret = -1;
+	if(isOpen())
+	{
+		fd_set fdread;
+	    FD_ZERO(&fdread);
+	    FD_SET(m_soc, &fdread);
 
-	timeval tv;
-    tv.tv_sec = timeout_ms / 1000;
-    tv.tv_usec = (timeout_ms % 1000) * 1000;
+		timeval tv;
+	    tv.tv_sec = timeout_ms / 1000;
+	    tv.tv_usec = (timeout_ms % 1000) * 1000;
 
-	return select(soc + 1, &fdread, NULL, NULL, &tv);
+		ret = select(m_soc + 1, &fdread, NULL, NULL, &tv);
+	}
+	else
+		debugPrint(DBG_LOG, "Not connected to server!");
+
+	return ret;
 }
 
 Socket::Socket()
@@ -210,64 +227,40 @@ Socket::~Socket()
 bool Socket::openSocket(const char *ip, int port) 
 {
 	bool success = false;
-	int iResult;
 
 	//if(m_isInit)
 	{
-		addrinfo hints;
-		addrinfo *adrInf = NULL;
-
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-		//hints.ai_protocol = IPPROTO_TCP;
-
-		char portStr[32];
-		sprintf(portStr, "%d", port);
-
-		iResult = getaddrinfo(ip, portStr, &hints, &adrInf);
-		if(iResult == 0) 
+		// Create a SOCKET for connecting to server
+		m_soc = socket(AF_INET, SOCK_STREAM, 0);
+		if(IS_VALID(m_soc)) 
 		{
-			// Attempt to connect to an address until one succeeds
-			// in our case this could be either an ipv4 or ipv6 address
-			for(addrinfo *pInfo = adrInf; pInfo != NULL; pInfo = pInfo->ai_next) 
+#ifdef USE_NON_BLOCKING
+			// turn on non blocking mode
+			unsigned long arg = 1;
+			ioctl(m_soc, FIONBIO, &arg);
+#endif
+			sockaddr_in addr;
+			addr.sin_family = AF_INET;
+			addr.sin_addr.s_addr = lookupAddress(ip);
+			addr.sin_port = htons(port);
+
+			// Connect the socket to the given IP and port
+			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR)
 			{
-				// Create a SOCKET for connecting to server
-				m_soc = socket(pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol);
-				if(IS_VALID(m_soc)) 
-				{
-					// turn on non blocking mode
-					unsigned long arg = 1;
-					ioctl(m_soc, FIONBIO, &arg);
-
-					// Connect to server.
-					iResult = connect(m_soc, pInfo->ai_addr, (int)pInfo->ai_addrlen);
-					/*
-					if(iResult != SOCKET_ERROR) 
-						break; // success we found a connection
-					else
-						debugPrint(DBG_WARN, "connect failed with error: %s", getLastErrorMessage());
-					*/
-
-					if(waitOnSocketConnect(m_soc, 5000))
-						break;
-
-					closeStream();
-				}
-				else
-					debugPrint(DBG_WARN, "socket failed with error: %s", getLastErrorMessage());
-			}
-			freeaddrinfo(adrInf);
-
-			if(IS_VALID(m_soc)) 
-			{
+#ifdef USE_NON_BLOCKING
+				success = waitOnSocketConnect(5000);
+#else
 				success = true;
+#endif
 			}
 			else
-				debugPrint(DBG_WARN, "Unable to connect to server!");
+				debugPrint(DBG_WARN, "socket connect failed with error: %s", getLastErrorMessage());
+
+			if(!success)
+				close(m_soc);
 		}
 		else
-			debugPrint(DBG_WARN, "getaddrinfo failed with error: %d:%s", iResult, gai_strerror(iResult));
+			debugPrint(DBG_WARN, "socket failed with error: %s", getLastErrorMessage());
 	}
 	//else
 	//	debugPrint(DBG_WARN, "winsock not initialized");
@@ -279,36 +272,22 @@ void Socket::closeStream()
 {
 	if(isOpen()) 
 	{
-		// tell server we are exiting
-		if(shutdown(m_soc, SHUT_WR) != SOCKET_ERROR) 
-		{
-			// wait for close signal, and drain connection
-			char tbuf[1024];
-			while(true)
-			{
-				int bytes = recv(m_soc, tbuf, 1024, 0);
-				if (bytes == SOCKET_ERROR)
-				{
-					//debugPrint(DBG_WARN, "close socket drain failed!");
-					//return false;
-					break;
-				}
-				else if (bytes != 0)
-					debugPrint(DBG_WARN, "extra bytes recieved at close: %d", bytes);
-				else
-					break;
-			}
+		// drain buffers
+		clear();
 
+		// tell server we are exiting
+		if(shutdown(m_soc, SHUT_RDWR) != SOCKET_ERROR) 
+		{
 			// actually close the socket
 			if(close(m_soc) != SOCKET_ERROR)
 			{
 				// success
 			}
 			else
-				debugPrint(DBG_WARN, "close socket failed!");
+				debugPrint(DBG_WARN, "close socket failed with error: %s", getLastErrorMessage());
 		}
 		else
-			debugPrint(DBG_LOG, "shutdown failed!");
+			debugPrint(DBG_LOG, "shutdown failed with error: %s", getLastErrorMessage());
 	}
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
@@ -328,8 +307,10 @@ void Socket::clear() // is this ever needed?
 
 	if(isOpen())
 	{
+		//****FixMe, how do we do this?
+		/*
 		// check if we have data waiting, without stalling
-		if(1 == waitOnSocketReciev(m_soc, 50))
+		if(1 == waitOnSocketReciev(50))
 		{
 			// log any leftover data
 			const int len = 4096;
@@ -337,6 +318,7 @@ void Socket::clear() // is this ever needed?
 			if(read(buf, len))
 				debugPrint(DBG_REPORT, "Socket::clear() leftover data: %s", buf);
 		}
+		*/
 	}
 }
 
@@ -346,11 +328,17 @@ int Socket::read(char *buf, int len)
 
 	if(buf)
 	{
-		*buf = '\0';
+		buf[0] = '\0';
+
 		if(isOpen() && len > 0) 
 		{
-			if(1 == waitOnSocketReciev(m_soc, 50))
+#ifdef USE_NON_BLOCKING
+			// wait for data without blocking
+			int ret = waitOnSocketReciev(50);
+			// if data available
+			if(1 == ret)
 			{
+#endif
 				int tLen = recv(m_soc, buf, len-1, 0);
 				if(tLen != SOCKET_ERROR)
 				{
@@ -370,9 +358,16 @@ int Socket::read(char *buf, int len)
 				}
 				else
 					debugPrint(DBG_WARN, "read failed with error: %s", getLastErrorMessage());
+#ifdef USE_NON_BLOCKING
 			}
-			//else
-			//	debugPrint(DBG_WARN, "read timeout");
+			else
+			{
+				if(-1 == ret)
+					debugPrint(DBG_WARN, "read errored out");
+				//else // 0
+				//	debugPrint(DBG_WARN, "read timeout");
+			}
+#endif
 		}
 		else
 			debugPrint(DBG_LOG, "Not connected to server!");
@@ -388,7 +383,7 @@ int Socket::write(const char *buf, const int len)
 	if(isOpen() && buf && len > 0) 
 	{
 		int tLen = send(m_soc, buf, len, 0);
-		if(tLen != SOCKET_ERROR)
+		if(tLen != SOCKET_ERROR && tLen > 0)
 		{
 			// success
 			bytesWritten = tLen;
@@ -397,6 +392,8 @@ int Socket::write(const char *buf, const int len)
 		else
 			debugPrint(DBG_WARN, "failed to write bytes: %s", getLastErrorMessage());
 	}
+	else
+		debugPrint(DBG_LOG, "Not connected to server!");
 
 	return bytesWritten;
 }
