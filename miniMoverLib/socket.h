@@ -30,8 +30,7 @@ public:
 
 protected:
 	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);
-	bool waitOnSocketConnect(int timeout_ms);
-	int waitOnSocketReciev(int timeout_ms);
+	int waitOnSocket(int timeout_ms, bool checkWrite);
 
 #ifdef _WIN32
 	bool m_isInit;

@@ -29,7 +29,7 @@
 #include "socket.h"
 
 // uncomment to allow socket connections to time out
-//#define USE_NON_BLOCKING
+#define USE_NON_BLOCKING
 
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel)
@@ -155,8 +155,9 @@ unsigned long lookupAddress(const char* pcHost)
 	return addr;
 }
 
-bool Socket::waitOnSocketConnect(int timeout_ms)
+int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 {
+	int ret = -1;
 	if(IS_VALID(m_soc)) //really same as isOpen() 
 	{
 		fd_set fdread;
@@ -167,49 +168,45 @@ bool Socket::waitOnSocketConnect(int timeout_ms)
 	    FD_ZERO(&fdwrite);
 	    FD_SET(m_soc, &fdwrite);
 
+		fd_set fderror;
+	    FD_ZERO(&fderror);
+	    FD_SET(m_soc, &fderror);
+
 		timeval tv;
 	    tv.tv_sec = timeout_ms / 1000;
 	    tv.tv_usec = (timeout_ms % 1000) * 1000;
 
-		int res = select(m_soc + 1, &fdread, &fdwrite, NULL, &tv);
-		if(res == 1)
+		// ret > 0 indicates an event triggered
+		// ret == 0 indicates we hit the timeout
+		// ret == -1 indicates error 
+		ret = select(m_soc + 1, &fdread, (checkWrite) ? &fdwrite : NULL, &fderror, &tv);
+		if(ret > 0)
 	    {
 			int iResult;
 	        socklen_t len = sizeof iResult;
-	        getsockopt(m_soc, SOL_SOCKET, SO_ERROR, (char*)&iResult, &len);
-
-			if(iResult != SOCKET_ERROR) 
-				return true; // success, connected with no timeout
+	        ret = getsockopt(m_soc, SOL_SOCKET, SO_ERROR, (char*)&iResult, &len);
+			if(ret >= 0)
+			{
+				if(iResult == 0) 
+				{
+					debugPrint(DBG_LOG, "waitOnSocket succeeded");
+					return 1; // success, connected with no timeout
+				}
+				else // failed with error
+					debugPrint(DBG_WARN, "waitOnSocket failed with error: %s", getLastErrorMessage(iResult));
+			}
 			else // failed with error
-				debugPrint(DBG_WARN, "wait failed with error: %s", getLastErrorMessage());
+				debugPrint(DBG_WARN, "waitOnSocket getsockopt failed with error: %s", getLastErrorMessage());
+
+			ret = -1;
 	    }
+		else if(ret == 0)
+			debugPrint(DBG_LOG, "waitOnSocket hit timeout, %s", ret, getLastErrorMessage());
 		else
-			debugPrint(DBG_LOG, "wait failed with timeout, %d:%s", res, getLastErrorMessage());
+			debugPrint(DBG_WARN, "waitOnSocket failed with timeout, %d:%s", ret, getLastErrorMessage());
 	}
 	else
-		debugPrint(DBG_LOG, "Not connected to server!");
-
-	return false;
-}
-
-// -1 - error, 0 - timeout, 1 - data ready
-int Socket::waitOnSocketReciev(int timeout_ms)
-{
-	int ret = -1;
-	if(isOpen())
-	{
-		fd_set fdread;
-	    FD_ZERO(&fdread);
-	    FD_SET(m_soc, &fdread);
-
-		timeval tv;
-	    tv.tv_sec = timeout_ms / 1000;
-	    tv.tv_usec = (timeout_ms % 1000) * 1000;
-
-		ret = select(m_soc + 1, &fdread, NULL, NULL, &tv);
-	}
-	else
-		debugPrint(DBG_LOG, "Not connected to server!");
+		debugPrint(DBG_WARN, "waitOnSocket failed not connected to server!");
 
 	return ret;
 }
@@ -245,14 +242,15 @@ bool Socket::openSocket(const char *ip, int port)
 			addr.sin_port = htons(port);
 
 			// Connect the socket to the given IP and port
-			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR)
-			{
+			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR
 #ifdef USE_NON_BLOCKING
-				success = waitOnSocketConnect(5000);
+				|| errno == EWOULDBLOCK
+				|| errno == EINPROGRESS)
+				success = (waitOnSocket(5000, true) > 0);
 #else
+				)
 				success = true;
 #endif
-			}
 			else
 				debugPrint(DBG_WARN, "socket connect failed with error: %s", getLastErrorMessage());
 
@@ -287,7 +285,7 @@ void Socket::closeStream()
 				debugPrint(DBG_WARN, "close socket failed with error: %s", getLastErrorMessage());
 		}
 		else
-			debugPrint(DBG_LOG, "shutdown failed with error: %s", getLastErrorMessage());
+			debugPrint(DBG_WARN, "shutdown failed with error: %s", getLastErrorMessage());
 	}
 	else
 		debugPrint(DBG_LOG, "Not connected to server!");
@@ -310,7 +308,7 @@ void Socket::clear() // is this ever needed?
 		//****FixMe, how do we do this?
 		/*
 		// check if we have data waiting, without stalling
-		if(1 == waitOnSocketReciev(50))
+		if(waitOnSocket(50, false) > 0)
 		{
 			// log any leftover data
 			const int len = 4096;
@@ -334,7 +332,8 @@ int Socket::read(char *buf, int len)
 		{
 #ifdef USE_NON_BLOCKING
 			// wait for data without blocking
-			int ret = waitOnSocketReciev(50);
+			int ret = waitOnSocket(50, false);
+
 			// if data available
 			if(1 == ret)
 			{
@@ -360,17 +359,14 @@ int Socket::read(char *buf, int len)
 					debugPrint(DBG_WARN, "read failed with error: %s", getLastErrorMessage());
 #ifdef USE_NON_BLOCKING
 			}
-			else
-			{
-				if(-1 == ret)
-					debugPrint(DBG_WARN, "read errored out");
-				//else // 0
-				//	debugPrint(DBG_WARN, "read timeout");
-			}
+			else if(0 == ret)
+				debugPrint(DBG_LOG, "read timeout");
+			else // -1 == ret
+				debugPrint(DBG_WARN, "read errored out");
 #endif
 		}
 		else
-			debugPrint(DBG_LOG, "Not connected to server!");
+			debugPrint(DBG_WARN, "Not connected to server!");
 	}
 
 	return bytesRead;
@@ -405,7 +401,7 @@ int Socket::write(const char *buf, const int len)
 #endif
 	}
 	else
-		debugPrint(DBG_LOG, "Not connected to server!");
+		debugPrint(DBG_WARN, "Not connected to server!");
 
 	return bytesWritten;
 }
