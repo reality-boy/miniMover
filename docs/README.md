@@ -31,14 +31,6 @@ With these printers I can only convert from gcode to 3w files and back.  They us
    da Vinci 2.0 Duo  
    da Vinci 2.0A Duo  
 
-This uses a modified version of the tiny-AES project by kkoke.
-
-https://github.com/kokke/tiny-AES-c
-
-It also uses a stripped down version of miniz by richgel999
-
-https://github.com/richgel999/miniz
-
 This comes in two flavors, a win32 GUI and a command line utility.
 
 ![My image](http://soliforum.com/i/?PDJlohX.png)
@@ -68,6 +60,22 @@ usage: miniMover <args>
   -z num - jog z axis by num, or 10 if num not provided
   file - print file if .gcode, otherwise convert to gcode if .3w
 ```
+
+This uses a modified version of the tiny-AES project by kkoke.
+
+https://github.com/kokke/tiny-AES-c
+
+It also uses a stripped down version of miniz by richgel999
+
+https://github.com/richgel999/miniz
+
+For downloading firmware from the website this also uses Internet.hpp from Elmü's code project
+
+https://www.codeproject.com/Articles/15397/Cabinet-File-CAB-Compression-and-Extraction
+
+and the simpleJSON library by MJPA.
+
+https://github.com/MJPA/SimpleJSON
 
 This is inspired by the threedub programs listed below but it is based on a fresh reverse engineering of the serial protocol.
 
