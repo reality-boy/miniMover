@@ -654,7 +654,8 @@ bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
 
 					// if not getting all, then done once
 					// we see all the requested values
-					if(q[0] != 'a')
+					// but only on wifi!
+					if(q[0] != 'a' && m_stream->isWIFI())
 					{
 						isDone = true;
 						for(int i=0; i<count; i++)
