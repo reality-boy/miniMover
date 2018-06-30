@@ -334,7 +334,7 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 		if(inf)
 			name = inf->screenName;
 
-		sprintf(tstr, "%s (%s)", name, g_wifiList.m_list[i].m_ip);
+		sprintf(tstr, "%s (%s:%d)", name, g_wifiList.m_list[i].m_ip, g_wifiList.m_list[i].m_port);
 		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
 		ent++;
 	}
@@ -365,106 +365,112 @@ void MainDlgUpdate(HWND hDlg)
 {
 	debugReduceNoise(true);
 	// don't set wait cursor since this triggers 2x a second
-	if(!g_threadRunning && xyz.queryStatus())
+	if(!g_threadRunning && xyz.isStreamSet())
 	{
-		const XYZPrinterStatus *st = xyz.getPrinterStatus();
-		const XYZPrinterInfo *inf = xyz.getPrinterInfo();
-
-		if(st->isValid)
+		if(xyz.queryStatus())
 		{
-			MainDlgUpdateStatusList(hDlg, st, inf);
+			const XYZPrinterStatus *st = xyz.getPrinterStatus();
+			const XYZPrinterInfo *inf = xyz.getPrinterInfo();
 
-			SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
-			SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
-
-			// only update if changed
-			if(g_prSt.zOffset != st->zOffset)
-				SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
-
-			//****FixMe, save these off in the registry so we can
-			// detect the printer when the usb is disconnected
-			// st->N4NetIP
-			// st->N4NetSSID
-			// st->nMachineName
-			// 
-			// or check out
-			// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting
-			//   DefaultIP     192.168.0.20
-			//   DefaultPort   COM3
-			//   DefaultPrinter  XYZprinting da Vinci miniMaker
-			//   LastPrinterSN 3FM1XPUS5CA68P0591
-			// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\3FM1XPUS5CA68P0591
-
-			// I believe the W functions represent wifi network as configured on the machine
-			// and 4 functions represent the network as connected
-			if(!g_wifiOptionsEdited)
+			if(st->isValid)
 			{
-				const char *prSSID = (g_prSt.WSSID[0]) ? g_prSt.WSSID : g_prSt.N4NetSSID;
-				const char *SSID = (st->WSSID[0]) ? st->WSSID : st->N4NetSSID;
+				MainDlgUpdateStatusList(hDlg, st, inf);
+
+				SendDlgItemMessage(hDlg, IDC_CHECK_BUZZER, BM_SETCHECK, (WPARAM)(st->sBuzzerEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+				SendDlgItemMessage(hDlg, IDC_CHECK_AUTO, BM_SETCHECK, (WPARAM)(st->oAutoLevelEnabled) ? BST_CHECKED : BST_UNCHECKED, 0);
+
 				// only update if changed
-				if(0!=strcmp(prSSID, SSID))
-					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
+				if(g_prSt.zOffset != st->zOffset)
+					SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
 
-				const char *prChan = (g_prSt.WChannel[0]) ? g_prSt.WChannel : g_prSt.N4NetChan;
-				const char *chan = (st->WChannel[0]) ? st->WChannel : st->N4NetChan;
-				// only update if changed
-				if(0!=strcmp(prChan, chan))
-					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_CHAN, chan);
+				//****FixMe, save these off in the registry so we can
+				// detect the printer when the usb is disconnected
+				// st->N4NetIP
+				// st->N4NetSSID
+				// st->nMachineName
+				// 
+				// or check out
+				// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting
+				//   DefaultIP     192.168.0.20
+				//   DefaultPort   COM3
+				//   DefaultPrinter  XYZprinting da Vinci miniMaker
+				//   LastPrinterSN 3FM1XPUS5CA68P0591
+				// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\3FM1XPUS5CA68P0591
 
-				/*
-				if(*SSID || *chan)
-					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "******");
-				else
-					SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "");
-				*/
-			}
-
-			//****FixMe, what one matches this?
-			//SetDlgItemTextA(hDlg, IDC_COMBO_ENERGY_SAVING, st->???);
-
-			// only update if changed
-			if(0 != strcmp(g_prSt.nMachineName, st->nMachineName))
-				SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
-
-			int pct = max(g_printPct, st->dPrintPercentComplete);
-			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
-
-			if(0 != strcmp(g_prSt.lLang, st->lLang))
-			{
-				int id = 0;
-				for(id=0; id<XYZPrintingLangCount; id++)
+				// I believe the W functions represent wifi network as configured on the machine
+				// and 4 functions represent the network as connected
+				if(!g_wifiOptionsEdited)
 				{
-					if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
-						break;
+					const char *prSSID = (g_prSt.WSSID[0]) ? g_prSt.WSSID : g_prSt.N4NetSSID;
+					const char *SSID = (st->WSSID[0]) ? st->WSSID : st->N4NetSSID;
+					// only update if changed
+					if(0!=strcmp(prSSID, SSID))
+						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, SSID);
+
+					const char *prChan = (g_prSt.WChannel[0]) ? g_prSt.WChannel : g_prSt.N4NetChan;
+					const char *chan = (st->WChannel[0]) ? st->WChannel : st->N4NetChan;
+					// only update if changed
+					if(0!=strcmp(prChan, chan))
+						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_CHAN, chan);
+
+					/*
+					if(*SSID || *chan)
+						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "******");
+					else
+						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, "");
+					*/
 				}
 
-				// default to en if not found
-				if(id == XYZPrintingLangCount)
-					id = 0;
+				//****FixMe, what one matches this?
+				//SetDlgItemTextA(hDlg, IDC_COMBO_ENERGY_SAVING, st->???);
 
-				SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
-			}
+				// only update if changed
+				if(0 != strcmp(g_prSt.nMachineName, st->nMachineName))
+					SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
 
-			// if network info changed
-			if(0 != strcmp(g_prSt.iMachineSerialNum, st->iMachineSerialNum) ||
-			   0 != strcmp(g_prSt.N4NetIP, st->N4NetIP) )
-			{
-				// if contains wifi info
-				if(st->N4NetIP[0])
+				int pct = max(g_printPct, st->dPrintPercentComplete);
+				SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
+
+				if(0 != strcmp(g_prSt.lLang, st->lLang))
 				{
-					// find entry, adding new if not found
-					WifiEntry *ent = g_wifiList.findEntry(st->iMachineSerialNum, true);
-					if(ent)
-						ent->set(st->iMachineSerialNum, st->N4NetIP);
-				}
-			}
+					int id = 0;
+					for(id=0; id<XYZPrintingLangCount; id++)
+					{
+						if(0 == strcmp(st->lLang, XYZPrintingLang[id].abrv))
+							break;
+					}
 
-			// copy to backup
-			memcpy(&g_prSt, st, sizeof(g_prSt));
+					// default to en if not found
+					if(id == XYZPrintingLangCount)
+						id = 0;
+
+					SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_SETCURSEL, id, 0);
+				}
+
+				// if network info changed
+				if(0 != strcmp(g_prSt.iMachineSerialNum, st->iMachineSerialNum) ||
+				   0 != strcmp(g_prSt.N4NetIP, st->N4NetIP) )
+				{
+					// if contains wifi info
+					if(st->N4NetIP[0])
+					{
+						// find entry, adding new if not found
+						WifiEntry *ent = g_wifiList.findEntry(st->iMachineSerialNum, true);
+						if(ent)
+							ent->set(st->iMachineSerialNum, st->N4NetIP);
+					}
+				}
+
+				// copy to backup
+				memcpy(&g_prSt, st, sizeof(g_prSt));
+			}
 		}
+		else
+			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
 	}
 	else
 		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+
 	debugReduceNoise(false);
 }
 
@@ -496,16 +502,14 @@ void MainDlgConnect(HWND hDlg)
 			MainDlgSetStatus(hDlg, "connected");
 		}
 		// fall back to wifi if no serial
-		/*
 		else if(g_wifiList.m_count > 0)
 		{
-			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, 9100))
+			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, g_wifiList.m_list[0].m_port))
 			{
 				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
 			}
 		}
-		*/
 	}
 	// else if serial port
 	else if(comID >= g_listSerialOffset)
@@ -523,7 +527,7 @@ void MainDlgConnect(HWND hDlg)
 		int id = comID - g_listWifiOffset;
 		if(id >=0 && id < g_wifiList.m_count)
 		{
-			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, 9100))
+			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port))
 			{
 				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
