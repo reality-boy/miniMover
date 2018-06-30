@@ -644,7 +644,12 @@ bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
 				{
 					//****FixMe, returns E4$\n or E7$\n sometimes
 					// in those cases we just ignore the error and keep going
-					isDone = true;
+
+					// if error is E1$ then quite
+					// otherwise expect $ on next line to terminate string
+					if(buf[1] && buf[2] == '$')
+						isDone = true;
+
 					debugPrint(DBG_WARN, "recieved error: %s", buf);
 				}
 				else if(parseStatusSubstring(buf))
