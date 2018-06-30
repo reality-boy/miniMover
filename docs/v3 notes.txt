@@ -1,6 +1,62 @@
 //*********************
 // Serial: 115200 baud, 8 bit, 0 parity, 1 stop, 
 
+
+//*********************
+// known printers
+
+//  prog	model_num		file3w_model	serial	nz fv sp cp dim LxWxH		name
+//
+//  older communication protocol
+//
+//	F10,	"dvF100B000",	"daVinciF10",	3DP01P,	0, 2, 1, 1, 200x200x200,	"da Vinci 1.0"       
+//	F10A,	"dvF100A000",	"daVinciF10",	3F10AP,	0, 2, 1, 1, 200x200x200,	"da Vinci 1.0A"
+//	F10SA,	"dvF10SA000",	"daVinciF10",	3S10AP,	0, 2, 1, 1, 200x200x200,	"da Vinci AIO"
+//	F20,	"dvF200B000",	"daVinciF20",	3F20XP,	0, 2, 1, 1, 200x150x200,	"da Vinci 2.0 Duo"
+//	F20A,	"dvF200A000",	"daVinciF20",	3F20AP,	0, 2, 1, 1, 200x150x200,	"da Vinci 2.0A Duo"
+//
+//  v3 protocol
+//
+//	F11,	"dvF110B000",	"daVinciF11",	3F11XP,	0, 2, 1, 3, 200x200x200,	"da Vinci 1.1 Plus" //???? I'm suspicious of this one, think it belongs above
+//
+//	FN1X,	"dv1NX0A000",	"dv1NX0A000",	3FN1XP,	1, 2, 1, 3, 120x120x120,	"da Vinci Nano"
+//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3, 150x150x150,	"da Vinci Mini w" // may show up as "dv1MW0B000"
+//	FM1X,	"dv1MX0A000",	"dv1MX0A000",	3FM1XP,	1, 2, 1, 3, 150x150x150,	"da Vinci miniMaker"
+//	FJR10,	"dv1J00A000",	"daVinciJR10",	??????,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0"
+//	FJR10W,	"dv1JW0A000",	"daVinciJR10W",	3F1JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0 Wireless"
+//	F1JS,	"dv1JS0A000",	"dv1JSOA000",	3F1JSP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 3in1"
+//	FJR20M,	"dv2JW0A000",	"daVinciJR20W",	3F2JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 2.0 Mix"
+//	FJR10A,	"dv1JA0A000",	"dv1JA0A000",	3F1JAP,	1, 2, 1, 3, 175x175x175,	"da Vinci Jr. 1.0A"
+//
+//  new file format
+//
+//	FJR10PRO,"dv1JP0A000",	"dv1JP0A000",	3F1JPP,	1, 5, 2, 3, 150x150x150,	"da Vinci Jr. 1.0 Pro"
+//	F1JO,	"dv1JSOA000",	"daVinciJR10S",	3F1JOP,	1, 5, 2, 3, 150x150x150,	"da Vinci Jr. 3in1 (Open filament)"
+//	F1AW,	"dvF1W0A000",	"daVinciAW10",	3F1AWP,	1, 5, 2, 3, 200x200x200,	"da Vinci 1.0 Pro"
+//	F1AS,	"dvF1WSA000",	"daVinciAS10",	3F1ASP,	1, 5, 2, 3, 200x200x190,	"da Vinci 1.0 Pro 3in1"
+//	F1SW,	"dv1SW0A000",	"dv1SW0A000",	3F1SWP,	1, 5, 2, 3, 300x300x300,	"da Vinci 1.0 Super"
+//
+//  unknown
+//
+//	F1CP,	"dv1CP0A000",
+//	F11A,	"dvF110A000",
+//	F11P,	"dvF110P000",
+//	F11SA,	"dvF11SA000",
+//	F21,	"dvF210B000",
+//	F21A,	"dvF210A000",
+//	F21P,	"dvF210P000",
+//
+// prog internal program id
+// model_number what is reported here
+// file3w_model model number used in file format
+// serial first 6 bytes of machine serial number
+// nz non zip
+// fv file format version
+// sp SWPublishVersion
+// cp communication protocol, v3 is what is outlined here, v1 is older
+// dim build volume
+// name human readable model name
+
 //*********************
 // reg keys
 
@@ -30,6 +86,7 @@ XYZv3/uploadDidFinish
 
 //************************
 // Send_Query_command or aboutconnect, SendCmd(), ActionOrder, queryIp (check ExcuteOrder)
+// on wifi any query other than a does not terminate with a $ sign
 // XYZv3/query=
 
 // Action Order or query all
@@ -63,7 +120,7 @@ XYZv3/query=a
 	//W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
 	X:2,GB-0002-0000-TH-68T-0250-5482
 	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
-
+	$
 
 // da Vinci miniMaker
 XYZv3/query=a
@@ -86,6 +143,7 @@ XYZv3/query=a
 	X:2,GB-0002-0000-TH-68T-0250-9579
 	l:en
 	z:321
+	$
 
 // da Vinci mini w
 XYZv3/query=a
@@ -110,6 +168,7 @@ XYZv3/query=a
 	z:266
 	V:5.0.8
 	4:{"wlan":{"ip":"192.168.1.117","ssid":"TUCKER_HOME","channel":"0","rssiValue":"0","MAC":"54:8c:a0:06:7e:48"}}
+	$
 
 // da Vinci 1.0 Pro
 XYZv3/query=a
@@ -140,12 +199,14 @@ XYZv3/query=a
 //   xx - deg C
 XYZv3/query=b 
 	b:20
+	$
 
 // Calibration values, only on miniMaker machines?
 // These are the 9 bed level sensor readings
 // c:{x1,x2,x3,x4,x5,x6,x7,x8,x9}
 XYZv3/query=c
 	c:{448,464,462,448,457,449,414,436,426}
+	$
 
 // print status
 // d:ps,el,es
@@ -155,11 +216,15 @@ XYZv3/query=c
 //   a value of 0,0,0 indicates no job is running
 XYZv3/query=d
 	d:0,0,0
+	$
 
 // error status
 // e:ec,optional?
 //   ec - some sort of string
-	/*
+XYZv3/query=e
+	e:0
+	$
+
 	low level error codes (numbers in brackets)
 
 	0003 Print bed heating problem
@@ -265,9 +330,7 @@ XYZv3/query=d
 	1073742851: M_FILAMENT_LOW
 	1073742852: M_FILAMENT_LOW_TO_EMPTY
 	1073742853: M_FILAMENT_END
-	*/
-XYZv3/query=e
-	e:0
+
 
 // filament remaining
 // f:ct,len,len2
@@ -276,6 +339,7 @@ XYZv3/query=e
 //   len2 - filament num2 left in millimeters, optional
 XYZv3/query=f
 	f:1,84090
+	$
 
 // unused
 XYZv3/query=g
@@ -297,12 +361,12 @@ XYZv3/query=h
 //   DDDDD ??? 
 XYZv3/query=i
 	i:3FM1XPUS5CA68P0591
+	$
 
-// printer status
-// j:st,sb
-//   st - status id
-//   sb - substatus id, optional
-/*
+	// printer status
+	// j:st,sb
+	//   st - status id
+	//   sb - substatus id, optional
    status ID:
 
    // These don't seem to have substates
@@ -362,27 +426,27 @@ XYZv3/query=i
 	9700 STATE_PRINT_BUSY
 	9800 STATE_PRINT_SCANNER_IDLE
 	9801 STATE_PRINT_SCANNER_RUNNING
-*/
+
 XYZv3/query=j
 	j:9511,0
+	$
 
-// material type
-// k:xx
-//   xx is material type, in hex?
-//   one of 41 46 47 50 51 54 56
-/*
-switch (FILAMANEE.material)
-{
-case 41: return "ABS";
-case 46: return "TPE";
-case 47: return "PETG";
-case 50: return "PLA";
-case 51: return "PLA";
-case 54: return "Tough PLA";
-case 56: return "PVA";
-default: return "---";
-}
-*/
+	// material type
+	// k:xx
+	//   xx is material type, in hex?
+	//   one of 41 46 47 50 51 54 56
+	switch (FILAMANEE.material)
+	{
+	case 41: return "ABS";
+	case 46: return "TPE";
+	case 47: return "PETG";
+	case 50: return "PLA";
+	case 51: return "PLA";
+	case 54: return "Tough PLA";
+	case 56: return "PVA";
+	default: return "---";
+	}
+
 XYZv3/query=k
 	// not used on miniMaker
 
@@ -391,16 +455,19 @@ XYZv3/query=k
 //   ln is language, one of en, fr, it, de, es, jp
 XYZv3/query=l
 	l:en
+	$
 
 // ?????
 XYZv3/query=m
 	m:0,0,0
+	$
 
 // printer name
 // n:nm
 //   nm is name as a string
 XYZv3/query=n
 	n:daVinci Mini 1
+	$
 
 // print options
 // o:ps,tt,cc,al
@@ -410,65 +477,14 @@ XYZv3/query=n
 //   al is auto leveling on if a+
 XYZv3/query=o
 	o:p8,t1,c1,a+
+	$
 
 // printer model number
 // p:mn
 //   mn is model_number
-//
-//  prog	model_num		file3w_model	serial	nz fv sp cp dim LxWxH		name
-//
-//  older communication protocol
-//
-//	F10,	"dvF100B000",	"daVinciF10",	3DP01P,	0, 2, 1, 1, 200x200x200,	"da Vinci 1.0"       
-//	F10A,	"dvF100A000",	"daVinciF10",	3F10AP,	0, 2, 1, 1, 200x200x200,	"da Vinci 1.0A"
-//	F10SA,	"dvF10SA000",	"daVinciF10",	3S10AP,	0, 2, 1, 1, 200x200x200,	"da Vinci AIO"
-//	F20,	"dvF200B000",	"daVinciF20",	3F20XP,	0, 2, 1, 1, 200x150x200,	"da Vinci 2.0 Duo"
-//	F20A,	"dvF200A000",	"daVinciF20",	3F20AP,	0, 2, 1, 1, 200x150x200,	"da Vinci 2.0A Duo"
-//
-//  v3 protocol
-//
-//	F11,	"dvF110B000",	"daVinciF11",	3F11XP,	0, 2, 1, 3, 200x200x200,	"da Vinci 1.1 Plus" //???? I'm suspicious of this one, think it belongs above
-//
-//	FN1X,	"dv1NX0A000",	"dv1NX0A000",	3FN1XP,	1, 2, 1, 3, 120x120x120,	"da Vinci Nano"
-//	FM1W,	"dv1MW0A000",	"dv1MW0A000",	3FM1WP,	1, 2, 1, 3, 150x150x150,	"da Vinci Mini w" // may show up as "dv1MW0B000"
-//	FM1X,	"dv1MX0A000",	"dv1MX0A000",	3FM1XP,	1, 2, 1, 3, 150x150x150,	"da Vinci miniMaker"
-//	FJR10,	"dv1J00A000",	"daVinciJR10",	??????,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0"
-//	FJR10W,	"dv1JW0A000",	"daVinciJR10W",	3F1JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 1.0 Wireless"
-//	F1JS,	"dv1JS0A000",	"dv1JSOA000",	3F1JSP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 3in1"
-//	FJR20M,	"dv2JW0A000",	"daVinciJR20W",	3F2JWP,	1, 2, 1, 3, 150x150x150,	"da Vinci Jr. 2.0 Mix"
-//	FJR10A,	"dv1JA0A000",	"dv1JA0A000",	3F1JAP,	1, 2, 1, 3, 175x175x175,	"da Vinci Jr. 1.0A"
-//
-//  new file format
-//
-//	FJR10PRO,"dv1JP0A000",	"dv1JP0A000",	3F1JPP,	1, 5, 2, 3, 150x150x150,	"da Vinci Jr. 1.0 Pro"
-//	F1JO,	"dv1JSOA000",	"daVinciJR10S",	3F1JOP,	1, 5, 2, 3, 150x150x150,	"da Vinci Jr. 3in1 (Open filament)"
-//	F1AW,	"dvF1W0A000",	"daVinciAW10",	3F1AWP,	1, 5, 2, 3, 200x200x200,	"da Vinci 1.0 Pro"
-//	F1AS,	"dvF1WSA000",	"daVinciAS10",	3F1ASP,	1, 5, 2, 3, 200x200x190,	"da Vinci 1.0 Pro 3in1"
-//	F1SW,	"dv1SW0A000",	"dv1SW0A000",	3F1SWP,	1, 5, 2, 3, 300x300x300,	"da Vinci 1.0 Super"
-//
-//  unknown
-//
-//	F1CP,	"dv1CP0A000",
-//	F11A,	"dvF110A000",
-//	F11P,	"dvF110P000",
-//	F11SA,	"dvF11SA000",
-//	F21,	"dvF210B000",
-//	F21A,	"dvF210A000",
-//	F21P,	"dvF210P000",
-//
-// prog internal program id
-// model_number what is reported here
-// file3w_model model number used in file format
-// serial first 6 bytes of machine serial number
-// nz non zip
-// fv file format version
-// sp SWPublishVersion
-// cp communication protocol, v3 is what is outlined here, v1 is older
-// dim build volume
-// name human readable model name
-//
 XYZv3/query=p
 	p:dv1MX0A000
+	$
 
 // unused
 XYZv3/query=q
@@ -487,7 +503,12 @@ XYZv3/query=r
 //   sd:yes  sd card yes or no
 XYZv3/query=s
 	s:{"fm":0,"fd":1,"sd":"yes","button":"no","buzzer":"on"}
+	$
+
+	or
+
 	s:{"fm":1,"fd":1,"dr":{"top":"off","front":"off"},"sd":"yes","eh":"0","of":"1"}
+	$
 
 // extruder temperature
 // t:ss,aa,bb
@@ -499,6 +520,7 @@ XYZv3/query=s
 //     bb is extruder 2 temp
 XYZv3/query=t
 	t:1,20,0
+	$
 
 // unused
 XYZv3/query=u
@@ -510,6 +532,7 @@ XYZv3/query=u
 //   en is engine version string (firmware)
 XYZv3/query=v
 	v:1.1.1
+	$
 
 // filament serian number
 // w:id,sn,xx
@@ -537,59 +560,59 @@ XYZv3/query=v
 // examples:
 //	PLA Gold  GBP3OCA64N0017
 //  PLA Green PMP6PTH6840596
-/*
-switch (FILAMANEE.serial_number[4])
-{
-case '0': return "Bronze";
-case '1': return "Silver";
-case '2': return "Clear Red";
-case '3': return "Clear";
-case '4': return "Bottle Green";
-case '5': return "Neon Magenta";
-case '6': return "SteelBlue";
-case '7': return "Sun Orange";
-case '8': return "Pearl White";
-case '9': return "Copper";
-case 'A': return "Purple";
-case 'B': return "Blue";
-case 'C': return "Neon Tangerine";
-case 'D': return "Viridity";
-case 'E': return "Olivine";
-case 'F': return "Gold";
-case 'G': return "Green";
-case 'H': return "Neon Green";
-case 'I': return "Snow White";
-case 'J': return "Neon Yellow";
-case 'K': return "Black";
-case 'L': return "Violet";
-case 'M': return "Grape Purple";
-case 'N': return "Purpurine";
-case 'O': return "Clear Yellow";
-case 'P': return "Clear Green";
-case 'Q': return "Clear Tangerine";
-case 'R': return "Red";
-case 'S': return "Cyber Yellow";
-case 'T': return "Tangerine";
-case 'U': return "Clear Blue";
-case 'V': return "Clear Purple";
-case 'W': return "White";
-case 'X': return "Clear Magenta";
-case 'Y': return "Yellow";
-case 'Z': return "Nature";
-
-case ':':
-case ';':
-case '<':
-case '=':
-case '>':
-case '?':
-case '@':
-default:
-	return "--";
-}
-*/
 XYZv3/query=w
 	w:1,PMP6PTH6840596
+	$
+
+	switch (FILAMANEE.serial_number[4])
+	{
+	case '0': return "Bronze";
+	case '1': return "Silver";
+	case '2': return "Clear Red";
+	case '3': return "Clear";
+	case '4': return "Bottle Green";
+	case '5': return "Neon Magenta";
+	case '6': return "SteelBlue";
+	case '7': return "Sun Orange";
+	case '8': return "Pearl White";
+	case '9': return "Copper";
+	case 'A': return "Purple";
+	case 'B': return "Blue";
+	case 'C': return "Neon Tangerine";
+	case 'D': return "Viridity";
+	case 'E': return "Olivine";
+	case 'F': return "Gold";
+	case 'G': return "Green";
+	case 'H': return "Neon Green";
+	case 'I': return "Snow White";
+	case 'J': return "Neon Yellow";
+	case 'K': return "Black";
+	case 'L': return "Violet";
+	case 'M': return "Grape Purple";
+	case 'N': return "Purpurine";
+	case 'O': return "Clear Yellow";
+	case 'P': return "Clear Green";
+	case 'Q': return "Clear Tangerine";
+	case 'R': return "Red";
+	case 'S': return "Cyber Yellow";
+	case 'T': return "Tangerine";
+	case 'U': return "Clear Blue";
+	case 'V': return "Clear Purple";
+	case 'W': return "White";
+	case 'X': return "Clear Magenta";
+	case 'Y': return "Yellow";
+	case 'Z': return "Nature";
+
+	case ':':
+	case ';':
+	case '<':
+	case '=':
+	case '>':
+	case '?':
+	case '@':
+	default:
+		return "--";
+	}
 
 // unused
 XYZv3/query=x
@@ -599,6 +622,7 @@ XYZv3/query=y
 // where z is offset in mm * 100
 XYZv3/query=z
 	z:327
+	$
 
 // unused
 XYZv3/query=A
@@ -613,6 +637,7 @@ XYZv3/query=F
 //**** need to see this from a real printer
 XYZv3/query=G
 	G:{"LastUsed":"len"} 
+	$
 
 // unused
 XYZv3/query=H
@@ -628,6 +653,7 @@ XYZv3/query=K
 //   lt - last power on time (minutes) (or last print time?), optional
 XYZv3/query=L
 	L:1,268830,5529,295
+	$
 
 // unused
 XYZv3/query=M
@@ -639,6 +665,7 @@ XYZv3/query=N
 //   yy is bed target temp in C
 XYZv3/query=O
 	O:{"nozzle":"240","bed":"90"}
+	$
 
 // unused
 XYZv3/query=P
@@ -651,6 +678,7 @@ XYZv3/query=U
 // wireless adapter firmware version?
 XYZv3/query=V
 	V:5.1.5
+	$
 
 // Ask wifi information, how the network is configured
 //
@@ -664,6 +692,7 @@ XYZv3/query=V
 //
 XYZv3/query=W
 	W:{"ssid":"str","bssid":"str","channel":"str","rssiValue":"str","PHY":"str","security":"str"}
+	$
 
 // Nozzle Info
 // X:nt,sn,sn2
@@ -686,6 +715,7 @@ XYZv3/query=W
 //   sn2 is optional second serial number for second nozzle
 XYZv3/query=X
 	X:2,GB-0002-0000-TH-68T-0250-5482
+	$
 
 // unused
 XYZv3/query=Y
@@ -706,6 +736,7 @@ XYZv3/query=3
 //  e is rssiValue  // recieved signal strength indicator, 0-20 --, 21-30 poor, 31-40 moderate, 41-?? standard
 XYZv3/query=4
 	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd","rssiValue":"num?"}}
+	$
 
 // unused
 XYZv3/query=5
@@ -715,43 +746,71 @@ XYZv3/query=8
 XYZv3/query=9
 
 
-
 //***********************
 // Send_Config_command or SendCfg() (check ExcuteOrder)
 // XYZv3/config=
-// all return ok or E0
+// on serial all return ok or E0 followed by $
+// on wifi no terminator is returned
 
 
 //-------------------------
-// toggle auto level off/on
+// toggle auto level off
 XYZv3/config=autolevel:off			// send
-// or
+	ok
+	$
+XYZv3/query=os						// send to get status
+	o:p8,t1,c1,a-					// recieve, get state of auto level, why s?
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"} 
+	$
+
+//-------------------------
+// toggle auto level on
 XYZv3/config=autolevel:on			// send
-// then
-XYZv3/query=os						// send
-o:p8,t1,c1,a-<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}<nl>$<nl> // recieve, get state of auto level, why s?
+	ok
+	$
+XYZv3/query=os						// send to get status
+	o:p8,t1,c1,a-					// recieve, get state of auto level, why s?
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}
+	$
 
 
 //----------------------------------
-// toggle print finish buzzer off/on
+// toggle print finish buzzer off
 XYZv3/config=buzzer:off				// send
-// or
-XYZv3/config=buzzer:on				// send
-// then
+	ok
+	$
 XYZv3/query=os						// send to get status
-o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}<nl>$<nl> // recieve, get state of buzzer, why o?
+	o:p8,t1,c1,a+					// recieve, get state of buzzer, why o?
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}
+	$
+
+//----------------------------------
+// toggle print finish buzzer on
+XYZv3/config=buzzer:on				// send
+	ok
+	$
+XYZv3/query=os						// send to get status
+	o:p8,t1,c1,a+					// recieve, get state of buzzer, why o?
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}
+	$
 
 
 // disconnect from the wifi router
 XYZv3/config=disconnectap
+	ok
+	$
 
 //???
 XYZv3/config=engrave:placeobject
+	ok
+	$
 
 // where E is energy value (whatever that is, probably lazer engraving energy)
 //****Note, this may be the energy saving level as seen in the jr 3in1, that controls how long the led lights stay on for, in min
 // E seems to range from 0.0 to 0.9
 XYZv3/config=energy:[E] 
+	ok
+	$
 
 //----------------
 // change language 
@@ -759,17 +818,21 @@ XYZv3/config=energy:[E]
 XYZv3/config=lang:[XX] 
 
 XYZv3/config=lang:[en]			// send at startup and when language changes
-ok<nl>$<nl>						// returns immediately
+	ok							// returns immediately
+	$						
 
 
 // update runtime maintanence counter
 // xx == how many hours since last maintanence?
 // can't seem to make it work
 XYZv3/config=life:[XX] 
+	// does not return anyting on miniMaker, probably not supported
 
 // update printer name
 // where N is the name
 XYZv3/config=name:[N] 
+	ok
+	$						
 
 // manage current print job
 //****FixMe, get details, probably combines with  XYZv3/upload=xxx
@@ -784,16 +847,20 @@ XYZv3/config=print[resume]
 XYZv3/config=restoredefault:on			// send
 XYZv3/config=energy:[3]					// send, why send this???
 XYZv3/query=os							// send to get status
-o:p8,t1,c1,a+<nl>s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}<nl>$<nl>  // returns status
+	o:p8,t1,c1,a+						// returns status
+	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}
+	$  
 
 
 //-----------------
 // connect wifi
 XYZv3/config=ssid:[WIFIName,Password,AP_Channel] 
 XYZv3/config=ssid:[TUCKER_HOME,aidanandcorianna,1]	// send
-ok<nl>$<nl>											// recieve
+	ok
+	$
 XYZv3/query=4										// send to get status
-4:{"wlan":{"ip":"192.168.1.117","ssid":"TUCKER_HOME","channel":"0","rssiValue":"0","MAC":"54:8c:a0:06:7e:48"}}<nl>$<nl> // recieve
+	4:{"wlan":{"ip":"192.168.1.117","ssid":"TUCKER_HOME","channel":"0","rssiValue":"0","MAC":"54:8c:a0:06:7e:48"}}
+	$ // recieve
 
 //-----------------
 // get/set z offset or adjusts z offset up or down
@@ -802,20 +869,24 @@ XYZv3/query=4										// send to get status
 // XYZv3/config=zoffset:set[J]
 
 XYZv3/config=zoffset:get				// send
-321<nl>$<nl>							// return zoffset
+	321
+	$							// return zoffset
 
 // then when adjusting
 XYZv3/action=home						// send, only on first adjustment
-home:{"stat":"start"}<nl>$<nl>			// return start 
+	home:{"stat":"start"}
+	$									// return start 
 XYZv3/action=zoffset:up					// send, set zoffset up by one
 XYZv3/config=zoffset:get				// send, request new position
-321<nl>$<nl>							// return zoffset
+	321
+	$							// return zoffset
 // also 
 XYZv3/action=zoffset:down				// same as up
 
 // can also set directly with 
 XYZv3/config=zoffset:set[321]			// send 
-ok<nl>$<nl>								// return
+	ok
+	$								// return
 
 
 // UnlockFilament, send in this order
@@ -839,24 +910,29 @@ XYZv3/config=pde:[8046]
 
 // start
 XYZv3/action=calibratejr:new					// send
-calibratejr:{"stat":"start"}<nl>$<nl>			// recieve immediately
-calibratejr:{"stat":"pressdetector"}<nl>$<nl>	// recieve immediately
+	calibratejr:{"stat":"start"}				// recieve immediately
+	$			
+	calibratejr:{"stat":"pressdetector"}		// recieve immediately
+	$			
 
 // press button to lower detector
 
 XYZv3/action=calibratejr:detectorok				// send
-calibratejr:{"stat":"processing"}<nl>$<nl>		// recieve immediately
+	calibratejr:{"stat":"processing"}			// recieve immediately
+	$
 
-// in loop
-calibratejr:{"stat":"ok",438,453,453,437,445,443,412,420,424}<nl>$<nl>	// recieve when done
+// wait for 
+	calibratejr:{"stat":"ok",438,453,453,437,445,443,412,420,424} // recieve when done
+	$	
 // or
-calibratejr:{"stat":"fail"}<nl>$<nl>			// recieve if button not pressed
+	calibratejr:{"stat":"fail"}					// recieve if button not pressed
+	$
 
 // release button to raise detector
 
 XYZv3/action=calibratejr:release				// send to end calibration, xyz sends this before button is released, why?
-
-calibratejr:{"stat":"complete"}<nl>$<nl>		// potentially recieve, but when?
+	calibratejr:{"stat":"complete"}				// potentially recieve, but when?
+	$
 
 // gets data?  maybe send after ok and before release?
 XYZv3/action=calibratejr:getdata
@@ -867,22 +943,28 @@ XYZv3/action=calibratejr:getdata
 // send to start heating
 
 XYZv3/action=cleannozzle:new			// send
-cleannozzle:{"stat":"start"}<nl>$<nl>	// recive immediately
+	cleannozzle:{"stat":"start"}		// recive immediately
+	$
 
 // in loop
 XYZv3/query=jt							// send
-j:9536,51<nl>t:1,196,0<nl>$<nl>			// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 51 heating?
+	j:9536,51<nl>t:1,196,0				// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 51 heating?
+	$
 // or
-j:9536,52<nl>t:1,211,210<nl>$<nl>		// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 52 ready?
+	j:9536,52<nl>t:1,211,210			// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 52 ready?
+	$
 
 // wait for 
-cleannozzle:{"stat":"complete"}
+	cleannozzle:{"stat":"complete"}
+	$????
 // or
-j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	j:9511,0							// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	$
 // or send
 XYZv3/action=cleannozzle:cancel			// send
 //XYZv3/query=a							// xyz queries for this, why?
-cleannozzle:{"stat":"ok"}<nl>$<nl>		// recieve immediately?
+	cleannozzle:{"stat":"ok"}			// recieve immediately?
+	$
 // end loop
 
 
@@ -890,15 +972,19 @@ cleannozzle:{"stat":"ok"}<nl>$<nl>		// recieve immediately?
 // home printer
 // send
 XYZv3/action=home					// send
-home:{"stat":"start"}<nl>$<nl>		// returns immediatley
+	home:{"stat":"start"}			// returns immediatley
+	$
 
 // loop start
 XYZv3/query=j						// send
-j:9534,5<nl>$<nl>					// returns, state 9534 is 'STATE_PRINT_HOMING', substate 5?
+	j:9534,5						// returns, state 9534 is 'STATE_PRINT_HOMING', substate 5?
+	$
 // or
-j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	j:9511,0						// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	$
 
-home:{"stat":"complete"}			// when do we get this? indicates home is finished
+	home:{"stat":"complete"}			// when do we get this? indicates home is finished
+	$????
 // loop end
 
 
@@ -914,15 +1000,19 @@ XYZv3/action=jog:{"axis":"z","dir":"+","len":"LL"}
 
 // start
 XYZv3/action=jog:{"axis":"x","dir":"-","len":"10"}		// send
-jog:{"stat":"start"}<nl>$<nl>		// returns immediately
+	jog:{"stat":"start"}			// returns immediately
+	$
 
 // loop start
 XYZv3/query=j						// send
-j:9532,30<nl>$<nl>					// returns, state 9532 is 'STATE_PRINT_JOG_MODE' substate 30 
+	j:9532,30						// returns, state 9532 is 'STATE_PRINT_JOG_MODE' substate 30 
+	$
 // or
-j:9511,0<nl>$<nl>					// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	j:9511,0						// returns, state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	$
 // or
-jog:{"stat":"complete"}				// when does this get returned
+	jog:{"stat":"complete"}			// when does this get returned
+	$????
 // loop end
 
 
@@ -931,30 +1021,39 @@ jog:{"stat":"complete"}				// when does this get returned
 
 // send to start
 XYZv3/action=load:new						// send
-load:{"stat":"start"}<nl>$<nl>				// return immediately
+	load:{"stat":"start"}					// return immediately
+	$
 
 // then in loop
 XYZv3/query=jt								// send to get status
-j:9530,11.t:1,205,210<nl>$<nl>				// returns immediately, 
+	j:9530,11.t:1,205,210					// returns immediately, 
+	$
 // or										// state 9530 is 'STATE_PRINT_LOAD_FIALMENT', 11 is heating up, 12 is loading
-j:9511,0.t:1,94,0<nl>$<nl>					// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	j:9511,0.t:1,94,0						// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	$
 
-load:{"stat":"load"}<nl>$<nl>				// transition from heating to loading
+	load:{"stat":"load"}					// transition from heating to loading
+	$
 
 // indicates end
-load:{"stat":"fail"}<nl>$<nl>				// return, load failed, maybe filament not detected
-load:{"stat":"complete"}<nl>$<nl>			// return, load succeeded, sent after a long delay, if you don't send cancel
+	load:{"stat":"fail"}					// return, load failed, maybe filament not detected
+	$
+	load:{"stat":"complete"}				// return, load succeeded, sent after a long delay, if you don't send cancel
+	$
 // or state is 9511
 // end loop
 
 // send when filament comes out of nozzle, or to cancel, after heating
 XYZv3/action=load:cancel
-load:{"stat":"complete"}<nl>$<nl>			// returns immediately, load succeeded
+	load:{"stat":"complete"}				// returns immediately, load succeeded
+	$
 
 // send to retry load, can only be sent after load finishes or fails
 XYZv3/action=load:retry						// send
-load:{"stat":"start"}<nl>$<nl>				// returns immediately
-load:{"stat":"heat","extemp":"24"}<nl>$<nl>	// returns immediately, only sent once after a retry
+	load:{"stat":"start"}					// returns immediately
+	$
+	load:{"stat":"heat","extemp":"24"}		// returns immediately, only sent once after a retry
+	$
 
 
 //----------------
@@ -962,17 +1061,22 @@ load:{"stat":"heat","extemp":"24"}<nl>$<nl>	// returns immediately, only sent on
 
 // to start unload
 XYZv3/action=unload:new							// send
-unload:{"stat":"start"}<nl>$<nl>				// return immediate
+	unload:{"stat":"start"}						// return immediate
+	$
 
 // then in loop
 XYZv3/query=jt									// send
-j:9531,21.t:1,22,155<nl>$<nl>					// return immediately
+	j:9531,21.t:1,22,155						// return immediately
+	$
 // or											// state 9531 is 'STATE_PRINT_UNLOAD_FIALMENT', substate is 21 when heating and 22 when unloading?
-j:9511,0.t:1,94,0<nl>$<nl>						// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	j:9511,0.t:1,94,0							// state 9511 is 'PRINT_NONE' or the idle state, indicates we are done
+	$
 
 // and look for one of these
-unload:{"stat":"unload"}<nl>$<nl>				// indicates filament is unloading, sent when substate goes from 21 to 22
-unload:{"stat":"complete"}<nl>$<nl>				// break after recieving this, or when state goes to 9511
+	unload:{"stat":"unload"}					// indicates filament is unloading, sent when substate goes from 21 to 22
+	$
+	unload:{"stat":"complete"}					// break after recieving this, or when state goes to 9511
+	$
 // end loop
 
 // send this to cancel
@@ -981,8 +1085,10 @@ XYZv3/action=unload:cancel						// cancels unload, available as soon as stat goe
 
 // send this to retry
 XYZv3/action=unload:retry						// restarts unload, available when stat goes to complete, or 9511
-unload:{"stat":"start"}<nl>$<nl>				// return immediatly
-unload:{"stat":"heat","extemp":"33"}<nl$<nl>	// and return immediatly, but only once, is current temp of extruder
+	unload:{"stat":"start"}						// return immediatly
+	$
+	unload:{"stat":"heat","extemp":"33"}		// and return immediatly, but only once, is current temp of extruder
+	$
 
 
 //***************************
@@ -1058,6 +1164,10 @@ def write_firmware(self, filename, downgrade=False):
         conn.write("XYZv3/uploadDidFinish")
 */
 
+
+
+
+//*****************
 // 3W file format
 /*
 // default setup for miniMaker
