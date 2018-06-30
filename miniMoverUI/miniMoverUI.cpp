@@ -45,6 +45,9 @@
 //-------------------------------------------
 // globals
 
+// uncomment to reduce amount of 'routine' logging in debug log
+#define DEBUG_REDUCE_NOISE
+
 XYZV3 xyz;
 Serial g_serial;
 Socket g_soc;
@@ -54,7 +57,9 @@ int g_listWifiOffset = -1;
 int g_listSerialOffset = -1;
 XYZPrinterStatus g_prSt = { 0 };
 
-int g_timerInterval = 500;
+// trigger once every 10 seconds
+float g_timerRate = 10.0f;
+int g_timerInterval = (int)(g_timerRate * 1000);
 UINT_PTR g_timer = 0;
 
 // set by XYZV3Thread.cpp
@@ -71,6 +76,8 @@ HCURSOR defaultCursor;
 
 //-------------------------------------------
 // main dialog
+
+void MainDlgUpdate(HWND hDlg);
 
 void listAddLine(HWND hList, const char *format, ...)
 {
@@ -281,7 +288,13 @@ void setZOffset(HWND hDlg)
 	SetCursor(waitCursor);
 	MainDlgSetStatus(hDlg, "set z-offset");
 	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
+	{
+		// update status and reset timer
+		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+		MainDlgUpdate(hDlg);
+
 		MainDlgSetStatus(hDlg, "set z-offset complete");
+	}
 	else
 		MainDlgSetStatus(hDlg, "set z-offset failed");
 	SetCursor(defaultCursor);
@@ -294,7 +307,13 @@ void setMachineName(HWND hDlg)
 	char tstr[64];
 	GetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, tstr, sizeof(tstr));
 	if(xyz.setMachineName(tstr))
+	{
+		// update status and reset timer
+		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+		MainDlgUpdate(hDlg);
+
 		MainDlgSetStatus(hDlg, "set machine name complete");
+	}
 	else
 		MainDlgSetStatus(hDlg, "set machine name failed");
 	SetCursor(defaultCursor);
@@ -363,7 +382,9 @@ void MainDlgUpdateModelDropdown(HWND hDlg)
 
 void MainDlgUpdate(HWND hDlg)
 {
+#ifdef DEBUG_REDUCE_NOISE
 	debugReduceNoise(true);
+#endif
 	// don't set wait cursor since this triggers 2x a second
 	if(!g_threadRunning && xyz.isStreamSet())
 	{
@@ -471,7 +492,9 @@ void MainDlgUpdate(HWND hDlg)
 	else
 		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
 
+#ifdef DEBUG_REDUCE_NOISE
 	debugReduceNoise(false);
+#endif
 }
 
 void MainDlgConnect(HWND hDlg)
@@ -529,10 +552,19 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port))
 			{
+				Sleep(100);
 				xyz.setStream(&g_soc);
+				Sleep(100);
 				MainDlgSetStatus(hDlg, "connected");
 			}
 		}
+	}
+
+	if(xyz.isStreamSet())
+	{
+		// update status and reset timer
+		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+		MainDlgUpdate(hDlg);
 	}
 }
 
@@ -903,6 +935,10 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				else if(xyz.setWifi(ssid, password, chan))
 				{
+					// update status and reset timer
+					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+					MainDlgUpdate(hDlg);
+
 					MainDlgSetStatus(hDlg, "set wifi parameters complete");
 					g_wifiOptionsEdited = false;
 				}
@@ -918,6 +954,10 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MainDlgSetStatus(hDlg, "reset options");
 			if(xyz.restoreDefaults())
 			{
+				// update status and reset timer
+				g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+				MainDlgUpdate(hDlg);
+
 				g_wifiOptionsEdited = false;
 				MainDlgSetStatus(hDlg, "reset options complete");
 			}
@@ -943,7 +983,13 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				MainDlgSetStatus(hDlg, "set energy saving");
 				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setEnergySaving(id * 3))
+				{
+					// update status and reset timer
+					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+					MainDlgUpdate(hDlg);
+
 					MainDlgSetStatus(hDlg, "set energy saving complete");
+				}
 				else
 					MainDlgSetStatus(hDlg, "set energy saving failed");
 				SetCursor(defaultCursor);
@@ -957,7 +1003,13 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				MainDlgSetStatus(hDlg, "set language");
 				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setLanguage(XYZPrintingLang[id].abrv))
+				{
+					// update status and reset timer
+					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+					MainDlgUpdate(hDlg);
+
 					MainDlgSetStatus(hDlg, "set language complete");
+				}
 				else
 					MainDlgSetStatus(hDlg, "set language failed");
 				SetCursor(defaultCursor);
@@ -978,6 +1030,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				xyz.setAutoLevel(true);
 			else
 				xyz.setAutoLevel(false);
+
+			// update status and reset timer
+			g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+			MainDlgUpdate(hDlg);
+
 			SetCursor(defaultCursor);
 			break;
 
@@ -988,6 +1045,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				xyz.setBuzzer(true);
 			else
 				xyz.setBuzzer(false);
+
+			// update status and reset timer
+			g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
+			MainDlgUpdate(hDlg);
+
 			SetCursor(defaultCursor);
 			break;
 

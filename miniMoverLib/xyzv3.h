@@ -426,7 +426,7 @@ protected:
 	const char* waitForLine(bool waitForEndCom, float timeout_s = -1, bool report = true);
 	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = -1);
 	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = -1);
-	bool waitForConfigOK();
+	bool waitForConfigOK(float timeout_s = -1);
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);

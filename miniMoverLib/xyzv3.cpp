@@ -115,10 +115,7 @@ void XYZV3::setStream(Stream *s)
 	memset(&m_status, 0, sizeof(m_status));
 
 	if(m_stream)
-	{
 		m_stream->clear();
-		queryStatus();
-	}
 
 	MTX(ReleaseMutex(ghMutex));
 }
@@ -1252,10 +1249,10 @@ int XYZV3::getZOffset()
 	return ret;
 }
 
-bool XYZV3::waitForConfigOK()
+bool XYZV3::waitForConfigOK(float timeout_s)
 {
-	if(m_stream && m_stream->isWIFI())
-		return waitForVal("ok", true);
+	if(m_stream && !m_stream->isWIFI())
+		return waitForVal("ok", true, timeout_s);
 	else
 		return true;
 }
@@ -1370,8 +1367,9 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 	bool success = 
 		ssid && 
 		password && 
+		//****FixMe, may need to send XYZv3/config=disconnectap here
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForConfigOK(); // not returned on wifi
+		waitForConfigOK(20.0f); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }

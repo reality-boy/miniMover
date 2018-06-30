@@ -180,6 +180,11 @@ bool checkCon()
 			if(soc.openSocket(tDevice, 9100))
 			{
 				xyz.setStream(&soc);
+
+				// force a status update if new connection
+				if(xyz.isStreamSet())
+					xyz.queryStatus();
+
 				return true;
 			}
 		}
@@ -196,6 +201,11 @@ bool checkCon()
 			if(tDevice && tDevice[0] && serial.openSerial(tDevice, 115200))
 			{
 				xyz.setStream(&serial);
+
+				// force a status update if new connection
+				if(xyz.isStreamSet())
+					xyz.queryStatus();
+
 				return true;
 			}
 		}
