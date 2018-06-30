@@ -2159,7 +2159,12 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 			{
 				char buf2[len];
 
-				if(m_stream->readLineWait(buf2, len, min(timeout_s, 0.1f), report))
+				// don't wait as long for the terminating char
+				float timeout = timeout_s;
+				if(timeout > 0.1f)
+					timeout = 0.1f;
+
+				if(m_stream->readLineWait(buf2, len, timeout, report))
 				{
 					if(buf2[0] == '$')
 					{

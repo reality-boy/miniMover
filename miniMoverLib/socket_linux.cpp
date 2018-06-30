@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "debug.h"
+#include "timer.h"
 #include "stream.h"
 #include "socket.h"
 
