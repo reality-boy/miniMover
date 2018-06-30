@@ -52,6 +52,8 @@ public:
 	int read(char *buf, int len);
 	int write(const char *buf, int len);
 
+	bool isWIFI() { return false; }
+
 	// from base class
 	//int readLine(char *buf, int bufLen);
 	//int readLineWait(char *buf, int bufLen, float timeout_s, bool report);

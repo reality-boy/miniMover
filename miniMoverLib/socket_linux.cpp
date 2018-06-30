@@ -201,7 +201,7 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 			ret = -1;
 	    }
 		else if(ret == 0)
-			debugPrint(DBG_LOG, "waitOnSocket hit timeout, %s", ret, getLastErrorMessage());
+			debugPrint(DBG_LOG, "waitOnSocket hit timeout, %s", getLastErrorMessage());
 		else
 			debugPrint(DBG_WARN, "waitOnSocket failed with timeout, %d:%s", ret, getLastErrorMessage());
 	}
@@ -380,11 +380,7 @@ int Socket::write(const char *buf, const int len)
 	{
 		//****FixMe, sleep is a hack that makes networking work
 		// figure out how to get around this!
-#ifdef _WIN32
-		Sleep(100);
-#else
-		usleep(100 * 1000);
-#endif
+		Sleep(300);
 		int tLen = send(m_soc, buf, len, 0);
 		if(tLen != SOCKET_ERROR && tLen > 0)
 		{
@@ -394,11 +390,6 @@ int Socket::write(const char *buf, const int len)
 		}
 		else
 			debugPrint(DBG_WARN, "failed to write bytes: %s", getLastErrorMessage());
-#ifdef _WIN32
-		Sleep(100);
-#else
-		usleep(100 * 1000);
-#endif
 	}
 	else
 		debugPrint(DBG_WARN, "Not connected to server!");

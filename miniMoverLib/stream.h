@@ -31,6 +31,8 @@ public:
 	// write a fixed length buffer
 	virtual int write(const char *buf, int bufLen) = 0;
 
+	virtual bool isWIFI() = 0;
+
 	// local functions, don't override
 
 	// read only to newline char, buffering rest of data, return immediately if not found

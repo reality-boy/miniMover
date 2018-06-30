@@ -65,27 +65,27 @@ msTimer::msTimer()
 
 void msTimer::startTimer()
 { 
-	startTime = msTime::getTime_micro(); 
-	elapsedTime = 0;
+	m_startTime = msTime::getTime_micro(); 
+	m_elapsedTime = 0;
 }
 
 float msTimer::stopTimer() 
 { 
-	elapsedTime = msTime::getTime_micro() - startTime;
+	m_elapsedTime = msTime::getTime_micro() - m_startTime;
 	return getLastTime_s();
 }
 
 float msTimer::getLastTime_s()
 { 
-	return elapsedTime / 1000000.0f;
+	return m_elapsedTime / 1000000.0f;
 }
 
 float msTimer::getLastTime_ms()
 { 
-	return elapsedTime / 1000.0f; 
+	return m_elapsedTime / 1000.0f; 
 }
 
 float msTimer::getLastTime_micro()
 { 
-	return elapsedTime; 
+	return m_elapsedTime; 
 }

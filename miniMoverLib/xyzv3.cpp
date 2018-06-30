@@ -117,7 +117,6 @@ void XYZV3::setStream(Stream *s)
 	if(m_stream)
 	{
 		m_stream->clear();
-		//****FixMe, do we want to force this?
 		queryStatus();
 	}
 
@@ -583,49 +582,110 @@ bool XYZV3::parseStatusSubstring(const char *str)
 // they will not come interleaved
 // want to return true if we happen to find both status and optional string
 // also need to return optional string if found
-bool XYZV3::queryStatus(bool doPrint)
+// 
+// We can query using 'a' to fill in all values
+// in that case we zero out the data and look for a '$' to indicate that everything was returned
+//
+// Otherwise we can query for up to 4 sub values
+// in that case only the sub values are returned, no terminating '$' is sent
+bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
 	if(m_stream && m_stream->isOpen())
 	{
-		if(serialSendMessage("XYZv3/query=a"))
+		int count = 0;
+		char q[4] = { q1, q2, q3, q4 };
+		bool b[4] = { 0, 0, 0, 0 };
+		char qStr[5] = { 0, 0, 0, 0, 0 };
+
+		if(!q[0])
+			q[0] = 'a';
+
+		// setup our query
+		for(count=0; count < 4; count++)
 		{
-			// zero out results
-			memset(&m_status, 0, sizeof(m_status));
+			qStr[count] = q[count];
+
+			// break if entry is null
+			if(q[count] == 0)
+				break;
+
+			// if any entry is 'a' then no need to send anything else
+			if(q[count] == 'a')
+			{
+				count = 1;
+				q[0] = 'a';
+				qStr[0] = 'a';
+				qStr[1] = '\0';
+				break;
+			}
+		}
+		qStr[4] = '\0';
+
+		char tstr[128];
+		sprintf(tstr, "XYZv3/query=%s", qStr);
+		if(serialSendMessage(tstr))
+		{
+			// zero out results, only if updating everything
+			if(q[0] == 'a')
+				memset(&m_status, 0, sizeof(m_status));
 
 			static const int len = 1024;
 			char buf[len];
 			bool isDone = false; // only try so many times for the answer
-			while(!isDone && m_stream->readLineWait(buf, len))
+			int ret = m_stream->readLineWait(buf, len);
+			while(ret > 0 && !isDone)
 			{
 				if(buf[0] == '$') // end of message
 				{
 					isDone = true;
-					m_status.isValid = true;
+					success = true;
 				}
 				else if(buf[0] == 'E') // error string like E4$\n
 				{
 					//****FixMe, returns E4$\n or E7$\n sometimes
 					// in those cases we just ignore the error and keep going
 					isDone = true;
-					m_status.isValid = false;
 					debugPrint(DBG_WARN, "recieved error: %s", buf);
 				}
 				else if(parseStatusSubstring(buf))
 				{
 					if(doPrint)
 						printf("%s\n", buf);
+
+					// if not getting all, then done once
+					// we see all the requested values
+					if(q[0] != 'a')
+					{
+						isDone = true;
+						for(int i=0; i<count; i++)
+						{
+							if(q[i] == buf[0])
+								b[i] = true;
+							if(!b[i])
+								isDone = false;
+						}
+
+						if(isDone)
+							success = true;
+					}
 				}
 				else
 				{
 					// handle other messages
+					//****FixMe, do we want this?
 				}
+
+				if(!isDone)
+					ret = m_stream->readLineWait(buf, len, 0.5f);
 			}
 
 			if(!isDone)
 				debugPrint(DBG_WARN, "queryStatus timed out");
+
+			m_status.isValid = success;
 
 			// manually pull zOffset, if not set above
 			// use zero wait time, in case command is ignored
@@ -644,8 +704,6 @@ bool XYZV3::queryStatus(bool doPrint)
 				}
 			}
 			*/
-
-			success = isDone;
 		}
 	}
 
@@ -1170,6 +1228,7 @@ int XYZV3::incrementZOffset(bool up)
 	int ret = -1;
 	if(serialSendMessage("XYZv3/action=zoffset:%s", (up) ? "up" : "down"))
 	{
+		//****FixMe, on wifi we return 'ok' and that is it
 		const char* buf = waitForLine(true);
 		if(*buf)
 			ret = atoi(buf);
@@ -1184,6 +1243,7 @@ int XYZV3::getZOffset()
 	int ret = -1;
 	if(serialSendMessage("XYZv3/config=zoffset:get"))
 	{
+		//****FixMe, on wifi get val\n$\nok\n
 		const char* buf = waitForLine(true);
 		if(*buf)
 			ret = atoi(buf);
@@ -1192,12 +1252,20 @@ int XYZV3::getZOffset()
 	return ret;
 }
 
+bool XYZV3::waitForConfigOK()
+{
+	if(m_stream && m_stream->isWIFI())
+		return waitForVal("ok", true);
+	else
+		return true;
+}
+
 bool XYZV3::setZOffset(int offset)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=zoffset:set[%d]", offset) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1207,7 +1275,7 @@ bool XYZV3::restoreDefaults()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=restoredefault:on") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1217,7 +1285,7 @@ bool XYZV3::setBuzzer(bool enable)
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1227,7 +1295,7 @@ bool XYZV3::setAutoLevel(bool enable)
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1238,7 +1306,7 @@ bool XYZV3::setLanguage(const char *lang)
 	bool success = 
 		lang && 
 		serialSendMessage("XYZv3/config=lang:[%s]", lang) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1250,7 +1318,7 @@ bool XYZV3::setEnergySaving(int level)
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=energy:[%d]", level) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1260,7 +1328,7 @@ bool XYZV3::sendDisconnectWifi()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=disconnectap") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi??
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1270,7 +1338,7 @@ bool XYZV3::sendEngraverPlaceObject()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=engrave:placeobject") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi???
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1280,7 +1348,7 @@ bool XYZV3::setMachineLife(int time_s)
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=life:[%d]", time_s) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1291,7 +1359,7 @@ bool XYZV3::setMachineName(const char *name)
 	bool success = 
 		name && 
 		serialSendMessage("XYZv3/config=name:[%s]", name) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1303,7 +1371,7 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 		ssid && 
 		password && 
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1313,7 +1381,7 @@ bool XYZV3::cancelPrint()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[cancel]") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1323,7 +1391,7 @@ bool XYZV3::pausePrint()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[pause]") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1333,7 +1401,7 @@ bool XYZV3::resumePrint()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[resume]") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1346,7 +1414,7 @@ bool XYZV3::readyPrint()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[complete]") &&
-		waitForVal("ok", true);
+		waitForConfigOK(); // not returned on wifi
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -2087,7 +2155,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 			{
 				char buf2[len];
 
-				if(m_stream->readLineWait(buf2, len, timeout_s, report))
+				if(m_stream->readLineWait(buf2, len, min(timeout_s, 0.1f), report))
 				{
 					if(buf2[0] == '$')
 					{

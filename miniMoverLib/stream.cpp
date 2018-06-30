@@ -87,7 +87,7 @@ int Stream::readLine(char *buf, int bufLen)
 			len = readLineFromBuffer(buf, bufLen);
 			if(len > 0)
 			{
-				debugPrint(DBG_LOG, "Stream::readLine() returned %s", buf);
+				debugPrint(DBG_LOG, "Stream::readLine() returned '%s'", buf);
 				return len;
 			}
 			else // not found, pull more data
@@ -101,7 +101,7 @@ int Stream::readLine(char *buf, int bufLen)
 					len = readLineFromBuffer(buf, bufLen);
 					if(len > 0)
 					{
-						debugPrint(DBG_LOG, "Stream::readLine() returned %s", buf);
+						debugPrint(DBG_LOG, "Stream::readLine() returned '%s'", buf);
 						return len;
 					}
 				}

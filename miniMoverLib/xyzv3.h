@@ -281,7 +281,9 @@ public:
 
 	// === query commands ===
 
-	bool queryStatus(bool doPrint = false); // update status struct
+	// update status struct
+	// a updates all status, b-z updates individual status entries
+	bool queryStatus(bool doPrint = false, char q1 = 'a', char q2 = 0, char q3 = 0, char q4 = 0);
 	const XYZPrinterStatus* getPrinterStatus() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
@@ -424,6 +426,7 @@ protected:
 	const char* waitForLine(bool waitForEndCom, float timeout_s = -1, bool report = true);
 	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = -1);
 	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = -1);
+	bool waitForConfigOK();
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);

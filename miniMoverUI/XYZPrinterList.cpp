@@ -13,6 +13,7 @@ void WifiEntry::reset()
 {
 	m_serialNum[0] = '\0';
 	m_ip[0] = '\0';
+	m_port = 0;
 }
 
 void WifiEntry::set(const char *serialNum, const char *ip)
@@ -21,6 +22,7 @@ void WifiEntry::set(const char *serialNum, const char *ip)
 	{
 		strcpy(m_serialNum, serialNum);
 		strcpy(m_ip, ip);
+		m_port = 9100;
 	}
 	else
 		reset();
@@ -48,6 +50,7 @@ bool WifiList::readXYZLastPrint(WifiEntry *ent)
 					len = WifiEntry::m_len;
 					if(RegQueryValueExA(key, "LastPrinterSN", NULL, NULL, (LPBYTE)ent->m_serialNum, &len) == ERROR_SUCCESS)
 					{
+						ent->m_port = 9100;
 						success = true;
 					}
 				}
@@ -60,6 +63,7 @@ bool WifiList::readXYZLastPrint(WifiEntry *ent)
 		if(!success)
 		{
 			ent->m_ip[0] = '\0';
+			ent->m_port = 0;
 			ent->m_serialNum[0] = '\0';
 		}
 	}
@@ -101,8 +105,9 @@ void WifiList::readWifiList()
 						len = WifiEntry::m_len;
 						if(RegQueryValueExA(entryKey, "ip", NULL, NULL, (LPBYTE)m_list[m_count].m_ip, &len) == ERROR_SUCCESS && len > 0)
 						{
-							m_count++;
+							m_list[m_count].m_port = 9100;
 							found = true;
+							m_count++;
 						}
 
 						RegCloseKey(entryKey);

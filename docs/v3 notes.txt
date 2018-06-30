@@ -1342,7 +1342,7 @@ def toHexString(text):
   return ' '.join(x.encode('hex') for x in str(text))
 
 def printOutputIfAvailable():
-  time.sleep(1) # wait one second before attempting to read response
+  time.sleep (1) # wait one second before attempting to read response
   out = ""
   while ser.inWaiting() > 0:
     out += ser.read(ser.inWaiting())

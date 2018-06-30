@@ -459,11 +459,7 @@ bool handlePrintFile(const char *path)
 					}
 				}
 
-#ifdef _WIN32
 				Sleep(10); // don't spin too fast
-#else
-				usleep(10 * 1000);
-#endif
 			}
 
 			return true;
@@ -717,6 +713,34 @@ int main(int argc, char **argv)
 				case 's': // status
 					if(checkCon())
 						printStatus();
+					break;
+				case 't': // test
+					debugPrint(DBG_REPORT, "test!");
+					if(checkCon())
+					{
+						msTimer t;
+
+						debugPrint(DBG_REPORT, "query 'a'");
+						t.startTimer();
+						for(int i=0; i<10; i++)
+							xyz.queryStatus(false, 'a');
+						t.stopTimer();
+						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
+
+						debugPrint(DBG_REPORT, "query 'b'");
+						t.startTimer();
+						for(int i=0; i<10; i++)
+							xyz.queryStatus(false, 'b');
+						t.stopTimer();
+						debugPrint(DBG_REPORT, "b took %0.4f", t.getLastTime_s());
+
+						debugPrint(DBG_REPORT, "query 'a'");
+						t.startTimer();
+						for(int i=0; i<10; i++)
+							xyz.queryStatus(false, 'a');
+						t.stopTimer();
+						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
+					}
 					break;
 				case 'u':
 					if(checkCon())

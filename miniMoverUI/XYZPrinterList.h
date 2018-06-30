@@ -20,6 +20,7 @@ struct WifiEntry
 
 	char m_serialNum[m_len];
 	char m_ip[m_len];
+	int m_port;
 };
 
 class WifiList
