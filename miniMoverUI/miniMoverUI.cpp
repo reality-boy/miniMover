@@ -60,6 +60,11 @@ XYZPrinterStatus g_prSt = { 0 };
 // trigger once every 10 seconds
 float g_timerRate = 10.0f;
 int g_timerInterval = (int)(g_timerRate * 1000);
+
+// triger once ever 1/10th of a second
+float g_timerShortRate = 0.10f;
+int g_timerShortInterval = (int)(g_timerShortRate * 1000);
+
 UINT_PTR g_timer = 0;
 
 // set by XYZV3Thread.cpp
@@ -289,10 +294,7 @@ void setZOffset(HWND hDlg)
 	MainDlgSetStatus(hDlg, "set z-offset");
 	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
 	{
-		// update status and reset timer
-		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-		MainDlgUpdate(hDlg);
-
+		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 		MainDlgSetStatus(hDlg, "set z-offset complete");
 	}
 	else
@@ -308,10 +310,7 @@ void setMachineName(HWND hDlg)
 	GetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, tstr, sizeof(tstr));
 	if(xyz.setMachineName(tstr))
 	{
-		// update status and reset timer
-		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-		MainDlgUpdate(hDlg);
-
+		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 		MainDlgSetStatus(hDlg, "set machine name complete");
 	}
 	else
@@ -561,11 +560,7 @@ void MainDlgConnect(HWND hDlg)
 	}
 
 	if(xyz.isStreamSet())
-	{
-		// update status and reset timer
-		g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-		MainDlgUpdate(hDlg);
-	}
+		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 }
 
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -644,6 +639,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case  WM_TIMER:
 		MainDlgUpdate(hDlg);
+		// reset to long interval
+		g_timer = SetTimer(hDlg, g_timer, g_timerInterval, NULL);
 		break;
 
 	case  WM_VSCROLL:
@@ -935,10 +932,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				else if(xyz.setWifi(ssid, password, chan))
 				{
-					// update status and reset timer
-					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-					MainDlgUpdate(hDlg);
-
+					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 					MainDlgSetStatus(hDlg, "set wifi parameters complete");
 					g_wifiOptionsEdited = false;
 				}
@@ -954,10 +948,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MainDlgSetStatus(hDlg, "reset options");
 			if(xyz.restoreDefaults())
 			{
-				// update status and reset timer
-				g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-				MainDlgUpdate(hDlg);
-
+				g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 				g_wifiOptionsEdited = false;
 				MainDlgSetStatus(hDlg, "reset options complete");
 			}
@@ -984,10 +975,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setEnergySaving(id * 3))
 				{
-					// update status and reset timer
-					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-					MainDlgUpdate(hDlg);
-
+					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 					MainDlgSetStatus(hDlg, "set energy saving complete");
 				}
 				else
@@ -1004,10 +992,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setLanguage(XYZPrintingLang[id].abrv))
 				{
-					// update status and reset timer
-					g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-					MainDlgUpdate(hDlg);
-
+					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 					MainDlgSetStatus(hDlg, "set language complete");
 				}
 				else
@@ -1031,10 +1016,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			else
 				xyz.setAutoLevel(false);
 
-			// update status and reset timer
-			g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-			MainDlgUpdate(hDlg);
-
+			g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 			SetCursor(defaultCursor);
 			break;
 
@@ -1046,10 +1028,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			else
 				xyz.setBuzzer(false);
 
-			// update status and reset timer
-			g_timer = SetTimer(NULL, g_timer, g_timerInterval, NULL);
-			MainDlgUpdate(hDlg);
-
+			g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 			SetCursor(defaultCursor);
 			break;
 
