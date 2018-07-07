@@ -2150,7 +2150,7 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 		{
 			if(buf[0] == '$' || buf[0] == 'E')
 			{
-				debugPrint(DBG_WARN, "waitForLine $ failed, got early '%s'", buf);
+				debugPrint(DBG_WARN, "XYZV3::waitForLine failed, got early '%s'", buf);
 				return "";
 			}
 
@@ -2171,19 +2171,23 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 						// success
 					}
 					else if(buf2[0] == 'E')
-						debugPrint(DBG_WARN, "waitForLine $ failed, got error '%s'", buf2);
+						debugPrint(DBG_WARN, "XYZV3::waitForLine $ failed, got error '%s'", buf2);
 					else
-						debugPrint(DBG_WARN, "waitForLine $ failed, instead got '%s'", buf2);
+						debugPrint(DBG_WARN, "XYZV3::waitForLine $ failed, instead got '%s'", buf2);
 				}
 				else
-					debugPrint(DBG_WARN, "waitForLine $ failed, got nothing");
+					debugPrint(DBG_WARN, "XYZV3::waitForLine $ failed, got nothing");
 			}
 
 			// return data even on failure to get terminator
 			// is this really a good idea?
 			return buf;
 		}
+		else if(report)
+			debugPrint(DBG_WARN, "XYZV3::waitForLine failed, timed out");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
 
 	return "";
 }
@@ -2197,7 +2201,11 @@ bool XYZV3::waitForVal(const char *val, bool waitForEndCom, float timeout_s)
 		{
 			return true;
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::waitForVal expected '%s', got '%s'", val, buf);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForVal invalid input");
 
 	return false;
 }
@@ -2219,8 +2227,14 @@ bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, 
 			// check for quoted match, probably not an ideal test
 			if(*tVal && 0 == strncmp(val, tVal+1, strlen(val)))
 				return true;
+
+			debugPrint(DBG_WARN, "XYZV3::waitForJsonVal no match, expected '%s:%s', got '%s'", key, val, tVal);
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::waitForJsonVal expected '%s:%s', got '%s'", key, val, buf);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForJsonVal invalid input");
 
 	return false;
 }
