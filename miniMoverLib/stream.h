@@ -48,7 +48,7 @@ public:
 private:
 
 	// default communication timeout
-	float getDefaultTimeout() { return 5.0f; }
+	virtual float getDefaultTimeout() = 0;
 
 	// helper function to read a line from m_lineBuf
 	int readLineFromBuffer(char *buf, int bufLen);

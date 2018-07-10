@@ -22,6 +22,7 @@ public:
 protected:
 	const static int m_maxPortCount = 24;
 
+
 	static int m_portCount;
 	static int m_defaultPortID;
 
@@ -61,6 +62,8 @@ public:
 	//int writePrintf(const char *fmt, ...);
 
 protected:
+
+	float getDefaultTimeout() { return 5.0f; }
 
 #ifdef _WIN32
 	HANDLE m_handle;
