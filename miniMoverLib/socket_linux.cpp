@@ -354,10 +354,16 @@ int Socket::read(char *buf, int len)
 						debugPrint(DBG_LOG, "Bytes received: %d", tLen);
 					}
 					else
+					{
 						debugPrint(DBG_LOG, "Connection closed by peer");
+						closeStream();
+					}
 				}
 				else
+				{
 					debugPrint(DBG_WARN, "read failed with error: %s", getLastErrorMessage());
+					closeStream();
+				}
 #ifdef USE_NON_BLOCKING
 			}
 			else if(0 == ret)

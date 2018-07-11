@@ -660,7 +660,7 @@ bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
 					// if not getting all, then done once
 					// we see all the requested values
 					// but only on wifi!
-					if(q[0] != 'a' && m_stream->isWIFI())
+					if(q[0] != 'a' && isWIFI())
 					{
 						isDone = true;
 						for(int i=0; i<count; i++)
@@ -1139,8 +1139,9 @@ bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
-								axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm)) &&
-		waitForJsonVal("stat", "start", true);
+								axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm));
+	if(success)
+		success = isWIFI() || waitForJsonVal("stat", "start", true);
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1149,7 +1150,7 @@ bool XYZV3::jogPrinterRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
-		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
+		isWIFI() || waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
 		// or state is PRINT_NONE
 	MTX(ReleaseMutex(ghMutex));
 	return success;
@@ -1231,10 +1232,12 @@ int XYZV3::incrementZOffset(bool up)
 	int ret = -1;
 	if(serialSendMessage("XYZv3/action=zoffset:%s", (up) ? "up" : "down"))
 	{
-		//****FixMe, on wifi we return 'ok' and that is it
-		const char* buf = waitForLine(true);
-		if(*buf)
-			ret = atoi(buf);
+		if(!isWIFI())
+		{
+			const char* buf = waitForLine(true);
+			if(*buf)
+				ret = atoi(buf);
+		}
 	}
 	MTX(ReleaseMutex(ghMutex));
 	return ret;
@@ -1244,12 +1247,21 @@ int XYZV3::getZOffset()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	int ret = -1;
-	if(serialSendMessage("XYZv3/config=zoffset:get"))
+	if(isWIFI())
 	{
-		//****FixMe, on wifi get val\n$\nok\n
-		const char* buf = waitForLine(true);
-		if(*buf)
-			ret = atoi(buf);
+		if(m_status.zOffsetSet)
+			ret = m_status.zOffset;
+		//****FixMe, else update status?
+	}
+	else
+	{
+		// not supported on wifi
+		if(serialSendMessage("XYZv3/config=zoffset:get"))
+		{
+			const char* buf = waitForLine(true);
+			if(*buf)
+				ret = atoi(buf);
+		}
 	}
 	MTX(ReleaseMutex(ghMutex));
 	return ret;
@@ -1257,7 +1269,7 @@ int XYZV3::getZOffset()
 
 bool XYZV3::waitForConfigOK(float timeout_s)
 {
-	if(m_stream && !m_stream->isWIFI())
+	if(!isWIFI())
 		return waitForVal("ok", true, timeout_s);
 	else
 		return true;
@@ -2810,4 +2822,9 @@ const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
 	}
 
 	return NULL;
+}
+
+bool XYZV3::isWIFI()
+{
+	return m_stream && m_stream->isWIFI();
 }

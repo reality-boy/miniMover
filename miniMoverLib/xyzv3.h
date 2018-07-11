@@ -449,6 +449,8 @@ protected:
 
 	bool parseStatusSubstring(const char *str);
 
+	bool isWIFI();
+
 	Stream *m_stream;
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
