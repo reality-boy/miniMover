@@ -29,7 +29,7 @@ enum XYZPrintStateCode
 	PRINT_ENDING_PROCESS = 9508,
 	PRINT_ENDING_PROCESS_DONE = 9509,
 	PRINT_JOB_DONE = 9510,
-	PRINT_NONE = 9511,
+	PRINT_NONE = 9511,						// 0
 	PRINT_STOP = 9512,
 	PRINT_LOAD_FILAMENT = 9513,
 	PRINT_UNLOAD_FILAMENT = 9514,
@@ -41,11 +41,11 @@ enum XYZPrintStateCode
 
 	STATE_PRINT_LOAD_FIALMENT = 9530,
 	STATE_PRINT_UNLOAD_FIALMENT = 9531,
-	STATE_PRINT_JOG_MODE = 9532,
+	STATE_PRINT_JOG_MODE = 9532,			// 30
 	STATE_PRINT_FATAL_ERROR = 9533,
-	STATE_PRINT_HOMING = 9534,
-	STATE_PRINT_CALIBRATE = 9535,
-	STATE_PRINT_CLEAN_NOZZLE = 9536,
+	STATE_PRINT_HOMING = 9534,				// 5
+	STATE_PRINT_CALIBRATE = 9535,			// 40
+	STATE_PRINT_CLEAN_NOZZLE = 9536,		// 51, 52
 	STATE_PRINT_GET_SD_FILE = 9537,
 	STATE_PRINT_PRINT_SD_FILE = 9538,
 	STATE_PRINT_ENGRAVE_PLACE_OBJECT = 9539,
@@ -76,6 +76,7 @@ struct XYZPrinterStatus
 
 	char eErrorStatusStr[64];
 	int eErrorStatus;
+	int eErrorStatusHiByte;
 
 	int fFilamentSpoolCount;
 	int fFilament1Remaining_mm;
@@ -413,6 +414,8 @@ protected:
 		char *blockBuf;		// buffer to hold one block of data to be sent
 	} pDat;
 
+	XYZPrintStateCode translateStatus(int oldStatus);
+	int translateErrorCode(int code);
 	const char* stateCodesToStr(int state, int subState);
 	static float nozzleIDToDiameter(int id);
 	static bool nozzleIDIsLaser(int id);
