@@ -23,13 +23,13 @@ enum XYZPrintStateCode
 	PRINT_PRINTING = 9502,
 	PRINT_CALIBRATING = 9503,
 	PRINT_CALIBRATING_DONE = 9504,
-	PRINT_IN_PROGRESS = 9505,
+	PRINT_IN_PROGRESS = 9505,		// print 2:
 	PRINT_COOLING_DONE = 9506,
 	PRINT_COOLING_END = 9507,
 	PRINT_ENDING_PROCESS = 9508,
-	PRINT_ENDING_PROCESS_DONE = 9509,
+	PRINT_ENDING_PROCESS_DONE = 9509,	// print 3:
 	PRINT_JOB_DONE = 9510,
-	PRINT_NONE = 9511,						// 0
+	PRINT_NONE = 9511,
 	PRINT_STOP = 9512,
 	PRINT_LOAD_FILAMENT = 9513,
 	PRINT_UNLOAD_FILAMENT = 9514,
@@ -37,15 +37,34 @@ enum XYZPrintStateCode
 	PRINT_JOG_MODE = 9516,
 	PRINT_FATAL_ERROR = 9517,
 
-	STATE_PRINT_FILE_CHECK = 9520,
+	STATE_PRINT_FILE_CHECK = 9520,	// print 1: pre-printing, file compatibility check?
 
 	STATE_PRINT_LOAD_FIALMENT = 9530,
+		// sub 11 - warming up
+		// sub 12 - loading
+
 	STATE_PRINT_UNLOAD_FIALMENT = 9531,
-	STATE_PRINT_JOG_MODE = 9532,			// 30
+		// sub 21 - warming up
+		// sub 22 - unloading
+
+	STATE_PRINT_JOG_MODE = 9532,			
+		// sub 30 - jogging
+
 	STATE_PRINT_FATAL_ERROR = 9533,
-	STATE_PRINT_HOMING = 9534,				// 5
-	STATE_PRINT_CALIBRATE = 9535,			// 40
-	STATE_PRINT_CLEAN_NOZZLE = 9536,		// 51, 52
+
+	STATE_PRINT_HOMING = 9534,				
+		// sub 5 - homing
+
+	STATE_PRINT_CALIBRATE = 9535,			
+		// sub 40 - begin calibration
+		// sub 41 - ask to lower detector
+		// sub 43 - calibrating
+		// sub 44 - ask to raise detector
+
+	STATE_PRINT_CLEAN_NOZZLE = 9536,
+		// sub 51 - warming up
+		// sub 52 - ready to clean
+
 	STATE_PRINT_GET_SD_FILE = 9537,
 	STATE_PRINT_PRINT_SD_FILE = 9538,
 	STATE_PRINT_ENGRAVE_PLACE_OBJECT = 9539,

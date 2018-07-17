@@ -180,8 +180,8 @@ int XYZV3::translateErrorCode(int code)
 	switch(code & 0xFFFF)
 	{
 	case 0x0002: return 0x0101;
-	case 0x0003: return 0x001B;
-//	case 0x0003: return 0x0102;
+	case 0x0003: return 0x001B; // machine buisy
+//	case 0x0003: return 0x0102; // bead heat error
 	case 0x0004: return 0x0103;
 	case 0x0005: return 0x0104;
 	case 0x0006: return 0x0105;

@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		docs\socket.txt = docs\socket.txt
 		docs\v3 notes.txt = docs\v3 notes.txt
 		docs\v3 scanner notes.txt = docs\v3 scanner notes.txt
+		docs\v3 wifi notes.txt = docs\v3 wifi notes.txt
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniMover", "miniMoverConsole\miniMover.vcxproj", "{E91D031F-5BF3-4567-A69E-F19413754505}"

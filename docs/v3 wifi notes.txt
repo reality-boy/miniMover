@@ -1,0 +1,255 @@
+-----------------
+// clean nozzle
+
+>XYZv3/query=a\r\n
+<e:0\n
+<j:9511,0\n	// idle state
+<t:1,24,0\n
+
+>XYZv3/action=cleannozzle:new\r\n
+
+// loop looking for change in status
+>XYZv3/query=a\r\n
+<j:9536,51\n	// cleaning warming up
+<t:1,24,0\n	// extruder turned off
+..
+<t:1,26,200\n	// extruder warming up to 200 deg
+..
+<t:1,191,200\n	// made it, or close enough
+..
+<j:9536,52\n	// ready to clean
+
+//call 
+>XYZv3/action=cleannozzle:cancel\r\n
+// or wait for
+<j:9511,0\n	// idle state
+<t:1,203,0\n
+
+-------------------
+// calibrate
+
+>XYZv3/query=a\r\n
+<j:9511,0\n	// idle state
+
+>XYZv3/action=calibratejr:new\r\n
+
+>XYZv3/query=j\r\n
+<j:9535,40\n	// begin calibration
+..
+<j:9535,41\n	// ask to lower detector
+
+>XYZv3/action=calibratejr:detectorok\r\n
+>XYZv3/query=j\r\n
+<j:9535,43\n	// calibrating
+..
+<j:9535,44\n	// ask to raise detector
+
+>XYZv3/action=calibratejr:getdata\r\n
+<calibratejr:{335,372,377,352,375,369,365,378,356}\n
+<$\n
+
+>XYZv3/action=calibratejr:release\r\n
+
+>XYZv3/query=j\r\n
+<j:9511,0\n	// idle state
+
+----------------
+// home
+
+>XYZv3/action=home\r\n
+
+>XYZv3/query=j\r\n
+<j:9511,0\n	// idle state
+..
+<j:9534,5\n	// homing
+..
+<j:9511,0\n	// idle state
+
+>XYZv3/action=jog:{"axis":"y","dir":"+","len":"150"}\r\n
+
+>XYZv3/query=j\r\n
+// initially no value returned
+..
+<j:9511,0\n	// idle state
+
+>XYZv3/action=jog:{"axis":"x","dir":"+","len":"150"}\r\n
+
+>XYZv3/query=j\r\n
+..
+<j:9511,0\n	// idle state
+
+>XYZv3/action=jog:{"axis":"z","dir":"+","len":"150"}\r\n
+
+>XYZv3/query=j\r\n
+<j:9511,0\n	// idle state
+..
+<j:9532,30\n	// jogging
+..
+<j:9511,0\n	// idle state
+
+>XYZv3/action=jog:{"axis":"z","dir":"-","len":"150"}\r\n
+
+>XYZv3/query=j\r\n
+<j:9511,0\n	// idle state
+..
+<j:9532,30\n	// jogging
+..
+<j:9511,0\n	// idle state
+
+
+---------------------
+// settings
+
+>XYZv3/query=a\r\n
+<o:p8,t1,c1,a+\n
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
+
+>XYZv3/config=autolevel:off\r\n
+
+>XYZv3/query=a\r\n
+<o:p8,t1,c1,a-\n
+
+>XYZv3/config=autolevel:on\r\n
+
+>XYZv3/query=a\r\n
+<o:p8,t1,c1,a+\n
+
+>XYZv3/config=buzzer:off\r\n
+
+>XYZv3/query=a\r\n
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}\n
+
+>XYZv3/config=buzzer:on\r\n
+
+>XYZv3/query=a\r\n
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
+
+>XYZv3/config=restoredefault:on\r\n
+
+
+-----------------------
+// z offset
+
+>XYZv3/query=a\r\n
+<z:241\n
+
+>XYZv3/config=zoffset:get\r\n
+<241\n
+<$\n
+
+>XYZv3/action=home\r\n
+
+>XYZv3/action=zoffset:up\r\n
+
+>XYZv3/config=zoffset:get\r\n  // seems delayed, reading old value!!!!
+<241\n
+<$\n
+
+>XYZv3/config=zoffset:set[261]\r\n
+
+>XYZv3/query=a\r\n
+<z:261\n
+
+------------------------
+// load/unload
+// an error of 0x40000206 indicates no spool installed
+
+>XYZv3/query=a\r\n
+<e:0\n
+<j:9511,0\n	// idle state
+<t:1,22,0\n
+
+>XYZv3/action=load:new\r\n
+
+>XYZv3/query=a\r\n
+<j:9530,11\n	// warming up
+<t:1,24,200\n
+..
+<j:9530,12\n	// loading
+<t:1,202,200\n
+
+>XYZv3/action=load:cancel\r\n
+
+>XYZv3/query=a\r\n
+<j:9530,12\n	// loading
+<t:1,202,200\n
+..
+<j:9511,0\n	// idle state
+<t:1,201,0\n
+
+// optionally call, if you did not cancel
+>XYZv3/action=load:retry\r\n
+
+>XYZv3/action=unload:new\r\n
+
+>XYZv3/query=a\r\n
+<j:9531,21\n	// warming up
+<t:1,128,200\n
+..
+<t:1,199,100\n
+..
+<j:9531,22\n	// unloading
+<t:1,199,100\n
+..
+<j:9511,0\n	// idle state
+<t:1,92,0\n
+
+// optionally call 
+>XYZv3/action=unload:retry\r\n
+
+------------------
+// print
+
+>XYZv3/query=a\r\n
+<d:0,0,0\n
+<e:0\n
+<j:9511,0\n	// idle state
+<t:1,26,0\n
+
+>XYZv3/upload=MyTest.gcode,18688\r\n
+<ok\n					// actually returns ok \n with a space at the end
+><data>					// no newline
+<ok\n
+...
+><data>					// no newline
+<ok\n
+>XYZv3/uploadDidFinish	// no newline
+<ok\n
+<ok\n					// get extra ok for some reason
+
+>XYZv3/query=a\r\n
+<d:0,0,0\n
+<j:9520,0\n	// check file format
+<t:1,87,0\n
+..
+<d:0,1,2\n
+<j:9505,0\n	// print in progress
+<t:1,195,200\n
+..
+<d:0,2,2\n
+<j:9505,0\n	// print in progress
+<t:1,202,200\n
+..
+<d:69,2,1\n
+<j:9505,0\n	// print in progress
+<t:1,203,200\n
+..
+<d:0,0,0\n
+<j:9509,0\n	// print ending
+<t:1,194,0\n
+..
+// just prior to removing fillament spool
+<w:1,PMP6QTH64R1093\n
+<e:0\n
+<f:1,199864\n
+<j:9509,0\n	// print ending
+..
+// after removing fillament spool
+<w:1,--------------\n
+<e:1073742342\n
+<f:1,-1\n
+<j:9511,0\n	// idle state
+
+
+
+
