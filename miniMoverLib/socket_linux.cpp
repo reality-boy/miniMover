@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-//#include <linux/wireless.h>
 
 #define IS_VALID(s) ((s) > 0)
 #define INVALID_SOCKET -1
@@ -34,6 +33,7 @@
 
 // detect wifi network windows is using
 /*
+#include <linux/wireless.h>
 bool autoDetectWifi(char *ssid, char *password, int &channel)
 {
 	bool success = false;
