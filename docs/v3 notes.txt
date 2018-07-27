@@ -745,16 +745,15 @@ XYZv3/query=7
 XYZv3/query=8
 XYZv3/query=9
 
-
 //***********************
 // Send_Config_command or SendCfg() (check ExcuteOrder)
 // XYZv3/config=
 // on serial all return ok or E0 followed by $
 // on wifi no terminator is returned
 
-
 //-------------------------
 // toggle auto level off
+
 XYZv3/config=autolevel:off			// send
 	ok
 	$
@@ -765,6 +764,7 @@ XYZv3/query=os						// send to get status
 
 //-------------------------
 // toggle auto level on
+
 XYZv3/config=autolevel:on			// send
 	ok
 	$
@@ -773,9 +773,9 @@ XYZv3/query=os						// send to get status
 	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}
 	$
 
-
 //----------------------------------
 // toggle print finish buzzer off
+
 XYZv3/config=buzzer:off				// send
 	ok
 	$
@@ -786,6 +786,7 @@ XYZv3/query=os						// send to get status
 
 //----------------------------------
 // toggle print finish buzzer on
+
 XYZv3/config=buzzer:on				// send
 	ok
 	$
@@ -794,20 +795,26 @@ XYZv3/query=os						// send to get status
 	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}
 	$
 
-
+//--------------------------------
 // disconnect from the wifi router
+
 XYZv3/config=disconnectap
 	ok
 	$
 
-//???
+//--------------
+//placeobject???
+
 XYZv3/config=engrave:placeobject
 	ok
 	$
 
+//-----------------
+// set energy level
 // where E is energy value (whatever that is, probably lazer engraving energy)
 //****Note, this may be the energy saving level as seen in the jr 3in1, that controls how long the led lights stay on for, in min
 // E seems to range from 0.0 to 0.9
+
 XYZv3/config=energy:[E] 
 	ok
 	$
@@ -815,42 +822,47 @@ XYZv3/config=energy:[E]
 //----------------
 // change language 
 // where XX is one of en, fr, it, de, es, jp
+
 XYZv3/config=lang:[XX] 
 
 XYZv3/config=lang:[en]			// send at startup and when language changes
 	ok							// returns immediately
 	$						
 
-
+//-----------------------------------
 // update runtime maintanence counter
 // xx == how many hours since last maintanence?
 // can't seem to make it work
+
 XYZv3/config=life:[XX] 
 	// does not return anyting on miniMaker, probably not supported
 
+//--------------------
 // update printer name
 // where N is the name
+
 XYZv3/config=name:[N] 
 	ok
 	$						
 
+//-------------------------
 // manage current print job
 //****FixMe, get details, probably combines with  XYZv3/upload=xxx
+
 XYZv3/config=print[complete] // send to swithc from 'print done' to 'print ready', but be sure the bed is clear before sending this!
 XYZv3/config=print[cancel]
 XYZv3/config=print[pause]
 XYZv3/config=print[resume]
 
-
 //-----------------------
 // reset printer settings
+
 XYZv3/config=restoredefault:on			// send
 XYZv3/config=energy:[3]					// send, why send this???
 XYZv3/query=os							// send to get status
 	o:p8,t1,c1,a+						// returns status
 	s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}
 	$  
-
 
 //-----------------
 // connect wifi
@@ -888,7 +900,7 @@ XYZv3/config=zoffset:set[321]			// send
 	ok
 	$								// return
 
-
+//-----------------------------------
 // UnlockFilament, send in this order
 // does not seem to work wih miniMaker
 XYZv3/config=pda:[1591]
@@ -896,14 +908,12 @@ XYZv3/config=pdb:[4387]
 XYZv3/config=pdc:[7264]
 XYZv3/config=pde:[8046]
 
-
 // stat can be:
 // ok, fail, no
 
 //***************************
 // Send_Action_command or SendAct()
 // XYZv3/action=
-
 
 //--------------
 // calibrate bed
@@ -937,7 +947,6 @@ XYZv3/action=calibratejr:release				// send to end calibration, xyz sends this b
 // gets data?  maybe send after ok and before release?
 XYZv3/action=calibratejr:getdata
 
-
 //-------------
 // clean nozzle
 // send to start heating
@@ -967,7 +976,6 @@ XYZv3/action=cleannozzle:cancel			// send
 	$
 // end loop
 
-
 //-------------
 // home printer
 // send
@@ -986,7 +994,6 @@ XYZv3/query=j						// send
 	home:{"stat":"complete"}			// when do we get this? indicates home is finished
 	$????
 // loop end
-
 
 //--------------------------
 // Jog where LL is step size
@@ -1014,7 +1021,6 @@ XYZv3/query=j						// send
 	jog:{"stat":"complete"}			// when does this get returned
 	$????
 // loop end
-
 
 //--------------
 // filament load
@@ -1055,7 +1061,6 @@ XYZv3/action=load:retry						// send
 	load:{"stat":"heat","extemp":"24"}		// returns immediately, only sent once after a retry
 	$
 
-
 //----------------
 // filament unload
 
@@ -1089,7 +1094,6 @@ XYZv3/action=unload:retry						// restarts unload, available when stat goes to c
 	$
 	unload:{"stat":"heat","extemp":"33"}		// and return immediatly, but only once, is current temp of extruder
 	$
-
 
 //***************************
 // V3OffineSendata or V3Wirelessdata
@@ -1163,8 +1167,6 @@ def write_firmware(self, filename, downgrade=False):
 
         conn.write("XYZv3/uploadDidFinish")
 */
-
-
 
 
 //*****************

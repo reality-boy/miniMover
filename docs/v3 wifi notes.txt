@@ -1,35 +1,187 @@
------------------
-// clean nozzle
+//************************
+// Send_Query_command or aboutconnect, SendCmd(), ActionOrder, queryIp (check ExcuteOrder)
+// on wifi any query other than a does not terminate with a $ sign
+// XYZv3/query=
 
 >XYZv3/query=a\r\n
+<b:20\n
+<c:{336,374,377,355,373,371,364,377,356}\n
+<d:0,0,0\n
+<w:1,PMP6QTH64R1093\n
 <e:0\n
-<j:9511,0\n	// idle state
-<t:1,24,0\n
+<f:1,200000\n
+<i:3FM1WPUS5CA6750022\n
+<j:9511,0\n
+<L:1,301080,28581,66\n
+<m:0,0,0\n
+<o:p8,t1,c1,a+\n
+<p:dv1MW0A000\n
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
+<t:1,22,0\n
+<v:1.2.3\n
+<n:miniMaker       \n
+<X:2,GB-0002-0000-TH-68T-0250-28727\n
+<l:en\n
+<z:245\n
+<V:5.0.9\n
+<4:{"wlan":{"ip":"192.168.1.118","ssid":"TUCKER_HOME","channel":"0","rssiValue":"39","MAC":"54:8c:a0:06:7e:48"}}\n
+<$\n
 
->XYZv3/action=cleannozzle:new\r\n
+>XYZv3/query=j\r\n
+<j:9511,0\n
 
-// loop looking for change in status
+//***********************
+// Send_Config_command or SendCfg() (check ExcuteOrder)
+// XYZv3/config=
+
+//----------------------
+// toggle auto level off
+
 >XYZv3/query=a\r\n
-<j:9536,51\n	// cleaning warming up
-<t:1,24,0\n	// extruder turned off
-..
-<t:1,26,200\n	// extruder warming up to 200 deg
-..
-<t:1,191,200\n	// made it, or close enough
-..
-<j:9536,52\n	// ready to clean
+<...
+<o:p8,t1,c1,a+\n
+<...
+<$\n
 
-//call 
->XYZv3/action=cleannozzle:cancel\r\n
-// or wait for
-<j:9511,0\n	// idle state
-<t:1,203,0\n
-
--------------------
-// calibrate
+>XYZv3/config=autolevel:off\r\n
 
 >XYZv3/query=a\r\n
+<...
+<o:p8,t1,c1,a-\n
+<...
+<$\n
+
+//----------------------
+// toggle auto level on
+
+>XYZv3/config=autolevel:on\r\n
+
+>XYZv3/query=a\r\n
+<...
+<o:p8,t1,c1,a+\n
+<...
+<$\n
+
+//-------------------------------
+// toggle print finish buzzer off
+
+>XYZv3/query=a\r\n
+<...
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
+<...
+<$\n
+
+>XYZv3/config=buzzer:off\r\n
+
+>XYZv3/query=a\r\n
+<...
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}\n
+<...
+<$\n
+
+//-------------------------------
+// toggle print finish buzzer on
+
+>XYZv3/config=buzzer:on\r\n
+
+>XYZv3/query=a\r\n
+<...
+<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
+<...
+<$\n
+
+//--------------------------------
+// disconnect from the wifi router
+
+//****FillMeIn
+
+//--------------
+//placeobject???
+
+//****FillMeIn
+
+//-----------------
+// set energy level
+
+//****FillMeIn
+
+//----------------
+// change language 
+
+//****FillMeIn
+
+//-----------------------------------
+// update runtime maintanence counter
+
+//****FillMeIn
+
+//--------------------
+// update printer name
+
+//****FillMeIn
+
+//-------------------------
+// manage current print job
+
+//****FillMeIn
+
+//-----------------------
+// reset printer settings
+
+>XYZv3/config=restoredefault:on\r\n
+
+//-----------------
+// connect wifi
+
+//****FillMeIn
+
+//-----------------
+// get/set z offset or adjusts z offset up or down
+
+>XYZv3/query=a\r\n
+<...
+<z:241\n
+<...
+<$\n
+
+>XYZv3/config=zoffset:get\r\n
+<241\n
+<$\n
+
+>XYZv3/action=home\r\n
+
+>XYZv3/action=zoffset:up\r\n
+
+>XYZv3/config=zoffset:get\r\n  // seems delayed, reading old value!!!!
+<241\n
+<$\n
+
+>XYZv3/config=zoffset:set[261]\r\n
+
+>XYZv3/query=a\r\n
+<...
+<z:261\n
+<...
+<$\n
+
+//---------------
+// UnlockFilament
+
+//****FillMeIn
+
+
+//***************************
+// Send_Action_command or SendAct()
+// XYZv3/action=
+
+//--------------
+// calibrate bed
+
+>XYZv3/query=a\r\n
+<...
 <j:9511,0\n	// idle state
+<...
+<$\n
 
 >XYZv3/action=calibratejr:new\r\n
 
@@ -53,7 +205,37 @@
 >XYZv3/query=j\r\n
 <j:9511,0\n	// idle state
 
-----------------
+//-------------
+// clean nozzle
+
+>XYZv3/query=a\r\n
+<...
+<e:0\n
+<j:9511,0\n	// idle state
+<t:1,24,0\n
+<...
+<$\n
+
+>XYZv3/action=cleannozzle:new\r\n
+
+// loop looking for change in status
+>XYZv3/query=a\r\n
+<j:9536,51\n	// cleaning warming up
+<t:1,24,0\n	// extruder turned off
+..
+<t:1,26,200\n	// extruder warming up to 200 deg
+..
+<t:1,191,200\n	// made it, or close enough
+..
+<j:9536,52\n	// ready to clean
+
+//call 
+>XYZv3/action=cleannozzle:cancel\r\n
+// or wait for
+<j:9511,0\n	// idle state
+<t:1,203,0\n
+
+//-----
 // home
 
 >XYZv3/action=home\r\n
@@ -64,6 +246,10 @@
 <j:9534,5\n	// homing
 ..
 <j:9511,0\n	// idle state
+
+
+//----
+// jog
 
 >XYZv3/action=jog:{"axis":"y","dir":"+","len":"150"}\r\n
 
@@ -97,67 +283,16 @@
 <j:9511,0\n	// idle state
 
 
----------------------
-// settings
-
->XYZv3/query=a\r\n
-<o:p8,t1,c1,a+\n
-<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
-
->XYZv3/config=autolevel:off\r\n
-
->XYZv3/query=a\r\n
-<o:p8,t1,c1,a-\n
-
->XYZv3/config=autolevel:on\r\n
-
->XYZv3/query=a\r\n
-<o:p8,t1,c1,a+\n
-
->XYZv3/config=buzzer:off\r\n
-
->XYZv3/query=a\r\n
-<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"off"}\n
-
->XYZv3/config=buzzer:on\r\n
-
->XYZv3/query=a\r\n
-<s:{"fm":0,"fd":0,"sd":"yes","button":"no","buzzer":"on"}\n
-
->XYZv3/config=restoredefault:on\r\n
-
-
------------------------
-// z offset
-
->XYZv3/query=a\r\n
-<z:241\n
-
->XYZv3/config=zoffset:get\r\n
-<241\n
-<$\n
-
->XYZv3/action=home\r\n
-
->XYZv3/action=zoffset:up\r\n
-
->XYZv3/config=zoffset:get\r\n  // seems delayed, reading old value!!!!
-<241\n
-<$\n
-
->XYZv3/config=zoffset:set[261]\r\n
-
->XYZv3/query=a\r\n
-<z:261\n
-
-------------------------
-// load/unload
+//--------------
+// filament load
 // an error of 0x40000206 indicates no spool installed
 
 >XYZv3/query=a\r\n
 <e:0\n
 <j:9511,0\n	// idle state
 <t:1,22,0\n
+<...
+<$\n
 
 >XYZv3/action=load:new\r\n
 
@@ -180,6 +315,9 @@
 // optionally call, if you did not cancel
 >XYZv3/action=load:retry\r\n
 
+//----------------
+// filament unload
+
 >XYZv3/action=unload:new\r\n
 
 >XYZv3/query=a\r\n
@@ -197,14 +335,20 @@
 // optionally call 
 >XYZv3/action=unload:retry\r\n
 
-------------------
-// print
+
+//***************************
+// V3OffineSendata or V3Wirelessdata
+// XYZv3/upload={filename},{size},SaveToSD
+// XYZv3/uploadDidFinish
 
 >XYZv3/query=a\r\n
+<...
 <d:0,0,0\n
 <e:0\n
 <j:9511,0\n	// idle state
 <t:1,26,0\n
+<...
+<$\n
 
 >XYZv3/upload=MyTest.gcode,18688\r\n
 <ok\n					// actually returns ok \n with a space at the end
@@ -250,6 +394,7 @@
 <f:1,-1\n
 <j:9511,0\n	// idle state
 
-
-
-
+//***************************
+// UpgradeFJR10
+// XYZv3/firmware={filename},{size},Downgrade
+// XYZv3/uploadDidFinish
