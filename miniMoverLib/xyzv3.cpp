@@ -2499,6 +2499,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					totalLayers = atoi(s + strlen("total_layers = "));
 				else if(NULL != (s = strstr(lineBuf, "LAYER_COUNT:")))
 					totalLayers = atoi(s + strlen("LAYER_COUNT:"));
+				//****FixMe, can look for ;LAYER: x as well
 
 				// filament used
 				else if(NULL != (s = strstr(lineBuf, "total_filament = ")))
@@ -2509,6 +2510,19 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 					totalFilament = (float)atof(s + strlen("filament used = "));
 				else if(NULL != (s = strstr(lineBuf, "Filament used: ")))
 					totalFilament = 1000.0f * (float)atof(s + strlen("Filament used: ")); // m to mm
+
+				// potential data to be stripped from header
+
+				// nozzle diameter
+				//" nozzle_diameter = "
+
+				// layer height
+				//" layer_height = "
+				//"Layer height: "
+
+				// print speed
+				//" speed = "
+				//"nspeed_print = "
 			}
 			//****Note, probably should not early out, some put there header at the bottom
 			else
@@ -2532,6 +2546,37 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 			bbufOffset += sprintf(bBuf + bbufOffset, "; total_layers = %d\n", totalLayers);
 			bbufOffset += sprintf(bBuf + bbufOffset, "; version = 18020109\n");
 			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilament);
+
+			// potential data to add to header
+			/*
+			; nozzle_diameter = 0.40
+			; layer_height = 0.30
+			; support_material = 0
+			; support_material_extruder = 1
+			; extruder_filament = 50.15:0.00
+			; extruder = 1
+			; filamentid = 50,50,
+			; materialid = 0,
+			; fill_density = 0.10
+			; raft_layers = 0
+			; support_density = 0.15
+			; shells = 2
+			; speed = 35.000
+			; brim_width = 0.000
+			; dimension = 20.00:20.00:0.65
+			; fill_pattern = rectilinear
+			; perimeter_speed = 15.000
+			; small_perimeter_speed = 10.000
+			; bridge_speed = 10.000
+			; travel_speed = 60.000
+			; retract_speed = 15
+			; retract_length = 4.000
+			; first_layer_speed = 5.000
+			; Call_From_APP = XYZware 2.1.26.1
+			; speed_limit_open = 1
+			; Total computing time = 0.000 sec. 
+			; threads = 1
+			*/
 
 			bool isHeader = true;
 			bool wasHeader = true;
