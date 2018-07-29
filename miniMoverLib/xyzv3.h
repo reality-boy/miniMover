@@ -303,7 +303,7 @@ public:
 
 	// update status struct
 	// a updates all status, b-z updates individual status entries
-	bool queryStatus(bool doPrint = false, char q1 = 'a', char q2 = 0, char q3 = 0, char q4 = 0);
+	bool queryStatus(bool doPrint = false, float timeout_s = -1, char q1 = 'a', char q2 = 0, char q3 = 0, char q4 = 0);
 	const XYZPrinterStatus* getPrinterStatus() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
@@ -449,6 +449,8 @@ protected:
 	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = -1);
 	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = -1);
 	bool waitForConfigOK(float timeout_s = -1);
+	bool waitForState(int state, int substate = -1, bool isSet = true, float timeout_s = -1);
+
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);

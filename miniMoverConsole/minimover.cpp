@@ -728,28 +728,39 @@ int main(int argc, char **argv)
 					debugPrint(DBG_REPORT, "test!");
 					if(checkCon())
 					{
+						/*
 						msTimer t;
-
 						debugPrint(DBG_REPORT, "query 'a'");
 						t.startTimer();
 						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, 'a');
+							xyz.queryStatus(false, -1, 'a');
 						t.stopTimer();
 						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
 
 						debugPrint(DBG_REPORT, "query 'b'");
 						t.startTimer();
 						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, 'b');
+							xyz.queryStatus(false, -1, 'b');
 						t.stopTimer();
 						debugPrint(DBG_REPORT, "b took %0.4f", t.getLastTime_s());
 
 						debugPrint(DBG_REPORT, "query 'a'");
 						t.startTimer();
 						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, 'a');
+							xyz.queryStatus(false, -1, 'a');
 						t.stopTimer();
 						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
+						*/
+
+						xyz.getZOffset();
+
+						if(xyz.homePrinterStart())
+							if(xyz.homePrinterRun())
+								debugPrint(DBG_REPORT, "success");
+							else
+								debugPrint(DBG_REPORT, "run failed");
+						else
+							debugPrint(DBG_REPORT, "start failed");
 					}
 					break;
 				case 'u':

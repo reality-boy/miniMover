@@ -595,7 +595,7 @@ bool XYZV3::parseStatusSubstring(const char *str)
 //
 // Otherwise we can query for up to 4 sub values
 // in that case only the sub values are returned, no terminating '$' is sent
-bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
+bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3, char q4)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
@@ -642,7 +642,7 @@ bool XYZV3::queryStatus(bool doPrint, char q1, char q2, char q3, char q4)
 			static const int len = 1024;
 			char buf[len];
 			bool isDone = false; // only try so many times for the answer
-			int ret = m_stream->readLineWait(buf, len);
+			int ret = m_stream->readLineWait(buf, len, timeout_s);
 			while(ret > 0 && !isDone)
 			{
 				if(buf[0] == '$') // end of message
@@ -993,8 +993,17 @@ bool XYZV3::calibrateBedStart()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:new") &&
-		waitForJsonVal("stat", "start", true) &&
-		waitForJsonVal("stat", "pressdetector", true, 120); //****FixMe, deal with delay, does this need to be this long, it should only last while we home
+		(isWIFI() || waitForJsonVal("stat", "start", true));
+
+	if(success)
+	{
+		//****FixMe, deal with delay, does this need to be this long, it should only last while we home
+		if(!isWIFI())
+			success = waitForJsonVal("stat", "pressdetector", true, 120);
+		else
+			success = waitForState(STATE_PRINT_CALIBRATE, 41, true, 120);
+	}
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1005,7 +1014,7 @@ bool XYZV3::calibrateBedDetectorLowered()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:detectorok") &&
-		waitForJsonVal("stat", "processing", true);
+		(isWIFI() || waitForJsonVal("stat", "processing", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1014,9 +1023,14 @@ bool XYZV3::calibrateBedDetectorLowered()
 bool XYZV3::calibrateBedRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		waitForJsonVal("stat", "ok", true, 240); //****FixMe, deal with delay
-		// or stat:fail
+	bool success = false;
+
+	//****FixMe, deal with delay
+	if(!isWIFI())
+		success = waitForJsonVal("stat", "ok", true, 240); // or stat:fail
+	else
+		success = waitForState(STATE_PRINT_CALIBRATE, 44, true, 240);
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1027,7 +1041,7 @@ bool XYZV3::calibrateBedFinish()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:release") &&
-		waitForJsonVal("stat", "complete", true);
+		(isWIFI() || waitForJsonVal("stat", "complete", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1037,7 +1051,7 @@ bool XYZV3::cleanNozzleStart()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=cleannozzle:new") &&
-		waitForJsonVal("stat", "start", true);
+		(isWIFI() || waitForJsonVal("stat", "start", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1045,9 +1059,14 @@ bool XYZV3::cleanNozzleStart()
 bool XYZV3::cleanNozzleRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
-		// or state is PRINT_NONE
+	bool success = false;
+
+	//****FixMe, deal with delay
+	if(!isWIFI())
+		waitForJsonVal("stat", "complete", true, 120); // or state is PRINT_NONE
+	else
+		success = waitForState(STATE_PRINT_CLEAN_NOZZLE, 52, true, 120);
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1057,7 +1076,7 @@ bool XYZV3::cleanNozzleCancel()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=cleannozzle:cancel") &&
-		waitForJsonVal("stat", "ok", true);
+		(isWIFI() || waitForJsonVal("stat", "ok", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1067,7 +1086,7 @@ bool XYZV3::homePrinterStart()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=home") &&
-		waitForJsonVal("stat", "start", true);
+		(isWIFI() || waitForJsonVal("stat", "start", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1075,9 +1094,16 @@ bool XYZV3::homePrinterStart()
 bool XYZV3::homePrinterRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
-		// or state is PRINT_NONE
+	bool success = false;
+
+	//****FixMe, rather than waiting for up to 120 seconds lets poll for status
+	// so that the calling program won't block
+
+	if(!isWIFI())
+		success = waitForJsonVal("stat", "complete", true, 120);
+	else // we may fall into idle or error state before we can detect homing state, so just block if homing state detected
+		success = waitForState(STATE_PRINT_HOMING, -1, false, 120);
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1086,10 +1112,8 @@ bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
-		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}",
-								axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm));
-	if(success)
-		success = isWIFI() || waitForJsonVal("stat", "start", true);
+		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}", axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm)) &&
+		(isWIFI() || waitForJsonVal("stat", "start", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1097,9 +1121,14 @@ bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 bool XYZV3::jogPrinterRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		isWIFI() || waitForJsonVal("stat", "complete", true, 120); //****FixMe, deal with delay
-		// or state is PRINT_NONE
+	bool success = false;
+
+	//****FixMe, deal with delay
+	if(!isWIFI())
+		success = waitForJsonVal("stat", "complete", true, 120); // or state is PRINT_NONE
+	else// we may fall into idle or error state before we can detect joging state, so just block if joging state detected
+		success = waitForState(STATE_PRINT_JOG_MODE, -1, false, 120);
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1109,7 +1138,7 @@ bool XYZV3::loadFilamentStart()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=load:new") &&
-		waitForJsonVal("stat", "start", true);
+		(isWIFI() || waitForJsonVal("stat", "start", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1117,14 +1146,19 @@ bool XYZV3::loadFilamentStart()
 bool XYZV3::loadFilamentRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		waitForJsonVal("stat", "heat", true, 120) &&  //****FixMe, deal with delay
-		waitForJsonVal("stat", "load", true, 240); //****FixMe, deal with delay
+	bool success = false;
 
-		// if user does not hit cancel/done then eventually one of these will be returned
-		// waitForJsonVal("stat", "fail", true);
-		// waitForJsonVal("stat", "complete", true);
-		// or state is PRINT_NONE
+	//****FixMe, deal with delay
+	if(!isWIFI())
+		success = waitForJsonVal("stat", "heat", true, 120) &&
+				  waitForJsonVal("stat", "load", true, 240); 
+	else
+		success = waitForState(STATE_PRINT_LOAD_FIALMENT, 12, true, 360);
+
+	// if user does not hit cancel/done then eventually one of these will be returned
+	// waitForJsonVal("stat", "fail", true);
+	// waitForJsonVal("stat", "complete", true);
+	// or state is PRINT_NONE
 
 	MTX(ReleaseMutex(ghMutex));
 	return success;
@@ -1135,7 +1169,7 @@ bool XYZV3::loadFilamentCancel()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=load:cancel") &&
-		waitForJsonVal("stat", "complete", true);
+		(isWIFI() || waitForJsonVal("stat", "complete", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1145,7 +1179,7 @@ bool XYZV3::unloadFilamentStart()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=unload:new") &&
-		waitForJsonVal("stat", "start", true);
+		(isWIFI() || waitForJsonVal("stat", "start", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1153,13 +1187,17 @@ bool XYZV3::unloadFilamentStart()
 bool XYZV3::unloadFilamentRun()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
-	bool success = 
-		// could query temp and state with  XYZv3/query=jt
-		waitForJsonVal("stat", "heat", true, 120) &&  //****FixMe, deal with delay
-		waitForJsonVal("stat", "unload", true, 240) && //****FixMe, deal with delay
-		// could query temp and state with  XYZv3/query=jt
-		waitForJsonVal("stat", "complete", true, 240); //****FixMe, deal with delay
-		// or state is PRINT_NONE
+	bool success = false;
+
+	//****FixMe, deal with delay
+	if(!isWIFI())
+		success = waitForJsonVal("stat", "heat", true, 120) && // could query temp and state with  XYZv3/query=jt
+				  waitForJsonVal("stat", "unload", true, 240) && // could query temp and state with  XYZv3/query=jt
+				  waitForJsonVal("stat", "complete", true, 240); // or state is PRINT_NONE
+	else // wait for unloading to start, then for any other state including error to indicate finished
+		success = waitForState(STATE_PRINT_UNLOAD_FIALMENT, 22, true, 360) &&
+				  waitForState(STATE_PRINT_UNLOAD_FIALMENT, 22, false, 360);
+
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1169,7 +1207,7 @@ bool XYZV3::unloadFilamentCancel()
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=unload:cancel") &&
-		waitForJsonVal("stat", "complete", true);
+		(isWIFI() || waitForJsonVal("stat", "complete", true));
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -1195,15 +1233,12 @@ int XYZV3::getZOffset()
 {
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	int ret = -1;
-	if(isWIFI())
-	{
-		if(m_status.zOffsetSet)
-			ret = m_status.zOffset;
-		//****FixMe, else update status?
-	}
+
+	// wifi is super slow, so return cached z-offset from status if available
+	if(isWIFI() && m_status.zOffsetSet)
+		ret = m_status.zOffset;
 	else
 	{
-		// not supported on wifi
 		if(serialSendMessage("XYZv3/config=zoffset:get"))
 		{
 			const char* buf = waitForLine(true);
@@ -1239,6 +1274,7 @@ bool XYZV3::restoreDefaults()
 	bool success = 
 		serialSendMessage("XYZv3/config=restoredefault:on") &&
 		waitForConfigOK(); // not returned on wifi
+		//****Note, XYZWare sets energy to 3 at this point
 	MTX(ReleaseMutex(ghMutex));
 	return success;
 }
@@ -2231,6 +2267,40 @@ bool XYZV3::getJsonVal(const char *str, const char *key, char *val)
 	}
 
 	return false;
+}
+
+bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
+{
+	bool success = false;
+
+	if(timeout_s < 0)
+		timeout_s = 20;
+
+	float start = msTime::getTime_s();
+	float end = start + timeout_s;
+	do
+	{
+		//****FixMe, is this needed?
+		Sleep(300);
+
+		if(queryStatus(false, 100))
+		{
+			if(isSet && (m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
+					success = true;
+			else if(!isSet && !(m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
+					success = true;
+			else
+				debugPrint(DBG_LOG, "XYZV3::waitForState stat is %d", m_status.jPrinterState);
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::waitForState queryStatus() failed");
+	}
+	while(!success && msTime::getTime_s() < end);
+
+	if(!success)
+		debugPrint(DBG_WARN, "XYZV3::waitForState failed!");
+
+	return success;
 }
 
 unsigned int XYZV3::swap16bit(unsigned int in)
