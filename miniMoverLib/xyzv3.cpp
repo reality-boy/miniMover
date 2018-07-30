@@ -658,11 +658,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 			int ret = m_stream->readLineWait(buf, len, timeout_s);
 			while(ret > 0 && !isDone)
 			{
-				//****FixMe, should we test 'j' or 'l' for success
-				// j is key to our ability to operate but l shows up much later in the list of returned values
-				if(buf[0] == 'j') 
-					foundState = true;
-				else if(buf[0] == '$') // end of message
+				if(buf[0] == '$') // end of message
 				{
 					isDone = true;
 					if(q[0] != 'a' || foundState)
@@ -682,6 +678,11 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 				}
 				else if(parseStatusSubstring(buf))
 				{
+					//****FixMe, should we test 'j' or 'l' for success
+					// j is key to our ability to operate but l shows up much later in the list of returned values
+					if(buf[0] == 'j') 
+						foundState = true;
+
 					if(doPrint)
 						printf("%s\n", buf);
 
@@ -2410,7 +2411,7 @@ bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
 			else if(!isSet && !(m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
 					success = true;
 			else
-				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d but stat is %d%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::waitForState queryStatus() failed");
