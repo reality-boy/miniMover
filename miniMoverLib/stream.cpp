@@ -17,9 +17,11 @@
 
 void Stream::clear()
 {
+	debugPrint(DBG_VERBOSE, "Stream::clear()");
+
 	// drain residual data in readline buffer
 	if(m_lineBufCount > 0)
-		debugPrint(DBG_REPORT, "Stream::clear() leftover data: %s", m_lineBuf);
+		debugPrint(DBG_REPORT, "Stream::clear leftover data: %s", m_lineBuf);
 
 	m_lineBuf[0] = '\0';
 	m_lineBufCount = 0;
@@ -29,6 +31,8 @@ void Stream::clear()
 
 int Stream::readLineFromBuffer(char *buf, int bufLen)
 {
+	debugPrint(DBG_VERBOSE, "stream::readlinefrombuffer()");
+
 	assert(buf);
 	assert(bufLen > 0);
 
@@ -47,7 +51,7 @@ int Stream::readLineFromBuffer(char *buf, int bufLen)
 			int len = i;
 			if(len > bufLen)
 			{
-				debugPrint(DBG_WARN, "Stream::readLineFromBuffer() data buffer too small, increase by %d bytes", len - bufLen);
+				debugPrint(DBG_WARN, "Stream::readLineFromBuffer data buffer too small, increase by %d bytes", len - bufLen);
 				len = bufLen;
 			}
 
@@ -63,13 +67,15 @@ int Stream::readLineFromBuffer(char *buf, int bufLen)
 		}
 	}
 	else
-		debugPrint(DBG_WARN, "Stream::readLineFromBuffer() failed invalid input");
+		debugPrint(DBG_WARN, "Stream::readLineFromBuffer failed invalid input");
 
 	return 0;
 }
 
 int Stream::readLine(char *buf, int bufLen)
 {
+	debugPrint(DBG_VERBOSE, "Stream::readLine()");
+
 	assert(buf);
 	assert(bufLen > 0);
 
@@ -87,7 +93,7 @@ int Stream::readLine(char *buf, int bufLen)
 			len = readLineFromBuffer(buf, bufLen);
 			if(len > 0)
 			{
-				debugPrint(DBG_LOG, "Stream::readLine() returned '%s'", buf);
+				debugPrint(DBG_LOG, "Stream::readLine returned '%s'", buf);
 				return len;
 			}
 			else // not found, pull more data
@@ -101,17 +107,17 @@ int Stream::readLine(char *buf, int bufLen)
 					len = readLineFromBuffer(buf, bufLen);
 					if(len > 0)
 					{
-						debugPrint(DBG_LOG, "Stream::readLine() returned '%s'", buf);
+						debugPrint(DBG_LOG, "Stream::readLine returned '%s'", buf);
 						return len;
 					}
 				}
 			}
 		}
 		else
-			debugPrint(DBG_WARN, "Stream::readLine() failed invalid connection");
+			debugPrint(DBG_WARN, "Stream::readLine failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Stream::readLine() failed invalid input");
+		debugPrint(DBG_WARN, "Stream::readLine failed invalid input");
 		
 
 	return 0;
@@ -119,6 +125,8 @@ int Stream::readLine(char *buf, int bufLen)
 
 int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 {
+	debugPrint(DBG_VERBOSE, "Stream::readLineWait()");
+
 	assert(buf);
 	assert(bufLen > 0);
 
@@ -146,35 +154,39 @@ int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 			if(report)
 			{
 				float elapsed = msTime::getTime_s() - start;
-				debugPrint(DBG_WARN, "Stream::readLineWait() triggered timeout %0.4f of %0.4f seconds", elapsed, timeout_s);
+				debugPrint(DBG_WARN, "Stream::readLineWait triggered timeout %0.4f of %0.4f seconds", elapsed, timeout_s);
 			}
 		}
 		else
-			debugPrint(DBG_WARN, "Stream::readLineWait() failed invalid connection");
+			debugPrint(DBG_WARN, "Stream::readLineWait failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Stream::readLineWait() failed invalid input");
+		debugPrint(DBG_WARN, "Stream::readLineWait failed invalid input");
 
 	return 0;
 }
 
 int Stream::writeStr(const char *buf)
 {
+	debugPrint(DBG_VERBOSE, "Stream::writeStr(%s)", buf);
+
 	assert(buf);
 
 	if(buf)
 	{
-		debugPrint(DBG_LOG,"Stream::writeStr() sent %s", buf);
+		debugPrint(DBG_LOG,"Stream::writeStr sent %s", buf);
 		return write(buf, strlen(buf));
 	}
 	else
-		debugPrint(DBG_WARN, "Stream::writeStr() failed invalid input");
+		debugPrint(DBG_WARN, "Stream::writeStr failed invalid input");
 
 	return 0;
 }
 
 int Stream::writePrintf(const char *fmt, ...)
 {
+	debugPrint(DBG_VERBOSE, "Stream::writePrintf(%s)", fmt);
+
 	assert(fmt);
 
 	if(fmt)
@@ -193,7 +205,7 @@ int Stream::writePrintf(const char *fmt, ...)
 		return writeStr(tstr);
 	}
 	else
-		debugPrint(DBG_WARN, "Stream::writePrintf() failed invalid input");
+		debugPrint(DBG_WARN, "Stream::writePrintf failed invalid input");
 
 	return 0;
 }

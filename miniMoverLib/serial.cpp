@@ -33,6 +33,8 @@ SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0
 // based on CEnumerateSerial http://www.naughter.com/enumser.html
 int SerialHelper::queryForPorts(const char *hint)
 {
+	debugPrint(DBG_LOG, "SerialHelper::queryForPorts(%s)", hint);
+
 	m_portCount = 0;
 	m_defaultPortID = -1;
 	bool hintFound = false;
@@ -103,24 +105,24 @@ int SerialHelper::queryForPorts(const char *hint)
 								}
 								else
 								{
-									debugPrint(DBG_REPORT, "SerialHelper::queryForPorts() failed to find display name for port %s", portInfo[m_portCount].deviceName);
+									debugPrint(DBG_REPORT, "SerialHelper::queryForPorts failed to find display name for port %s", portInfo[m_portCount].deviceName);
 									sprintf(portInfo[m_portCount].displayName, portInfo[m_portCount].deviceName);
 								}
 
 								m_portCount++;
 							}
 							else
-								debugPrint(DBG_WARN, "SerialHelper::queryForPorts() m_maxPortCount exeeded %d", m_maxPortCount);
+								debugPrint(DBG_WARN, "SerialHelper::queryForPorts m_maxPortCount exeeded %d", m_maxPortCount);
 						}
 					}
 				}
 				else
-					debugPrint(DBG_WARN, "SerialHelper::queryForPorts() RegQueryValueEx failed with error %d", status);
+					debugPrint(DBG_WARN, "SerialHelper::queryForPorts RegQueryValueEx failed with error %d", status);
 
 				RegCloseKey(key);
 			}
 			else
-				debugPrint(DBG_WARN, "SerialHelper::queryForPorts() SetupDiOpenDevRegKey failed with error %d", GetLastError());
+				debugPrint(DBG_WARN, "SerialHelper::queryForPorts SetupDiOpenDevRegKey failed with error %d", GetLastError());
 
 			++nIndex;
 		}
@@ -130,24 +132,24 @@ int SerialHelper::queryForPorts(const char *hint)
 		{
 			for(int i=0; i<m_portCount; i++)
 			{
-				debugPrint(DBG_LOG, "SerialHelper::queryForPorts() found port  %d:%s", i, SerialHelper::getPortDisplayName(i));
+				debugPrint(DBG_LOG, "SerialHelper::queryForPorts found port  %d:%s", i, SerialHelper::getPortDisplayName(i));
 			}
 
 			if(m_defaultPortID >= 0)
 			{
 				if(SerialHelper::getPortDisplayName(m_defaultPortID))
-					debugPrint(DBG_LOG, "SerialHelper::queryForPorts() default port: %d:%s", m_defaultPortID, SerialHelper::getPortDisplayName(m_defaultPortID));
+					debugPrint(DBG_LOG, "SerialHelper::queryForPorts default port: %d:%s", m_defaultPortID, SerialHelper::getPortDisplayName(m_defaultPortID));
 				else
-					debugPrint(DBG_LOG, "SerialHelper::queryForPorts() default port: %d:NULL", m_defaultPortID);
+					debugPrint(DBG_LOG, "SerialHelper::queryForPorts default port: %d:NULL", m_defaultPortID);
 			}
 		}
 		else
-			debugPrint(DBG_REPORT, "SerialHelper::queryForPorts() failed to find any ports");
+			debugPrint(DBG_REPORT, "SerialHelper::queryForPorts failed to find any ports");
 
 		SetupDiDestroyDeviceInfoList(hDevInfoSet);
 	}
 	else
-		debugPrint(DBG_WARN, "SerialHelper::queryForPorts() SetupDiGetClassDevs failed with error %d", GetLastError());
+		debugPrint(DBG_WARN, "SerialHelper::queryForPorts SetupDiGetClassDevs failed with error %d", GetLastError());
 	
 	return m_defaultPortID;
 }
@@ -158,17 +160,23 @@ Serial::Serial()
 	: m_handle(INVALID_HANDLE_VALUE) 
 	, m_baudRate(-1)
 {
+	debugPrint(DBG_LOG, "Serial::Serial()");
+
 	m_deviceName[0] = '\0';
 }
 
 Serial::~Serial() 
 { 
+	debugPrint(DBG_LOG, "Serial::~Serial()");
+
 	closeStream(); 
 }
 
 /*
-bool setupConfig(const char *portStr, HANDLE h)
+bool Serial::setupConfig(const char *portStr, HANDLE h)
 {
+	debugPrint(DBG_LOG, "Serial::setupConfig()");
+
  	COMMCONFIG commConfig = {0};
 	DWORD dwSize = sizeof(commConfig);
 	commConfig.dwSize = dwSize;
@@ -186,6 +194,8 @@ bool setupConfig(const char *portStr, HANDLE h)
 
 bool Serial::openSerial(const char *deviceName, int baudRate)
 {
+	debugPrint(DBG_LOG, "Serial::openSerial(%s, %d)", deviceName, baudRate);
+
 	assert(deviceName);
 	assert(baudRate > 0);
 
@@ -240,34 +250,34 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 										strcpy(m_deviceName, deviceName);
 										m_baudRate = baudRate;
 
-										debugPrint(DBG_LOG, "Serial::openSerial() connected to %s : %d", m_deviceName, m_baudRate);
+										debugPrint(DBG_LOG, "Serial::openSerial connected to %s : %d", m_deviceName, m_baudRate);
 
 										return true;
 									}
 									else
-										debugPrint(DBG_WARN, "Serial::openSerial() SetupComm failed with error %d", GetLastError());
+										debugPrint(DBG_WARN, "Serial::openSerial SetupComm failed with error %d", GetLastError());
 								}
 								else
-									debugPrint(DBG_WARN, "Serial::openSerial() SetCommMask failed with error %d", GetLastError());
+									debugPrint(DBG_WARN, "Serial::openSerial SetCommMask failed with error %d", GetLastError());
 							}
 							else
-								debugPrint(DBG_WARN, "Serial::openSerial() SetCommTimeouts failed with error %d", GetLastError());
+								debugPrint(DBG_WARN, "Serial::openSerial SetCommTimeouts failed with error %d", GetLastError());
 						}
 						else
-							debugPrint(DBG_WARN, "Serial::openSerial() GetCommTimeouts failed with error %d", GetLastError());
+							debugPrint(DBG_WARN, "Serial::openSerial GetCommTimeouts failed with error %d", GetLastError());
 					}
 					else
-						debugPrint(DBG_WARN, "Serial::openSerial() SetCommState failed with error %d", GetLastError());
+						debugPrint(DBG_WARN, "Serial::openSerial SetCommState failed with error %d", GetLastError());
 				}
 				else
-					debugPrint(DBG_WARN, "Serial::openSerial() GetCommState failed with error %d", GetLastError());
+					debugPrint(DBG_WARN, "Serial::openSerial GetCommState failed with error %d", GetLastError());
 			}
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::openSerial() CreateFile failed with error %d", GetLastError());
+			debugPrint(DBG_WARN, "Serial::openSerial CreateFile failed with error %d", GetLastError());
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::openSerial() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::openSerial failed invalid input");
 
 	// Close if already open
 	closeStream();
@@ -277,6 +287,8 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 
 void Serial::closeStream()
 {
+	debugPrint(DBG_LOG, "Serial::closeStream()");
+
 	if(isOpen())
 	{
 		CloseHandle(m_handle);
@@ -288,11 +300,15 @@ void Serial::closeStream()
 
 bool Serial::isOpen()
 {
+	debugPrint(DBG_LOG, "Serial::isOpen()");
+
 	return m_handle != INVALID_HANDLE_VALUE; 
 }
 
 void Serial::clear()
 {
+	debugPrint(DBG_VERBOSE, "Serial::clear()");
+
 	// call parent
 	Stream::clear();
 
@@ -308,15 +324,17 @@ void Serial::clear()
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "Serial::clear() leftover data: '%s'", buf);
+				debugPrint(DBG_REPORT, "Serial::clear leftover data: '%s'", buf);
 		}
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::clear() failed invalid connection");
+		debugPrint(DBG_WARN, "Serial::clear failed invalid connection");
 }
 
 int Serial::read(char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "Serial::read()");
+
 	assert(buf);
 	assert(len > 0);
 
@@ -339,7 +357,7 @@ int Serial::read(char *buf, int len)
 				if(tbufBytes > 0)
 					memcpy(tbuf, tbuf+l, tbufBytes);
 
-				debugPrint(DBG_LOG, "Serial::read() cache returned %d bytes", l);
+				debugPrint(DBG_LOG, "Serial::read cache returned %d bytes", l);
 
 				return l;
 			}
@@ -361,14 +379,14 @@ int Serial::read(char *buf, int len)
 						if(tbufBytes > 0)
 							memcpy(tbuf, tbuf+l, tbufBytes);
 
-						debugPrint(DBG_LOG, "Serial::read() returned %d bytes", l);
+						debugPrint(DBG_LOG, "Serial::read returned %d bytes", l);
 
 						return l;
 					}
 					//else no data yet
 				}
 				else
-					debugPrint(DBG_WARN, "Serial::read() failed with error %d", GetLastError());
+					debugPrint(DBG_WARN, "Serial::read failed with error %d", GetLastError());
 			}
 #else
 
@@ -379,25 +397,27 @@ int Serial::read(char *buf, int len)
 				{
 					// success
 					buf[tLen] = '\0';
-					debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
+					debugPrint(DBG_LOG, "Serial::read returned %d bytes", tLen);
 					return tLen;
 				}
 			}
 			else
-				debugPrint(DBG_WARN, "Serial::read() failed with error %d", GetLastError());
+				debugPrint(DBG_WARN, "Serial::read failed with error %d", GetLastError());
 #endif
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::read() failed invalid connection");
+			debugPrint(DBG_WARN, "Serial::read failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::read() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::read failed invalid input");
 
 	return 0;
 }
 
 int Serial::write(const char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "Serial::write(%s, %d)", buf, len);
+
 	assert(buf);
 	assert(len > 0);
 
@@ -409,17 +429,17 @@ int Serial::write(const char *buf, int len)
 			if(WriteFile(m_handle, buf, len, &tLen, NULL))
 			{
 				// success
-				debugPrint(DBG_LOG, "Serial::write() sent: %d of %d bytes", tLen, len);
+				debugPrint(DBG_LOG, "Serial::write sent: %d of %d bytes", tLen, len);
 				return tLen;
 			}
 			else
-				debugPrint(DBG_ERR, "Serial::write() failed with error %d", GetLastError());
+				debugPrint(DBG_ERR, "Serial::write failed with error %d", GetLastError());
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::write() failed invalid connection");
+			debugPrint(DBG_WARN, "Serial::write failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::write() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::write failed invalid input");
 
 	return 0;
 }

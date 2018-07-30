@@ -46,7 +46,7 @@
 // globals
 
 // uncomment to reduce amount of 'routine' logging in debug log
-#define DEBUG_REDUCE_NOISE
+//#define DEBUG_REDUCE_NOISE
 
 XYZV3 xyz;
 Serial g_serial;
@@ -284,7 +284,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 
 void MainDlgSetStatus(HWND hDlg, const char *msg)
 {
-	debugPrint(DBG_LOG, "status: %s", msg);
+	debugPrint(DBG_LOG, "MainDlgSetStatus(%s)", msg);
 	SendDlgItemMessage(hDlg, IDC_STATIC_STATUS, WM_SETTEXT, 0, (LPARAM)msg);
 }
 

@@ -37,6 +37,8 @@ SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0
 
 int SerialHelper::queryForPorts(const char *hint)
 {
+	debugPrint(DBG_LOG, "SerialHelper::queryForPorts(%s)", hint);
+
 	isdigit('c');
 	m_portCount = 0;
 	m_defaultPortID = -1;
@@ -80,11 +82,15 @@ Serial::Serial()
 	: m_handle(-1)
 	, m_baudRate(-1)
 {
+	debugPrint(DBG_LOG, "Serial::Serial()");
+
 	m_deviceName[0] = '\0';
 }
 
 Serial::~Serial()
 {
+	debugPrint(DBG_LOG, "Serial::~Serial()");
+
 	closeStream();
 }
 
@@ -115,6 +121,8 @@ int baudFlag(int BaudRate)
 
 bool Serial::openSerial(const char *deviceName, int baudRate)
 {
+	debugPrint(DBG_LOG, "Serial::openSerial(%s, %d)", deviceName, baudRate);
+
 	assert(deviceName);
 	assert(baudRate > 0);
 
@@ -190,13 +198,13 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 				return true;
 			}
 			else
-				debugPrint(DBG_WARN, "Serial::openSerial() tcsetattr failed with error %d", errno);
+				debugPrint(DBG_WARN, "Serial::openSerial tcsetattr failed with error %d", errno);
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::openSerial() open failed with error %d", errno);
+			debugPrint(DBG_WARN, "Serial::openSerial open failed with error %d", errno);
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::openSerial() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::openSerial failed invalid input");
 
 	// Close if already open
 	closeStream();
@@ -206,6 +214,8 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 
 void Serial::closeStream()
 {
+	debugPrint(DBG_LOG, "Serial::closeStream()");
+
 	if(isOpen())
 	{
 		tcdrain(m_handle);
@@ -218,11 +228,15 @@ void Serial::closeStream()
 
 bool Serial::isOpen()
 {
+	debugPrint(DBG_LOG, "Serial::isOpen()");
+
 	return m_handle >= 0;
 }
 
 void Serial::clear()
 {
+	debugPrint(DBG_VERBOSE, "Serial::clear()");
+
 	// call parent
 	Stream::clear();
 
@@ -237,15 +251,17 @@ void Serial::clear()
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "Serial::clear() leftover data: '%s'", buf);
+				debugPrint(DBG_REPORT, "Serial::clear leftover data: '%s'", buf);
 		}
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::clear() failed invalid connection");
+		debugPrint(DBG_WARN, "Serial::clear failed invalid connection");
 }
 
 int Serial::read(char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "Serial::read()");
+
 	assert(buf);
 	assert(len > 0);
 
@@ -268,7 +284,7 @@ int Serial::read(char *buf, int len)
 				if(tbufBytes > 0)
 					memcpy(tbuf, tbuf+l, tbufBytes);
 
-				debugPrint(DBG_LOG, "Serial::read() cache returned %d bytes", l);
+				debugPrint(DBG_LOG, "Serial::read cache returned %d bytes", l);
 
 				return l;
 			}
@@ -288,12 +304,12 @@ int Serial::read(char *buf, int len)
 					if(tbufBytes > 0)
 						memcpy(tbuf, tbuf+l, tbufBytes);
 
-					debugPrint(DBG_LOG, "Serial::read() returned %d bytes", l);
+					debugPrint(DBG_LOG, "Serial::read returned %d bytes", l);
 
 					return l;
 				}
 				else
-					debugPrint(DBG_WARN, "Serial::read() failed with error %d", errno);
+					debugPrint(DBG_WARN, "Serial::read failed with error %d", errno);
 			}
 #else
 			int tLen = ::read(m_handle, buf, len-1);
@@ -301,24 +317,26 @@ int Serial::read(char *buf, int len)
 			{
 				// success
 				buf[tLen] = '\0';
-				debugPrint(DBG_LOG, "Serial::read() returned %d bytes", tLen);
+				debugPrint(DBG_LOG, "Serial::read returned %d bytes", tLen);
 				return tLen;
 			}
 			else
-				debugPrint(DBG_WARN, "Serial::read() failed with error %d", errno);
+				debugPrint(DBG_WARN, "Serial::read failed with error %d", errno);
 #endif
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::read() failed invalid connection");
+			debugPrint(DBG_WARN, "Serial::read failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::read() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::read failed invalid input");
 
 	return 0;
 }
 
 int Serial::write(const char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "Serial::write(%s, %d)", buf, len);
+
 	assert(buf);
 	assert(len > 0);
 
@@ -330,17 +348,17 @@ int Serial::write(const char *buf, int len)
 			if(tLen > 0)
 			{
 				// success
-				debugPrint(DBG_LOG, "Serial::write() sent: %d of %d bytes", tLen, len);
+				debugPrint(DBG_LOG, "Serial::write sent: %d of %d bytes", tLen, len);
 				return tLen;
 			}
 			else
-				debugPrint(DBG_ERR, "Serial::write() failed with error %d", errno);
+				debugPrint(DBG_ERR, "Serial::write failed with error %d", errno);
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::write() failed invalid connection");
+			debugPrint(DBG_WARN, "Serial::write failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::write() failed invalid input");
+		debugPrint(DBG_WARN, "Serial::write failed invalid input");
 
 	return 0;
 }

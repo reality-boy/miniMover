@@ -89,6 +89,8 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 
 XYZV3::XYZV3() 
 {
+	debugPrint(DBG_LOG, "XYZV3::XYZV3()");
+
 	memset(&m_status, 0, sizeof(m_status));
 	memset(&pDat, 0, sizeof(pDat));
 	m_stream = NULL;
@@ -99,11 +101,15 @@ XYZV3::XYZV3()
 
 XYZV3::~XYZV3() 
 {
+	debugPrint(DBG_LOG, "XYZV3::~XYZV3()");
+
 	MTX(CloseHandle(ghMutex));
 } 
 
 void XYZV3::setStream(Stream *s)
 {
+	debugPrint(DBG_LOG, "XYZV3::setStream(%d)", s);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 
 	// close out old stream
@@ -122,6 +128,8 @@ void XYZV3::setStream(Stream *s)
 
 bool XYZV3::serialSendMessage(const char *format, ...)
 {
+	debugPrint(DBG_LOG, "XYZV3::serialSendMessage(%s)", format);
+
 	//****Note, assume parrent has locked the mutex for us
 	bool success = false;
 
@@ -209,6 +217,8 @@ int XYZV3::translateErrorCode(int code)
 
 bool XYZV3::parseStatusSubstring(const char *str)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::parseStatusSubstring(%s)", str);
+
 	//****Note, assumes parrent locked mutex
 
 	if(str && str[0] != '\0' && str[1] == ':')
@@ -572,7 +582,7 @@ bool XYZV3::parseStatusSubstring(const char *str)
 		// case '5' to '9' unused
 
 		default:
-			debugPrint(DBG_WARN, "unknown string: %s", str);
+			debugPrint(DBG_WARN, "XYZV3::parseStatusSubstring unknown string: %s", str);
 			break;
 		}
 		return true;
@@ -597,6 +607,8 @@ bool XYZV3::parseStatusSubstring(const char *str)
 // in that case only the sub values are returned, no terminating '$' is sent
 bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3, char q4)
 {
+	debugPrint(DBG_LOG, "XYZV3::queryStatus(%d, %0.2f, %c...)", doPrint, timeout_s, q1);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -641,14 +653,20 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 
 			static const int len = 1024;
 			char buf[len];
+			bool foundState = false;
 			bool isDone = false; // only try so many times for the answer
 			int ret = m_stream->readLineWait(buf, len, timeout_s);
 			while(ret > 0 && !isDone)
 			{
-				if(buf[0] == '$') // end of message
+				//****FixMe, should we test 'j' or 'l' for success
+				// j is key to our ability to operate but l shows up much later in the list of returned values
+				if(buf[0] == 'j') 
+					foundState = true;
+				else if(buf[0] == '$') // end of message
 				{
 					isDone = true;
-					success = true;
+					if(q[0] != 'a' || foundState)
+						success = true;
 				}
 				else if(buf[0] == 'E') // error string like E4$\n
 				{
@@ -660,7 +678,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 					if(buf[1] && buf[2] == '$')
 						isDone = true;
 
-					debugPrint(DBG_WARN, "recieved error: %s", buf);
+					debugPrint(DBG_WARN, "XYZV3::queryStatus recieved error: %s", buf);
 				}
 				else if(parseStatusSubstring(buf))
 				{
@@ -696,7 +714,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 			}
 
 			if(!isDone)
-				debugPrint(DBG_WARN, "queryStatus timed out");
+				debugPrint(DBG_WARN, "XYZV3::queryStatus queryStatus timed out");
 
 			m_status.isValid = success;
 
@@ -990,6 +1008,8 @@ int XYZV3::rssiToPct(int rssi)
 // call to start calibration
 bool XYZV3::calibrateBedStart()
 {
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedStart()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:new") &&
@@ -1011,6 +1031,8 @@ bool XYZV3::calibrateBedStart()
 // ask user to lower detector, then call this
 bool XYZV3::calibrateBedDetectorLowered()
 {
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedDetectorLowered()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:detectorok") &&
@@ -1022,6 +1044,8 @@ bool XYZV3::calibrateBedDetectorLowered()
 // call in loop while true to pump status
 bool XYZV3::calibrateBedRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1038,6 +1062,8 @@ bool XYZV3::calibrateBedRun()
 // ask user to raise detector, then call this
 bool XYZV3::calibrateBedFinish()
 {
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedFinish()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=calibratejr:release") &&
@@ -1048,6 +1074,8 @@ bool XYZV3::calibrateBedFinish()
 
 bool XYZV3::cleanNozzleStart()
 {
+	debugPrint(DBG_LOG, "XYZV3::cleanNozzleStart()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=cleannozzle:new") &&
@@ -1058,6 +1086,8 @@ bool XYZV3::cleanNozzleStart()
 
 bool XYZV3::cleanNozzleRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1073,6 +1103,8 @@ bool XYZV3::cleanNozzleRun()
 
 bool XYZV3::cleanNozzleCancel()
 {
+	debugPrint(DBG_LOG, "XYZV3::cleanNozzleCancel()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=cleannozzle:cancel") &&
@@ -1083,6 +1115,8 @@ bool XYZV3::cleanNozzleCancel()
 
 bool XYZV3::homePrinterStart()
 {
+	debugPrint(DBG_LOG, "XYZV3::homePrinterStart()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=home") &&
@@ -1093,6 +1127,8 @@ bool XYZV3::homePrinterStart()
 
 bool XYZV3::homePrinterRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::homePrinterRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1110,6 +1146,8 @@ bool XYZV3::homePrinterRun()
 
 bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 {
+	debugPrint(DBG_LOG, "XYZV3::jogPrinterStart(%c, %d)", axis, dist_mm);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}", axis, (dist_mm < 0) ? '-' : '+', abs(dist_mm)) &&
@@ -1120,6 +1158,8 @@ bool XYZV3::jogPrinterStart(char axis, int dist_mm)
 
 bool XYZV3::jogPrinterRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1135,6 +1175,8 @@ bool XYZV3::jogPrinterRun()
 
 bool XYZV3::loadFilamentStart()
 {
+	debugPrint(DBG_LOG, "XYZV3::loadFilamentStart()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=load:new") &&
@@ -1145,6 +1187,8 @@ bool XYZV3::loadFilamentStart()
 
 bool XYZV3::loadFilamentRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1166,6 +1210,8 @@ bool XYZV3::loadFilamentRun()
 
 bool XYZV3::loadFilamentCancel()
 {
+	debugPrint(DBG_LOG, "XYZV3::loadFilamentCancel()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=load:cancel") &&
@@ -1176,6 +1222,8 @@ bool XYZV3::loadFilamentCancel()
 
 bool XYZV3::unloadFilamentStart()
 {
+	debugPrint(DBG_LOG, "XYZV3::unloadFilamentStart()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=unload:new") &&
@@ -1186,6 +1234,8 @@ bool XYZV3::unloadFilamentStart()
 
 bool XYZV3::unloadFilamentRun()
 {
+	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1204,6 +1254,8 @@ bool XYZV3::unloadFilamentRun()
 
 bool XYZV3::unloadFilamentCancel()
 {
+	debugPrint(DBG_LOG, "XYZV3::unloadFilamentCancel()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/action=unload:cancel") &&
@@ -1214,6 +1266,8 @@ bool XYZV3::unloadFilamentCancel()
 
 int XYZV3::incrementZOffset(bool up)
 {
+	debugPrint(DBG_LOG, "XYZV3::incrementZOffset(%d)", up);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	int ret = -1;
 	if(serialSendMessage("XYZv3/action=zoffset:%s", (up) ? "up" : "down"))
@@ -1231,6 +1285,8 @@ int XYZV3::incrementZOffset(bool up)
 
 int XYZV3::getZOffset()
 {
+	debugPrint(DBG_LOG, "XYZV3::getZOffset()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	int ret = -1;
 
@@ -1252,6 +1308,8 @@ int XYZV3::getZOffset()
 
 bool XYZV3::waitForConfigOK(float timeout_s)
 {
+	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK(%0.2f)", timeout_s);
+
 	if(!isWIFI())
 		return waitForVal("ok", true, timeout_s);
 	else
@@ -1260,6 +1318,8 @@ bool XYZV3::waitForConfigOK(float timeout_s)
 
 bool XYZV3::setZOffset(int offset)
 {
+	debugPrint(DBG_LOG, "XYZV3::setZOffset(%d)", offset);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=zoffset:set[%d]", offset) &&
@@ -1270,6 +1330,8 @@ bool XYZV3::setZOffset(int offset)
 
 bool XYZV3::restoreDefaults()
 {
+	debugPrint(DBG_LOG, "XYZV3::restoreDefaults()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=restoredefault:on") &&
@@ -1281,6 +1343,8 @@ bool XYZV3::restoreDefaults()
 
 bool XYZV3::setBuzzer(bool enable)
 {
+	debugPrint(DBG_LOG, "XYZV3::setBuzzer(%d)", enable);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off") &&
@@ -1291,6 +1355,8 @@ bool XYZV3::setBuzzer(bool enable)
 
 bool XYZV3::setAutoLevel(bool enable)
 {
+	debugPrint(DBG_LOG, "XYZV3::setAutoLevel(%d)", enable);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off") &&
@@ -1301,6 +1367,8 @@ bool XYZV3::setAutoLevel(bool enable)
 
 bool XYZV3::setLanguage(const char *lang)
 {
+	debugPrint(DBG_LOG, "XYZV3::setLanguage(%s)", lang);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		lang && 
@@ -1314,6 +1382,8 @@ bool XYZV3::setLanguage(const char *lang)
 // XYZWare sets this to 0,3,6
 bool XYZV3::setEnergySaving(int level)
 {
+	debugPrint(DBG_LOG, "XYZV3::setEnergySaving(%d)", level);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=energy:[%d]", level) &&
@@ -1324,6 +1394,8 @@ bool XYZV3::setEnergySaving(int level)
 
 bool XYZV3::sendDisconnectWifi()
 {
+	debugPrint(DBG_LOG, "XYZV3::sendDisconnectWifi()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=disconnectap") &&
@@ -1334,6 +1406,8 @@ bool XYZV3::sendDisconnectWifi()
 
 bool XYZV3::sendEngraverPlaceObject()
 {
+	debugPrint(DBG_LOG, "XYZV3::sendEngraverPlaceObject()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=engrave:placeobject") &&
@@ -1344,6 +1418,8 @@ bool XYZV3::sendEngraverPlaceObject()
 
 bool XYZV3::setMachineLife(int time_s)
 {
+	debugPrint(DBG_LOG, "XYZV3::setMachineLife(%d)", time_s);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=life:[%d]", time_s) &&
@@ -1354,6 +1430,8 @@ bool XYZV3::setMachineLife(int time_s)
 
 bool XYZV3::setMachineName(const char *name)
 {
+	debugPrint(DBG_LOG, "XYZV3::setMachineName(%s)", name);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		name && 
@@ -1365,6 +1443,8 @@ bool XYZV3::setMachineName(const char *name)
 
 bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 {
+	debugPrint(DBG_LOG, "XYZV3::setWifi(%s, %s, %d)", ssid, password, channel);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		ssid && 
@@ -1378,6 +1458,8 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 
 bool XYZV3::cancelPrint()
 {
+	debugPrint(DBG_LOG, "XYZV3::cancelPrint()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[cancel]") &&
@@ -1388,6 +1470,8 @@ bool XYZV3::cancelPrint()
 
 bool XYZV3::pausePrint()
 {
+	debugPrint(DBG_LOG, "XYZV3::pausePrint()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[pause]") &&
@@ -1398,6 +1482,8 @@ bool XYZV3::pausePrint()
 
 bool XYZV3::resumePrint()
 {
+	debugPrint(DBG_LOG, "XYZV3::resumePrint()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[resume]") &&
@@ -1411,6 +1497,8 @@ bool XYZV3::resumePrint()
 // be sure old job is off print bed!!!
 bool XYZV3::readyPrint()
 {
+	debugPrint(DBG_LOG, "XYZV3::readyPrint()");
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = 
 		serialSendMessage("XYZv3/config=print[complete]") &&
@@ -1429,6 +1517,8 @@ XYZv3/config=pde:[8046]
 
 bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 {
+	debugPrint(DBG_LOG, "XYZV3::printFile(%s, %d)", path, cbStatus);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 
@@ -1485,6 +1575,8 @@ bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
 
 bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 {
+	debugPrint(DBG_LOG, "XYZV3::writeFirmware(%s, %d)", path, cbStatus);
+
 	if(true)
 		return false; // probably don't want to run this!
 
@@ -1511,6 +1603,8 @@ bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
+	debugPrint(DBG_LOG, "XYZV3::sendFileInit(%s, %d)", path, isPrint);
+
 	//****Note, assume parrent has locked the mutex for us
 	assert(!pDat.isPrintActive);
 
@@ -1599,6 +1693,8 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 float XYZV3::getFileUploadPct()
 {
+	debugPrint(DBG_LOG, "XYZV3::getFileUploadPct()");
+
 	if(pDat.isPrintActive && pDat.blockCount > 0)
 		return (float)pDat.curBlock/(float)pDat.blockCount;
 	return 0;
@@ -1606,6 +1702,8 @@ float XYZV3::getFileUploadPct()
 
 bool XYZV3::sendFileProcess()
 {
+	debugPrint(DBG_LOG, "XYZV3::sendFileProcess()");
+
 	//****Note, assume parrent has locked the mutex for us
 	assert(pDat.isPrintActive);
 
@@ -1654,6 +1752,8 @@ bool XYZV3::sendFileProcess()
 
 bool XYZV3::sendFileFinalize()
 {
+	debugPrint(DBG_LOG, "XYZV3::sendFileFinalize()");
+
 	//****Note, assume parrent has locked the mutex for us
 	assert(pDat.isPrintActive);
 
@@ -1677,6 +1777,8 @@ bool XYZV3::sendFileFinalize()
 
 bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
 {
+	debugPrint(DBG_LOG, "XYZV3::convertFile(%s, %s, %d)", inPath, outPath, infoIdx);
+
 	if(inPath)
 	{
 		if(isGcodeFile(inPath))
@@ -1690,6 +1792,8 @@ bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
 
 bool XYZV3::isGcodeFile(const char *path)
 {
+	debugPrint(DBG_LOG, "XYZV3::isGcodeFile(%s)", path);
+
 	if(path)
 	{
 		const char *p = strrchr(path, '.');
@@ -1704,6 +1808,8 @@ bool XYZV3::isGcodeFile(const char *path)
 
 bool XYZV3::is3wFile(const char *path)
 {
+	debugPrint(DBG_LOG, "XYZV3::is3wFile(%s)", path);
+
 	if(path)
 	{
 		const char *p = strrchr(path, '.');
@@ -1716,6 +1822,8 @@ bool XYZV3::is3wFile(const char *path)
 
 bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 {
+	debugPrint(DBG_LOG, "XYZV3::encryptFile(%s, %s, %d)", inPath, outPath, infoIdx);
+
 	MTX(WaitForSingleObject(ghMutex, INFINITE));
 	bool success = false;
 	const int bodyOffset = 8192;
@@ -1881,6 +1989,8 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 
 bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 {
+	debugPrint(DBG_LOG, "XYZV3::decryptFile(%s, %s)", inPath, outPath);
+
 	bool success = false;
 
 	if(inPath)
@@ -2021,7 +2131,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						bbuf[bodyLen] = '\0';
 
 						if(crc32 != (int)calcXYZcrc32(bbuf, bodyLen))
-							debugPrint(DBG_WARN, "crc's don't match!!!");
+							debugPrint(DBG_WARN, "XYZV3::decryptFile crc's don't match!!!");
 
 						if(fileIsZip)
 						{
@@ -2066,7 +2176,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 										const int tstr_len = 512;
 										char tstr[tstr_len];
 										if(mz_zip_reader_get_filename(&zip, 0, tstr, tstr_len))
-											debugPrint(DBG_LOG, "zip file name '%s'", tstr);
+											debugPrint(DBG_LOG, "XYZV3::decryptFile zip file name '%s'", tstr);
 
 										size_t size = 0;
 										char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, 0, &size, 0);
@@ -2079,15 +2189,15 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 											tbuf = NULL;
 										}
 										else
-											debugPrint(DBG_WARN, "error %d", zip.m_last_error);
+											debugPrint(DBG_WARN, "XYZV3::decryptFile error %d", zip.m_last_error);
 									}
 									else
-										debugPrint(DBG_WARN, "error numfiles is %d", numFiles);
+										debugPrint(DBG_WARN, "XYZV3::decryptFile error numfiles is %d", numFiles);
 
 									mz_zip_reader_end(&zip);
 								}
 								else
-									debugPrint(DBG_WARN, "error %s", zip.m_last_error);
+									debugPrint(DBG_WARN, "XYZV3::decryptFile error %s", zip.m_last_error);
 
 								delete [] zbuf;
 								zbuf = NULL;
@@ -2136,6 +2246,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 // need to deal with all variants
 const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 {
+	debugPrint(DBG_LOG, "XYZV3::waitForLine(%d, %0.2f, %d)", waitForEndCom, timeout_s, report);
+
 	static const int len = 1024;
 	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
 	*buf = '\0';
@@ -2190,6 +2302,8 @@ const char* XYZV3::waitForLine(bool waitForEndCom, float timeout_s, bool report)
 
 bool XYZV3::waitForVal(const char *val, bool waitForEndCom, float timeout_s)
 {
+	debugPrint(DBG_LOG, "XYZV3::waitForVal(%s, %d, %0.2f)", val, waitForEndCom, timeout_s);
+
 	if(val)
 	{
 		const char* buf = waitForLine(waitForEndCom, timeout_s);
@@ -2208,6 +2322,8 @@ bool XYZV3::waitForVal(const char *val, bool waitForEndCom, float timeout_s)
 
 bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, float timeout_s)
 {
+	debugPrint(DBG_LOG, "XYZV3::waitForJsonVal(%s, %s, %d, %0.2f)", key, val, waitForEndCom, timeout_s);
+
 	if(key && val)
 	{
 		static const int len = 1024;
@@ -2237,6 +2353,8 @@ bool XYZV3::waitForJsonVal(const char *key, const char*val, bool waitForEndCom, 
 
 bool XYZV3::getJsonVal(const char *str, const char *key, char *val)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::getJsonVal(%s, %s, %s)", str, key, val);
+
 	if(str && key && val)
 	{
 		*val = '\0';
@@ -2271,6 +2389,8 @@ bool XYZV3::getJsonVal(const char *str, const char *key, char *val)
 
 bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
 {
+	debugPrint(DBG_LOG, "XYZV3::waitForState(%d, %d, %d, %0.2f)", state, substate, isSet, timeout_s);
+
 	bool success = false;
 
 	if(timeout_s < 0)
@@ -2290,7 +2410,7 @@ bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
 			else if(!isSet && !(m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
 					success = true;
 			else
-				debugPrint(DBG_LOG, "XYZV3::waitForState stat is %d", m_status.jPrinterState);
+				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d but stat is %d%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::waitForState queryStatus() failed");
@@ -2298,7 +2418,7 @@ bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
 	while(!success && msTime::getTime_s() < end);
 
 	if(!success)
-		debugPrint(DBG_WARN, "XYZV3::waitForState failed!");
+		debugPrint(DBG_WARN, "XYZV3::waitForState (%d:%d, %d) failed!", state, substate, isSet);
 
 	return success;
 }
@@ -2840,6 +2960,8 @@ int XYZV3::getInfoCount()
 
 const XYZPrinterInfo* XYZV3::indexToInfo(int index)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::indexToInfo(%d)", index);
+
 	if(index >= 0 && index < m_infoArrayLen)
 		return &m_infoArray[index];
 
@@ -2848,6 +2970,8 @@ const XYZPrinterInfo* XYZV3::indexToInfo(int index)
 
 const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::modelToInfo(%s)", modelNum);
+
 	if(modelNum)
 	{
 		// mini w has two model numbers
@@ -2869,6 +2993,8 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 
 const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::serialToInfo(%s)", serialNum);
+
 	if(serialNum)
 	{
 		//****Note, mini w has two model numbers
