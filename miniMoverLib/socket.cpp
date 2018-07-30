@@ -271,7 +271,7 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 			ret = -1;
 	    }
 		else if(ret == 0)
-			debugPrint(DBG_LOG, "Socket::waitOnSocket hit timeout, %s", getLastErrorMessage());
+			debugPrint(DBG_LOG, "Socket::waitOnSocket hit timeout, %d ms, error %s", timeout_ms, getLastErrorMessage());
 		else
 			debugPrint(DBG_WARN, "Socket::waitOnSocket failed with timeout, %d:%s", ret, getLastErrorMessage());
 	}

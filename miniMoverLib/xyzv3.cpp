@@ -2404,12 +2404,19 @@ bool XYZV3::waitForState(int state, int substate, bool isSet, float timeout_s)
 		//****FixMe, is this needed?
 		Sleep(300);
 
-		if(queryStatus(false, 100))
+		// only need to update state
+		if(queryStatus(false, -1, 'j'))
 		{
-			if(isSet && (m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
-					success = true;
-			else if(!isSet && !(m_status.jPrinterState == state && (0 < substate || m_status.jPrinterSubState == substate)))
-					success = true;
+			if(isSet && (m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate)))
+			{
+				success = true;
+				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+			}
+			else if(!isSet && !(m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate)))
+			{
+				success = true;
+				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+			}
 			else
 				debugPrint(DBG_LOG, "XYZV3::waitForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 		}
