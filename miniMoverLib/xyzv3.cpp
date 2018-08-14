@@ -3021,6 +3021,14 @@ const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
 	return NULL;
 }
 
+const char* XYZV3::serialToName(const char *serialNum)
+{
+	const XYZPrinterInfo *inf = XYZV3::serialToInfo(serialNum);
+	if(inf)
+		return inf->screenName;
+	return serialNum;
+}
+
 bool XYZV3::isWIFI()
 {
 	return m_stream && m_stream->isWIFI();

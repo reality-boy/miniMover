@@ -7,7 +7,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="XYZV3Thread.h" />
     <ClInclude Include="Resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
@@ -15,7 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp" />
-    <ClCompile Include="XYZV3Thread.cpp" />
     <ClCompile Include="XYZPrinterList.cpp" />
   </ItemGroup>
   <ItemGroup>

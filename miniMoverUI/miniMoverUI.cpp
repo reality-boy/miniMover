@@ -31,7 +31,6 @@
 #include "socket.h"
 #include "xyzv3.h"
 #include "XYZPrinterList.h"
-#include "XYZV3Thread.h"
 
 // tell windows to give us a more modern look
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -47,6 +46,8 @@
 
 // uncomment to reduce amount of 'routine' logging in debug log
 //#define DEBUG_REDUCE_NOISE
+
+HINSTANCE g_hInst = NULL;
 
 XYZV3 xyz;
 Serial g_serial;
@@ -68,9 +69,8 @@ int g_timerShortInterval = (int)(g_timerShortRate * 1000);
 UINT_PTR g_timer = 0;
 
 // set by XYZV3Thread.cpp
-int g_printPct = 0;
+//int g_printPct = 0;
 
-bool g_threadRunning = false;
 bool g_wifiOptionsEdited = false;
 
 // controls
@@ -80,9 +80,313 @@ HCURSOR waitCursor;
 HCURSOR defaultCursor;
 
 //-------------------------------------------
+// helper 'run' dialog
+
+enum ActionCommand
+{
+	ACT_IDLE,
+
+	ACT_CALIB_BED_START,
+	ACT_CALIB_BED_LOWER,
+	ACT_CALIB_BED_RUN,
+	ACT_CALIB_BED_RAISE,
+
+	ACT_CLEAN_NOZZLE_START,
+	ACT_CLEAN_NOZZLE_RUN,
+
+	ACT_HOME_PRINTER_START,
+	ACT_HOME_PRINTER_RUN, // no cancel
+
+	ACT_JOG_PRINTER_START,
+	ACT_JOG_PRINTER_RUN, //no cancel
+
+	ACT_LOAD_FILLAMENT_START,
+	ACT_LOAD_FILLAMENT_RUN,
+
+	ACT_UNLOAD_FILLAMENT_START,
+	ACT_UNLOAD_FILLAMENT_RUN,
+
+	ACT_PRINT_FILE_START,
+	ACT_PRINT_FILE_RUN, //load
+	ACT_PRINT_FILE_MONITOR,
+
+	ACT_CONVERT_FILE_START,
+	ACT_CONVERT_FILE_RUN,
+};
+
+ActionCommand g_run_act = ACT_IDLE;
+UINT_PTR g_run_timer = 0;
+bool g_run_doPause = true;
+char g_run_jogAxis = 'x';
+int g_run_jogDist = 1;
+char g_run_fileIn[MAX_PATH];
+char g_run_fileOut[MAX_PATH];
+int g_run_infoIdx = -1;
+
+void printFileCallback(float pct)
+{
+	//g_printPct = (int)(pct * 100);
+}
+
+void runDoInit(HWND hDlg)
+{
+	g_run_doPause = true;
+
+	SendDlgItemMessage(hDlg, IDC_RUN_PROGRESS, PBM_SETPOS, 0, 0);
+	SetDlgItemText(hDlg, IDC_RUN_STATIC1, "test");
+	SetDlgItemText(hDlg, IDC_RUN_STATIC2, "two");
+	// IDD_RUN_DIALOG
+}
+
+bool runSetState(HWND hDlg, ActionCommand newState, const char *statusStr)
+{
+	g_run_act = newState;
+	SetDlgItemText(hDlg, IDC_RUN_STATIC2, statusStr);
+
+	return true;
+}
+
+bool runDoProcess(HWND hDlg)
+{
+	switch(g_run_act)
+	{
+	case ACT_IDLE:
+		//****FixMe, put a timeout here
+		return true;
+
+	case ACT_CALIB_BED_START:
+		if(xyz.calibrateBedStart())
+			return runSetState(hDlg, ACT_CALIB_BED_LOWER, "Lower calibration sensor and hit ok");
+		else return runSetState(hDlg, ACT_IDLE, "Calibration failed to start");
+	case ACT_CALIB_BED_RUN:
+		if(xyz.calibrateBedRun())
+			return runSetState(hDlg, ACT_CALIB_BED_RAISE, "Raise calibration sensor and hit ok");
+		else return runSetState(hDlg, ACT_IDLE, "Calibration failed to finish");
+
+	case ACT_CLEAN_NOZZLE_START:
+		if(xyz.cleanNozzleStart())
+			return runSetState(hDlg, ACT_CLEAN_NOZZLE_RUN, "Clean nozzel warming up");
+		else return runSetState(hDlg, ACT_IDLE, "Clean nozzel failed to start");
+	case ACT_CLEAN_NOZZLE_RUN:
+		if(xyz.cleanNozzleRun())
+			return runSetState(hDlg, ACT_IDLE, "Clean nozzel and hit cancel when finished");
+		else return runSetState(hDlg, ACT_IDLE, "Clean nozzel failed to finish");
+
+	case ACT_HOME_PRINTER_START:
+		if(xyz.homePrinterStart())
+			return runSetState(hDlg, ACT_HOME_PRINTER_RUN, "Homing printer");
+		else return runSetState(hDlg, ACT_IDLE, "Home printer failed to start");
+	case ACT_HOME_PRINTER_RUN:
+		if(xyz.homePrinterRun())
+			return runSetState(hDlg, ACT_IDLE, "Homing printer finishing");
+		else return runSetState(hDlg, ACT_IDLE, "Home printer failed to finish");
+
+	case ACT_JOG_PRINTER_START:
+		if(xyz.jogPrinterStart(g_run_jogAxis, g_run_jogDist))
+			return runSetState(hDlg, ACT_JOG_PRINTER_RUN, "Jog printer running");
+		else return runSetState(hDlg, ACT_IDLE, "Jog printer failed to start");
+	case ACT_JOG_PRINTER_RUN: //no cancel
+		if(xyz.jogPrinterRun())
+			return runSetState(hDlg, ACT_IDLE, "Jog printer finishing");
+		else return runSetState(hDlg, ACT_IDLE, "Jog printer failed to finish");
+
+	case ACT_LOAD_FILLAMENT_START:
+		if(xyz.loadFilamentStart())
+			return runSetState(hDlg, ACT_LOAD_FILLAMENT_RUN, "Load fillament running");
+		else return runSetState(hDlg, ACT_IDLE, "Load fillament failed to start");
+	case ACT_LOAD_FILLAMENT_RUN:
+		if(xyz.loadFilamentRun())
+			return runSetState(hDlg, ACT_IDLE, "Loading fillament hit cancel when fillament comes out of nozzle");
+		else return runSetState(hDlg, ACT_IDLE, "Load fillament failed to finish");
+
+	case ACT_UNLOAD_FILLAMENT_START:
+		if(xyz.unloadFilamentStart())
+			return runSetState(hDlg, ACT_UNLOAD_FILLAMENT_RUN, "Unload fillament running");
+		else return runSetState(hDlg, ACT_IDLE, "Unload fillament failed to start");
+	case ACT_UNLOAD_FILLAMENT_RUN:
+		if(xyz.unloadFilamentRun())
+			return runSetState(hDlg, ACT_IDLE, "Unload fillament finishing");
+		else return runSetState(hDlg, ACT_IDLE, "Unload fillament failed to finish");
+
+	case ACT_PRINT_FILE_START:
+		assert(false);
+		if(xyz.printFile(g_run_fileIn, printFileCallback))
+			return runSetState(hDlg, ACT_IDLE, "process complete");
+		else return runSetState(hDlg, ACT_IDLE, "process failed");
+	case ACT_PRINT_FILE_RUN:
+		assert(false);
+		return false;
+	case ACT_PRINT_FILE_MONITOR:
+		assert(false);
+		return false;
+
+	case ACT_CONVERT_FILE_START:
+		if(xyz.convertFile(g_run_fileIn, g_run_fileOut, g_run_infoIdx))
+			return runSetState(hDlg, ACT_IDLE, "process complete");
+		else return runSetState(hDlg, ACT_IDLE, "process failed");
+	case ACT_CONVERT_FILE_RUN:
+		assert(false);
+		return false;
+
+	default:
+		return false;
+	}
+}
+
+void runDoAction(HWND hDlg)
+{
+	switch(g_run_act)
+	{
+	case ACT_IDLE:
+		KillTimer(hDlg, g_run_timer);
+	    EndDialog(hDlg, false); 
+		break;
+
+	case ACT_CALIB_BED_LOWER:
+		if(xyz.calibrateBedDetectorLowered())
+			runSetState(hDlg, ACT_CALIB_BED_RUN, "Calibration running");
+		// else runSetState(hDlg, ACT_IDLE, "Calibration failed");
+		break;
+	case ACT_CALIB_BED_RAISE:
+		if(xyz.calibrateBedFinish())
+			runSetState(hDlg, ACT_IDLE, "Calibration succeeded, hit ok to finish");
+		// else runSetState(hDlg, ACT_IDLE, "Calibration failed");
+		break;
+	case ACT_PRINT_FILE_MONITOR:
+		if(g_run_doPause)
+			xyz.pausePrint();
+		else
+			xyz.resumePrint();
+		g_run_doPause = !g_run_doPause;
+		break;
+	default:
+		// action button not supported
+		return;
+	}
+}
+
+void runDoCancel(HWND hDlg)
+{
+	switch(g_run_act)
+	{
+	case ACT_IDLE:
+		// nothing to do
+		break;
+	case ACT_CLEAN_NOZZLE_RUN:
+		xyz.cleanNozzleCancel();
+		g_run_act = ACT_IDLE;
+		break;
+	case ACT_LOAD_FILLAMENT_RUN:
+		xyz.loadFilamentCancel();
+		g_run_act = ACT_IDLE;
+		break;
+	case ACT_UNLOAD_FILLAMENT_RUN:
+		xyz.unloadFilamentCancel();
+		g_run_act = ACT_IDLE;
+		break;
+	case ACT_PRINT_FILE_MONITOR:
+		xyz.cancelPrint();
+		g_run_act = ACT_IDLE;
+		break;
+	default:
+		// cancel not supported
+		return;
+	}
+
+	KillTimer(hDlg, g_run_timer);
+    EndDialog(hDlg, false); 
+}
+
+BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
+{ 
+    switch (message) 
+    { 
+		case WM_INITDIALOG:
+			runDoInit(hDlg);
+			// set a timer to trigger basically immediatly
+			g_run_timer = SetTimer(hDlg, NULL, 50, NULL);
+            return TRUE; 
+
+		case WM_TIMER:
+			if(runDoProcess(hDlg))
+				g_run_timer = SetTimer(hDlg, g_run_timer, 50, NULL);
+            return TRUE; 
+
+        case WM_COMMAND: 
+            switch (LOWORD(wParam)) 
+            { 
+            case ID_RUN_OK: 
+				runDoAction(hDlg);
+				return TRUE;
+
+			case IDOK:
+            case IDCANCEL: 
+				runDoCancel(hDlg);
+				return TRUE;
+            } 
+    } 
+
+	// we did not handle this message
+    return FALSE; 
+} 
+
+bool RunDialogStart(HWND hDlg, ActionCommand act)
+{
+	g_run_act = act;
+	return DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
+}
+
+bool RunDialogStartJog(HWND hDlg, const char axis, int dist)
+{
+	g_run_jogAxis = axis;
+	g_run_jogDist = dist;
+	return RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+}
+
+//-------------------------------------------
 // main dialog
 
 void MainDlgUpdate(HWND hDlg);
+
+bool getFilePath(HWND hDlg, char *path, int len, bool isOpen)
+{
+	if(path && len > 0)
+	{
+		OPENFILENAME ofn;
+		memset(&ofn, 0, sizeof(ofn));
+		ofn.lStructSize = sizeof(ofn);
+		ofn.hwndOwner = hDlg;
+		//ofn.lpstrFilter = "Print Files\0*.gcode;*.3w\0GCode Files\0*.gcode\03W Files\0*.3w\0All Files\0*.*\0";
+		ofn.lpstrFilter = "All Files\0*.*\0GCode Files\0*.gcode\0XYZ Files\0*.3w\0\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFile = path;
+		if(isOpen)
+			ofn.lpstrFile[0] = '\0'; // zero string if selecting a file
+		ofn.nMaxFile = len;
+		ofn.Flags = OFN_PATHMUSTEXIST | ((isOpen) ? OFN_FILEMUSTEXIST : OFN_OVERWRITEPROMPT);
+
+		if(isOpen)
+			return (TRUE == GetOpenFileName(&ofn) && strlen(path) > 0);
+		else
+			return (TRUE == GetSaveFileName(&ofn) && strlen(path) > 0);
+	}
+
+	return false;
+}
+
+void setDialogStr(HWND hDlg, const char *format, ...)
+{
+	const static int BUFF_SIZE = 2048;
+	char msgBuf[BUFF_SIZE];
+	va_list arglist;
+
+	va_start(arglist, format);
+	vsnprintf(msgBuf, sizeof(msgBuf), format, arglist);
+	msgBuf[sizeof(msgBuf)-1] = '\0';
+	va_end(arglist);
+
+	SetWindowText(hDlg, msgBuf);
+}
 
 void listAddLine(HWND hList, const char *format, ...)
 {
@@ -345,13 +649,8 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	char tstr[512];
 	for(int i=0; i<g_wifiList.m_count; i++)
 	{
-		// fall back to serial number
-		const char *name = g_wifiList.m_list[i].m_serialNum;
 		// look for screen name
-		const XYZPrinterInfo *inf = XYZV3::serialToInfo(g_wifiList.m_list[i].m_serialNum);
-		if(inf)
-			name = inf->screenName;
-
+		const char *name = XYZV3::serialToName(g_wifiList.m_list[i].m_serialNum);
 		sprintf(tstr, "%s (%s:%d)", name, g_wifiList.m_list[i].m_ip, g_wifiList.m_list[i].m_port);
 		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
 		ent++;
@@ -385,7 +684,7 @@ void MainDlgUpdate(HWND hDlg)
 	debugReduceNoise(true);
 #endif
 	// don't set wait cursor since this triggers 2x a second
-	if(!g_threadRunning && xyz.isStreamSet())
+	if(xyz.isStreamSet())
 	{
 		if(xyz.queryStatus())
 		{
@@ -448,8 +747,8 @@ void MainDlgUpdate(HWND hDlg)
 				if(0 != strcmp(g_prSt.nMachineName, st->nMachineName))
 					SetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, st->nMachineName);
 
-				int pct = max(g_printPct, st->dPrintPercentComplete);
-				SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
+				//int pct = max(g_printPct, st->dPrintPercentComplete);
+				//SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, pct, 0);
 
 				if(0 != strcmp(g_prSt.lLang, st->lLang))
 				{
@@ -485,11 +784,9 @@ void MainDlgUpdate(HWND hDlg)
 				memcpy(&g_prSt, st, sizeof(g_prSt));
 			}
 		}
-		else
-			SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+		//else SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
 	}
-	else
-		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+	//else SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
 
 #ifdef DEBUG_REDUCE_NOISE
 	debugReduceNoise(false);
@@ -512,6 +809,7 @@ void MainDlgConnect(HWND hDlg)
 	// close old connection
 	xyz.setStream(NULL);
 	MainDlgSetStatus(hDlg, "not connected");
+	setDialogStr(hDlg, "MiniMoverUI %s - %s", g_ver, "not connected");
 
 	// if auto detect
 	if(comID == 0)
@@ -522,6 +820,7 @@ void MainDlgConnect(HWND hDlg)
 		{
 			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
+			setDialogStr(hDlg, "MiniMoverUI %s - %s", g_ver, SerialHelper::getPortDisplayName(id));
 		}
 		// fall back to wifi if no serial
 		else if(g_wifiList.m_count > 0)
@@ -530,6 +829,8 @@ void MainDlgConnect(HWND hDlg)
 			{
 				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
+				const char *name = XYZV3::serialToName(g_wifiList.m_list[0].m_serialNum);
+				setDialogStr(hDlg, "MiniMoverUI %s - %s (%s:%d)", g_ver, name, g_wifiList.m_list[0].m_ip, g_wifiList.m_list[0].m_port);
 			}
 		}
 	}
@@ -541,6 +842,7 @@ void MainDlgConnect(HWND hDlg)
 		{
 			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
+			setDialogStr(hDlg, "MiniMoverUI %s - %s", g_ver, SerialHelper::getPortDisplayName(id));
 		}
 	}
 	// else if wifi
@@ -555,6 +857,8 @@ void MainDlgConnect(HWND hDlg)
 				xyz.setStream(&g_soc);
 				Sleep(100);
 				MainDlgSetStatus(hDlg, "connected");
+				const char *name = XYZV3::serialToName(g_wifiList.m_list[id].m_serialNum);
+				setDialogStr(hDlg, "MiniMoverUI %s - %s (%s:%d)", g_ver, name, g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port);
 			}
 		}
 	}
@@ -565,7 +869,6 @@ void MainDlgConnect(HWND hDlg)
 
 BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	int t;
 	switch(msg) 
 	{
 	case WM_INITDIALOG:
@@ -621,22 +924,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_ACTIVATE:
 		break;
 
-	case WM_SETCURSOR:
-		if(g_threadRunning)
-			SetCursor(waitCursor);
-//		else
-//			SetCursor(defaultCursor);
-		break;
-
-	case XYZ_THREAD_DONE:
-		g_threadRunning = false;
-		if(wParam)
-			MainDlgSetStatus(hDlg, "process complete");
-		else
-			MainDlgSetStatus(hDlg, "process failed");
-		SetCursor(defaultCursor);
-		break;
-
 	case  WM_TIMER:
 		MainDlgUpdate(hDlg);
 		// reset to long interval
@@ -652,10 +939,6 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_COMMAND:
-
-		if(g_threadRunning && LOWORD(wParam) != IDCANCEL)
-			break;
-
 		switch(LOWORD(wParam))
 		{
 		case IDOK:
@@ -671,202 +954,118 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_PRINT:
 			MainDlgSetStatus(hDlg, "printing file");
-			SetCursor(waitCursor);
-
-			g_threadRunning = handlePrintFile(hDlg, xyz);
-			if(!g_threadRunning)
+			if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
 			{
-				SetCursor(defaultCursor);
-				MainDlgSetStatus(hDlg, "print failed");
+				if(RunDialogStart(hDlg, ACT_PRINT_FILE_START))
+					MainDlgSetStatus(hDlg, "printing file complete");
+				else MainDlgSetStatus(hDlg, "printing file failed");
 			}
-			break;
-
-		case IDC_BUTTON_PAUSE:
-			MainDlgSetStatus(hDlg, "pause print");
-			SetCursor(waitCursor);
-			if(xyz.pausePrint())
-				MainDlgSetStatus(hDlg, "print paused");
-			else
-				MainDlgSetStatus(hDlg, "pause print failed");
-			SetCursor(defaultCursor);
-			break;
-
-		case IDC_BUTTON_RESUME:
-			MainDlgSetStatus(hDlg, "resume print");
-			SetCursor(waitCursor);
-			if(xyz.resumePrint())
-				MainDlgSetStatus(hDlg, "print resumed");
-			else
-				MainDlgSetStatus(hDlg, "resume print failed");
-			SetCursor(defaultCursor);
-			break;
-
-		case IDC_BUTTON_CANCEL:
-			MainDlgSetStatus(hDlg, "cancel print");
-			SetCursor(waitCursor);
-			if(xyz.cancelPrint())
-				MainDlgSetStatus(hDlg, "print canceld");
-			else
-				MainDlgSetStatus(hDlg, "cancel print failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "printing file failed to open file");
 			break;
 
 		case IDC_BUTTON_CONVERT:
 			MainDlgSetStatus(hDlg, "converting file");
-			SetCursor(waitCursor);
-
-			t = SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_GETCURSEL, 0, 0);
-			g_threadRunning = handleConvertFile(hDlg, xyz, t-1);
-			if(!g_threadRunning)
+			g_run_infoIdx = SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_GETCURSEL, 0, 0)-1;
+			if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
 			{
-				SetCursor(defaultCursor);
-				MainDlgSetStatus(hDlg, "converting failed");
+				// fix up path
+				strcpy(g_run_fileOut, g_run_fileIn);
+				char *s = strrchr(g_run_fileOut, '.');
+				if(s)
+				{
+					if(s[1] == 'g')
+						sprintf(s, ".3w");
+					else if(s[1] == '3')
+						sprintf(s, ".gcode");
+
+					if(getFilePath(hDlg, g_run_fileOut, sizeof(g_run_fileOut), false))
+					{
+						if(RunDialogStart(hDlg, ACT_CONVERT_FILE_START))
+							MainDlgSetStatus(hDlg, "converting file complete");
+						else MainDlgSetStatus(hDlg, "converting file failed");
+					}
+					else MainDlgSetStatus(hDlg, "converting failed to open destination file");
+				}
+				else MainDlgSetStatus(hDlg, "converting failed to open destination file");
 			}
+			else MainDlgSetStatus(hDlg, "converting failed to open source file");
 			break;
 
 		case IDC_BUTTON_LOAD:
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "loading filament");
-			if( xyz.loadFilamentStart() &&
-				xyz.loadFilamentRun())
-			{
-				MessageBox(NULL, "Hit ok when filliment comes out of nozzle.", "Load Filament", MB_OK);
-				if(xyz.loadFilamentCancel())
-					MainDlgSetStatus(hDlg, "loading filament complete");
-				else
-					MainDlgSetStatus(hDlg, "loading filament failed");
-			}
-			else
-				MainDlgSetStatus(hDlg, "loading filament failed");
-			SetCursor(defaultCursor);
+			if(RunDialogStart(hDlg, ACT_LOAD_FILLAMENT_START))
+				MainDlgSetStatus(hDlg, "loading filament complete");
+			else MainDlgSetStatus(hDlg, "loading filament failed");
 			break;
 
 		case IDC_BUTTON_UNLOAD: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "unloading filament");
-			if( xyz.unloadFilamentStart() &&
-				xyz.unloadFilamentRun())
+			if(RunDialogStart(hDlg, ACT_UNLOAD_FILLAMENT_START))
 				MainDlgSetStatus(hDlg, "unloading filament complete");
-			else
-				MainDlgSetStatus(hDlg, "unloading filament failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "unloading filament failed");
 			break;
 
 		case IDC_BUTTON_CLEAN: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "cleaning nozzle");
-			if( xyz.cleanNozzleStart() &&
-				xyz.cleanNozzleRun())
-			{
-				MessageBox(NULL, "Hit ok after cleaning nozzle.", "Clean Nozzle", MB_OK);
-				if(xyz.cleanNozzleCancel())
-					MainDlgSetStatus(hDlg, "cleaning nozzle complete");
-				else
-					MainDlgSetStatus(hDlg, "cleaning nozzle failed");
-			}
-			else
-				MainDlgSetStatus(hDlg, "cleaning nozzle failed");
-			SetCursor(defaultCursor);
+			if(RunDialogStart(hDlg, ACT_CLEAN_NOZZLE_START))
+				MainDlgSetStatus(hDlg, "cleaning nozzle complete");
+			else MainDlgSetStatus(hDlg, "cleaning nozzle failed");
 			break;
 
 		case IDC_BUTTON_CALIB: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "calibrating bed");
-			if(xyz.calibrateBedStart()) 
-			{
-				MessageBox(NULL, "Lower detector and hit ok.", "Calibrate Bed", MB_OK);
-				if( xyz.calibrateBedDetectorLowered() &&
-					xyz.calibrateBedRun())
-				{
-					MessageBox(NULL, "Raise detector and hit ok.", "Calibrate Bed", MB_OK);
-					if(xyz.calibrateBedFinish())
-						MainDlgSetStatus(hDlg, "calibrating bed complete");
-					else
-						MainDlgSetStatus(hDlg, "calibrating bed failed");
-				}
-				else
-					MainDlgSetStatus(hDlg, "calibrating bed failed");
-			}
-			else
-				MainDlgSetStatus(hDlg, "calibrating bed failed");
-			SetCursor(defaultCursor);
+			if(RunDialogStart(hDlg, ACT_CALIB_BED_START))
+				MainDlgSetStatus(hDlg, "calibrating bed complete");
+			else MainDlgSetStatus(hDlg, "calibrating bed failed");
 			break;
 
 		case IDC_BUTTON_HOME: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "homing printer");
-			if( xyz.homePrinterStart() &&
-				xyz.homePrinterRun()) 
+			if(RunDialogStart(hDlg, ACT_HOME_PRINTER_START))
 				MainDlgSetStatus(hDlg, "homing printer complete");
-			else
-				MainDlgSetStatus(hDlg, "homing printer failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "homing printer failed");
 			break;
 
 		case IDC_BUTTON_XP: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if( xyz.jogPrinterStart('x', getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'x', getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move x complete");
-			else
-				MainDlgSetStatus(hDlg, "move x failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move x failed");
 			break;
 
 		case IDC_BUTTON_XM: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move x");
-			if( xyz.jogPrinterStart('x', -getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'x', -getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move x complete");
-			else
-				MainDlgSetStatus(hDlg, "move x failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move x failed");
 			break;
 
 		case IDC_BUTTON_YP: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if( xyz.jogPrinterStart('y', getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'y', getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move y complete");
-			else
-				MainDlgSetStatus(hDlg, "move y failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move y failed");
 			break;
 
 		case IDC_BUTTON_YM: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move y");
-			if( xyz.jogPrinterStart('y', -getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'y', -getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move y complete");
-			else
-				MainDlgSetStatus(hDlg, "move y failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move y failed");
 			break;
 
 		case IDC_BUTTON_ZP: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if( xyz.jogPrinterStart('z', getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'z', getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move z complete");
-			else
-				MainDlgSetStatus(hDlg, "move z failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move z failed");
 			break;
 
 		case IDC_BUTTON_ZM: 
-			SetCursor(waitCursor);
 			MainDlgSetStatus(hDlg, "move z");
-			if( xyz.jogPrinterStart('z', -getMoveDist(hDlg)) &&
-				xyz.jogPrinterRun())
+			if(RunDialogStartJog(hDlg, 'z', -getMoveDist(hDlg)))
 				MainDlgSetStatus(hDlg, "move z complete");
-			else
-				MainDlgSetStatus(hDlg, "move z failed");
-			SetCursor(defaultCursor);
+			else MainDlgSetStatus(hDlg, "move z failed");
 			break;
 
 		case IDC_BUTTON_WIFI_AUTO:
@@ -896,8 +1095,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					g_wifiOptionsEdited = true;
 				}
-				else
-					MainDlgSetStatus(hDlg, "failed to detect wifi network");
+				else MainDlgSetStatus(hDlg, "failed to detect wifi network");
 
 				SetCursor(defaultCursor);
 			}
@@ -936,25 +1134,10 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					MainDlgSetStatus(hDlg, "set wifi parameters complete");
 					g_wifiOptionsEdited = false;
 				}
-				else
-					MainDlgSetStatus(hDlg, "set wifi parameters failed");
+				else MainDlgSetStatus(hDlg, "set wifi parameters failed");
 
 				SetCursor(defaultCursor);
 			}
-			break;
-
-		case IDC_BUTTON_RESET:
-			SetCursor(waitCursor);
-			MainDlgSetStatus(hDlg, "reset options");
-			if(xyz.restoreDefaults())
-			{
-				g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-				g_wifiOptionsEdited = false;
-				MainDlgSetStatus(hDlg, "reset options complete");
-			}
-			else
-				MainDlgSetStatus(hDlg, "reset options failed");
-			SetCursor(defaultCursor);
 			break;
 
 		case IDC_EDIT_ZOFF:
@@ -978,8 +1161,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 					MainDlgSetStatus(hDlg, "set energy saving complete");
 				}
-				else
-					MainDlgSetStatus(hDlg, "set energy saving failed");
+				else MainDlgSetStatus(hDlg, "set energy saving failed");
 				SetCursor(defaultCursor);
 			}
 			break;
@@ -995,8 +1177,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 					MainDlgSetStatus(hDlg, "set language complete");
 				}
-				else
-					MainDlgSetStatus(hDlg, "set language failed");
+				else MainDlgSetStatus(hDlg, "set language failed");
 				SetCursor(defaultCursor);
 			}
 			break;
@@ -1049,6 +1230,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT)
 {
 	debugInit();
+
+	g_hInst = hInst;
 
 	// Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)

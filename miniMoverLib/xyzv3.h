@@ -14,6 +14,8 @@ that XYZMaker does do is slice a model for you.  You will need
 to use a third party slicing tool to generate the gcode.
 */
 
+const static char* g_ver = "v0.9b";
+
 // printer state word
 // items marked with state have substatus words as well.
 enum XYZPrintStateCode
@@ -407,6 +409,7 @@ public:
 	static const XYZPrinterInfo* indexToInfo(int index);
 	static const XYZPrinterInfo* modelToInfo(const char *modelNum);
 	static const XYZPrinterInfo* serialToInfo(const char *serialNum);
+	static const char* serialToName(const char *serialNum);
 
 protected:
 
