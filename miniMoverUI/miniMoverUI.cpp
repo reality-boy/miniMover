@@ -85,33 +85,15 @@ HCURSOR defaultCursor;
 enum ActionCommand
 {
 	ACT_IDLE,
-
+	ACT_FINISH_WAIT,
 	ACT_CALIB_BED_START,
-	ACT_CALIB_BED_LOWER,
-	ACT_CALIB_BED_RUN,
-	ACT_CALIB_BED_RAISE,
-
 	ACT_CLEAN_NOZZLE_START,
-	ACT_CLEAN_NOZZLE_RUN,
-
 	ACT_HOME_PRINTER_START,
-	ACT_HOME_PRINTER_RUN, // no cancel
-
 	ACT_JOG_PRINTER_START,
-	ACT_JOG_PRINTER_RUN, //no cancel
-
 	ACT_LOAD_FILLAMENT_START,
-	ACT_LOAD_FILLAMENT_RUN,
-
 	ACT_UNLOAD_FILLAMENT_START,
-	ACT_UNLOAD_FILLAMENT_RUN,
-
 	ACT_PRINT_FILE_START,
-	ACT_PRINT_FILE_RUN, //load
-	ACT_PRINT_FILE_MONITOR,
-
 	ACT_CONVERT_FILE_START,
-	ACT_CONVERT_FILE_RUN,
 };
 
 ActionCommand g_run_act = ACT_IDLE;
@@ -128,173 +110,266 @@ void printFileCallback(float pct)
 	//g_printPct = (int)(pct * 100);
 }
 
-void runDoInit(HWND hDlg)
+void runSetButton(HWND hDlg, int num, bool enable, const char *str = NULL)
 {
-	g_run_doPause = true;
+	assert(num >= 0 && num <=3);
+	assert(!enable || str);
 
-	SendDlgItemMessage(hDlg, IDC_RUN_PROGRESS, PBM_SETPOS, 0, 0);
-	SetDlgItemText(hDlg, IDC_RUN_STATIC1, "test");
-	SetDlgItemText(hDlg, IDC_RUN_STATIC2, "two");
-	// IDD_RUN_DIALOG
+	int id = -1;
+	if(num == 0)
+		id = IDCANCEL;
+	else if(num == 1)
+		id = ID_RUN_BTN1;
+	else if(num == 2)
+		id = ID_RUN_BTN2;
+
+	if(id >= 0)
+	{
+		ShowWindow(GetDlgItem(hDlg, id), (enable) ? SW_SHOW : SW_HIDE);
+
+		if(enable && str)
+			SetDlgItemText(hDlg, id, str);
+	}
 }
 
-bool runSetState(HWND hDlg, ActionCommand newState, const char *statusStr)
+// progress of -1 is 'buisy' marquee
+void runSetProgressBar(HWND hDlg, int progress)
 {
-	g_run_act = newState;
-	SetDlgItemText(hDlg, IDC_RUN_STATIC2, statusStr);
+	LONG_PTR style = GetWindowLongPtr(GetDlgItem(hDlg, IDC_RUN_PROGRESS), GWL_STYLE);
+	if(progress < 0)
+	{
+		if(!(style & PBS_MARQUEE))
+			SetWindowLongPtr(GetDlgItem(hDlg, IDC_RUN_PROGRESS), GWL_STYLE, style | PBS_MARQUEE);
+		SendMessage(GetDlgItem(hDlg, IDC_RUN_PROGRESS), (UINT)PBM_SETMARQUEE, (WPARAM)1, (LPARAM)NULL);
+	}
+	else
+	{
+		if((style & PBS_MARQUEE))
+			SetWindowLongPtr(GetDlgItem(hDlg, IDC_RUN_PROGRESS), GWL_STYLE, style & ~PBS_MARQUEE);
+		SendDlgItemMessage(hDlg, IDC_RUN_PROGRESS, PBM_SETPOS, progress, 0);
+	}
+}
 
-	return true;
+void runDoInit(HWND hDlg)
+{
+	//SetWindowText(hDlg, "whatever");
+	SetDlgItemText(hDlg, IDC_RUN_STATIC2, "initializing");
+	runSetProgressBar(hDlg, 0);
+
+	switch(g_run_act)
+	{
+	case ACT_CALIB_BED_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Calibrating Bed");
+		xyz.calibrateBedStart();
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
+		break;
+	case ACT_CLEAN_NOZZLE_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Clean Nozzle");
+		SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Nozzle warming up");
+		xyz.cleanNozzleStart();
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, true, "Cancel");
+		break;
+	case ACT_HOME_PRINTER_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Home Printer");
+		xyz.homePrinterStart();
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
+		break;
+	case ACT_JOG_PRINTER_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Jog Printer");
+		xyz.jogPrinterStart(g_run_jogAxis, g_run_jogDist);
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
+		break;
+	case ACT_LOAD_FILLAMENT_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Loading Fillament");
+		xyz.loadFilamentStart();
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, true, "Cancel");
+		break;
+	case ACT_UNLOAD_FILLAMENT_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Unloading Fillament");
+		xyz.unloadFilamentStart();
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, true, "Cancel");
+		break;
+	case ACT_PRINT_FILE_START:
+		g_run_doPause = true;
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Printing File");
+		break;
+	case ACT_CONVERT_FILE_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Converting File");
+		break;
+	default:
+		assert(false);
+		break;
+	}
 }
 
 bool runDoProcess(HWND hDlg)
 {
+	runSetProgressBar(hDlg, xyz.getProgress());
+
 	switch(g_run_act)
 	{
 	case ACT_IDLE:
-		//****FixMe, put a timeout here
+		return false;	// time to quit
+	case ACT_FINISH_WAIT:
+		// spin till we are done
 		return true;
-
 	case ACT_CALIB_BED_START:
-		if(xyz.calibrateBedStart())
-			return runSetState(hDlg, ACT_CALIB_BED_LOWER, "Lower calibration sensor and hit ok");
-		else return runSetState(hDlg, ACT_IDLE, "Calibration failed to start");
-	case ACT_CALIB_BED_RUN:
-		if(xyz.calibrateBedRun())
-			return runSetState(hDlg, ACT_CALIB_BED_RAISE, "Raise calibration sensor and hit ok");
-		else return runSetState(hDlg, ACT_IDLE, "Calibration failed to finish");
+		if(xyz.calibrateBedPromptToLowerDetector()) {
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Lower calibration sensor and hit ok");
+		} else if(xyz.calibrateBedPromptToRaiseDetector()) {
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Raise calibration sensor and hit ok");
+		} else {
+			runSetButton(hDlg, 0, false);
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "calibrating");
+		}
 
+		if(!xyz.calibrateBedRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Calibrating Bed finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	case ACT_CLEAN_NOZZLE_START:
-		if(xyz.cleanNozzleStart())
-			return runSetState(hDlg, ACT_CLEAN_NOZZLE_RUN, "Clean nozzel warming up");
-		else return runSetState(hDlg, ACT_IDLE, "Clean nozzel failed to start");
-	case ACT_CLEAN_NOZZLE_RUN:
-		if(xyz.cleanNozzleRun())
-			return runSetState(hDlg, ACT_IDLE, "Clean nozzel and hit cancel when finished");
-		else return runSetState(hDlg, ACT_IDLE, "Clean nozzel failed to finish");
+		if(xyz.cleanNozzlePromtToClean()) {
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Clean nozzle with wire and hit ok when finished");
+		}
 
+		if(!xyz.cleanNozzleRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Clean nozzle finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	case ACT_HOME_PRINTER_START:
-		if(xyz.homePrinterStart())
-			return runSetState(hDlg, ACT_HOME_PRINTER_RUN, "Homing printer");
-		else return runSetState(hDlg, ACT_IDLE, "Home printer failed to start");
-	case ACT_HOME_PRINTER_RUN:
-		if(xyz.homePrinterRun())
-			return runSetState(hDlg, ACT_IDLE, "Homing printer finishing");
-		else return runSetState(hDlg, ACT_IDLE, "Home printer failed to finish");
-
+		if(!xyz.homePrinterRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Home printer finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	case ACT_JOG_PRINTER_START:
-		if(xyz.jogPrinterStart(g_run_jogAxis, g_run_jogDist))
-			return runSetState(hDlg, ACT_JOG_PRINTER_RUN, "Jog printer running");
-		else return runSetState(hDlg, ACT_IDLE, "Jog printer failed to start");
-	case ACT_JOG_PRINTER_RUN: //no cancel
-		if(xyz.jogPrinterRun())
-			return runSetState(hDlg, ACT_IDLE, "Jog printer finishing");
-		else return runSetState(hDlg, ACT_IDLE, "Jog printer failed to finish");
-
+		if(!xyz.jogPrinterRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Jog printer finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	case ACT_LOAD_FILLAMENT_START:
-		if(xyz.loadFilamentStart())
-			return runSetState(hDlg, ACT_LOAD_FILLAMENT_RUN, "Load fillament running");
-		else return runSetState(hDlg, ACT_IDLE, "Load fillament failed to start");
-	case ACT_LOAD_FILLAMENT_RUN:
-		if(xyz.loadFilamentRun())
-			return runSetState(hDlg, ACT_IDLE, "Loading fillament hit cancel when fillament comes out of nozzle");
-		else return runSetState(hDlg, ACT_IDLE, "Load fillament failed to finish");
+		if(xyz.loadFilamentPromptToFinish())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Wait for fillament to come out of nozzle then hit ok");
+		}
 
+		if(!xyz.loadFilamentRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Load fillament printer finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	case ACT_UNLOAD_FILLAMENT_START:
-		if(xyz.unloadFilamentStart())
-			return runSetState(hDlg, ACT_UNLOAD_FILLAMENT_RUN, "Unload fillament running");
-		else return runSetState(hDlg, ACT_IDLE, "Unload fillament failed to start");
-	case ACT_UNLOAD_FILLAMENT_RUN:
-		if(xyz.unloadFilamentRun())
-			return runSetState(hDlg, ACT_IDLE, "Unload fillament finishing");
-		else return runSetState(hDlg, ACT_IDLE, "Unload fillament failed to finish");
-
+		if(!xyz.unloadFilamentRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Unload fillament printer finished, hit ok to exit");
+			runSetProgressBar(hDlg, 0);
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
+		/*
 	case ACT_PRINT_FILE_START:
 		assert(false);
 		if(xyz.printFile(g_run_fileIn, printFileCallback))
-			return runSetState(hDlg, ACT_IDLE, "process complete");
-		else return runSetState(hDlg, ACT_IDLE, "process failed");
-	case ACT_PRINT_FILE_RUN:
-		assert(false);
-		return false;
-	case ACT_PRINT_FILE_MONITOR:
-		assert(false);
-		return false;
-
+			return runSetState(hDlg, ACT_PRINT_FILE_MONITOR, "Send print succeeded, hit ok to finish");
+		else return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Send print failed to finish");
 	case ACT_CONVERT_FILE_START:
 		if(xyz.convertFile(g_run_fileIn, g_run_fileOut, g_run_infoIdx))
-			return runSetState(hDlg, ACT_IDLE, "process complete");
-		else return runSetState(hDlg, ACT_IDLE, "process failed");
-	case ACT_CONVERT_FILE_RUN:
-		assert(false);
-		return false;
-
-	default:
-		return false;
+			return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Convert file succeeded, hit ok to finish");
+		else return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Convert file failed to finish");
+		*/
 	}
+
+	// if we got to here then something is wrong, just bail
+	//assert(false);
+	return false;
 }
 
-void runDoAction(HWND hDlg)
+// btn 0 == cancel
+// btn 1 == button 1
+// btn 2 == button 2
+void runDoAction(HWND hDlg, int btn)
 {
 	switch(g_run_act)
 	{
 	case ACT_IDLE:
-		KillTimer(hDlg, g_run_timer);
-	    EndDialog(hDlg, false); 
 		break;
-
-	case ACT_CALIB_BED_LOWER:
-		if(xyz.calibrateBedDetectorLowered())
-			runSetState(hDlg, ACT_CALIB_BED_RUN, "Calibration running");
-		// else runSetState(hDlg, ACT_IDLE, "Calibration failed");
+	case ACT_FINISH_WAIT:
+		g_run_act = ACT_IDLE; // set state to exit
 		break;
-	case ACT_CALIB_BED_RAISE:
-		if(xyz.calibrateBedFinish())
-			runSetState(hDlg, ACT_IDLE, "Calibration succeeded, hit ok to finish");
-		// else runSetState(hDlg, ACT_IDLE, "Calibration failed");
+	case ACT_CALIB_BED_START:
+		if(xyz.calibrateBedPromptToLowerDetector())
+			xyz.calibrateBedDetectorLowered();
+		else if(xyz.calibrateBedPromptToRaiseDetector())
+			xyz.calibrateBedDetectorRaised();
 		break;
-	case ACT_PRINT_FILE_MONITOR:
-		if(g_run_doPause)
-			xyz.pausePrint();
-		else
-			xyz.resumePrint();
-		g_run_doPause = !g_run_doPause;
-		break;
-	default:
-		// action button not supported
-		return;
-	}
-}
-
-void runDoCancel(HWND hDlg)
-{
-	switch(g_run_act)
-	{
-	case ACT_IDLE:
-		// nothing to do
-		break;
-	case ACT_CLEAN_NOZZLE_RUN:
+	case ACT_CLEAN_NOZZLE_START:
 		xyz.cleanNozzleCancel();
-		g_run_act = ACT_IDLE;
 		break;
-	case ACT_LOAD_FILLAMENT_RUN:
+	case ACT_HOME_PRINTER_START:
+		break;
+	case ACT_JOG_PRINTER_START:
+		break;
+	case ACT_LOAD_FILLAMENT_START:
 		xyz.loadFilamentCancel();
-		g_run_act = ACT_IDLE;
 		break;
-	case ACT_UNLOAD_FILLAMENT_RUN:
+	case ACT_UNLOAD_FILLAMENT_START:
 		xyz.unloadFilamentCancel();
-		g_run_act = ACT_IDLE;
 		break;
-	case ACT_PRINT_FILE_MONITOR:
-		xyz.cancelPrint();
-		g_run_act = ACT_IDLE;
+	case ACT_PRINT_FILE_START:
+		/*
+		if(btn == 0)
+			g_run_act = ACT_EXIT;
+		else if(btn == 1)
+		{
+			if(g_run_doPause)
+				xyz.pausePrint();
+			else
+				xyz.resumePrint();
+			g_run_doPause = !g_run_doPause;
+		}
+		else if(btn == 2)
+		{
+			xyz.cancelPrint();
+			g_run_act = ACT_EXIT;
+		}
+		*/
 		break;
-	default:
-		// cancel not supported
-		return;
 	}
-
-	KillTimer(hDlg, g_run_timer);
-    EndDialog(hDlg, false); 
 }
 
 BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
@@ -310,18 +385,27 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 		case WM_TIMER:
 			if(runDoProcess(hDlg))
 				g_run_timer = SetTimer(hDlg, g_run_timer, 50, NULL);
+			else
+			{
+				KillTimer(hDlg, g_run_timer);
+			    EndDialog(hDlg, false); 
+			}
             return TRUE; 
 
         case WM_COMMAND: 
             switch (LOWORD(wParam)) 
             { 
-            case ID_RUN_OK: 
-				runDoAction(hDlg);
+            case ID_RUN_BTN1: 
+				runDoAction(hDlg, 2);
+				return TRUE;
+
+            case ID_RUN_BTN2: 
+				runDoAction(hDlg, 1);
 				return TRUE;
 
 			case IDOK:
             case IDCANCEL: 
-				runDoCancel(hDlg);
+				runDoAction(hDlg, 0);
 				return TRUE;
             } 
     } 
@@ -334,13 +418,6 @@ bool RunDialogStart(HWND hDlg, ActionCommand act)
 {
 	g_run_act = act;
 	return DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
-}
-
-bool RunDialogStartJog(HWND hDlg, const char axis, int dist)
-{
-	g_run_jogAxis = axis;
-	g_run_jogDist = dist;
-	return RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
 }
 
 //-------------------------------------------
@@ -1028,42 +1105,54 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_XP: 
 			MainDlgSetStatus(hDlg, "move x");
-			if(RunDialogStartJog(hDlg, 'x', getMoveDist(hDlg)))
+			g_run_jogAxis = 'x';
+			g_run_jogDist = getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move x complete");
 			else MainDlgSetStatus(hDlg, "move x failed");
 			break;
 
 		case IDC_BUTTON_XM: 
 			MainDlgSetStatus(hDlg, "move x");
-			if(RunDialogStartJog(hDlg, 'x', -getMoveDist(hDlg)))
+			g_run_jogAxis = 'x';
+			g_run_jogDist = -getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move x complete");
 			else MainDlgSetStatus(hDlg, "move x failed");
 			break;
 
 		case IDC_BUTTON_YP: 
 			MainDlgSetStatus(hDlg, "move y");
-			if(RunDialogStartJog(hDlg, 'y', getMoveDist(hDlg)))
+			g_run_jogAxis = 'y';
+			g_run_jogDist = getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move y complete");
 			else MainDlgSetStatus(hDlg, "move y failed");
 			break;
 
 		case IDC_BUTTON_YM: 
 			MainDlgSetStatus(hDlg, "move y");
-			if(RunDialogStartJog(hDlg, 'y', -getMoveDist(hDlg)))
+			g_run_jogAxis = 'y';
+			g_run_jogDist = -getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move y complete");
 			else MainDlgSetStatus(hDlg, "move y failed");
 			break;
 
 		case IDC_BUTTON_ZP: 
 			MainDlgSetStatus(hDlg, "move z");
-			if(RunDialogStartJog(hDlg, 'z', getMoveDist(hDlg)))
+			g_run_jogAxis = 'z';
+			g_run_jogDist = getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move z complete");
 			else MainDlgSetStatus(hDlg, "move z failed");
 			break;
 
 		case IDC_BUTTON_ZM: 
 			MainDlgSetStatus(hDlg, "move z");
-			if(RunDialogStartJog(hDlg, 'z', -getMoveDist(hDlg)))
+			g_run_jogAxis = 'z';
+			g_run_jogDist = -getMoveDist(hDlg);
+			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
 				MainDlgSetStatus(hDlg, "move z complete");
 			else MainDlgSetStatus(hDlg, "move z failed");
 			break;

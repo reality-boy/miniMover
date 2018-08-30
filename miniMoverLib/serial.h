@@ -61,9 +61,9 @@ public:
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 
-protected:
-
 	float getDefaultTimeout() { return 5.0f; }
+
+protected:
 
 #ifdef _WIN32
 	HANDLE m_handle;

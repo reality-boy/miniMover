@@ -39,4 +39,20 @@ protected:
 	float m_elapsedTime;
 };
 
+class msTimeout
+{
+public:
+	msTimeout();
+	msTimeout(float timeout_s);
+
+	void setTimeout_s(float timeout_s);
+	bool isTimeout();
+	float getElapsedTime_s();
+	float getElapsedTime_pct();
+
+protected:
+	float m_startTime;
+	float m_endTime;
+};
+
 #endif // TIMER_H

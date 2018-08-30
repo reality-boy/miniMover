@@ -31,9 +31,9 @@ public:
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 
-protected:
 	float getDefaultTimeout() { return 20.0f; }
 
+protected:
 	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);
 	int waitOnSocket(int timeout_ms, bool checkWrite);
 

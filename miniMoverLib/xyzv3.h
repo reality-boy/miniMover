@@ -311,51 +311,47 @@ public:
 
 	// === action commands ===
 
+	// get progress of action
+	int getProgress();
+	void setState(int state, float timeout_s = -1);
+
 	// run auto bed leveling routine
-	// call to start
-	bool calibrateBedStart(); 
-	// ask to lower detector then call
-	bool calibrateBedDetectorLowered();
-	// call in loop while true to pump status
+	void calibrateBedStart(); 
 	bool calibrateBedRun();
-	// ask to raise detector then call
-	bool calibrateBedFinish();
+
+	bool calibrateBedPromptToLowerDetector();
+	void calibrateBedDetectorLowered();
+
+	bool calibrateBedPromptToRaiseDetector();
+	void calibrateBedDetectorRaised();
 
 	// heats up nozzle so you can clean it out with a wire
-	// call to start
-	bool cleanNozzleStart();
-	// call in loop while true to pump status
+	void cleanNozzleStart();
 	bool cleanNozzleRun();
-	// call once user finishes cleaning or anytime to cancel
-	bool cleanNozzleCancel(); 
+
+	bool cleanNozzlePromtToClean();
+	void cleanNozzleCancel(); 
 
 	// home printer so you can safely move head
-	// call to start
-	bool homePrinterStart();
-	// call in loop while true to pump status
+	void homePrinterStart();
 	bool homePrinterRun();
 
 	// move head in given direction, axis is one of x,y,z
-	// call to start
-	bool jogPrinterStart(char axis, int dist_mm);
-	// call in loop while true to pump status
+	void jogPrinterStart(char axis, int dist_mm);
 	bool jogPrinterRun();
 
 	// loads filament
-	// call to start
-	bool loadFilamentStart();
-	// call in loop while true to pump status
+	void loadFilamentStart();
 	bool loadFilamentRun();
-	// call when filament comes out of extruder, or any time to cancel
-	bool loadFilamentCancel();
+
+	bool loadFilamentPromptToFinish();
+	void loadFilamentCancel();
 
 	// unloads filament without any user interaction
-	// call to start
-	bool unloadFilamentStart();
-	// call in loop while true to pump status
+	void unloadFilamentStart();
 	bool unloadFilamentRun();
-	// optionally call to cancel unload
-	bool unloadFilamentCancel();
+
+	void unloadFilamentCancel();
 
 	// === config commands ===
 
@@ -445,15 +441,21 @@ protected:
 	const char* filamentMaterialTypeToStr(int materialType);
 	const char* filamentColorIdToStr(int colorId);
 	int rssiToPct(int rssi);
-	bool getJsonVal(const char *str, const char *key, char *val);
+	bool findJsonVal(const char *str, const char *key, char *val);
 
 	// serial functions
-	const char* waitForLine(bool waitForEndCom, float timeout_s = -1, bool report = true);
-	bool waitForVal(const char *val, bool waitForEndCom, float timeout_s = -1);
-	bool waitForJsonVal(const char *key, const char *val, bool waitForEndCom, float timeout_s = -1);
-	bool waitForConfigOK(float timeout_s = -1);
-	bool waitForState(int state, int substate = -1, bool isSet = true, float timeout_s = -1);
 
+	//****FixMe, try to eliminate all these wait functions
+	const char* waitForLine(float timeout_s = -1);
+	bool waitForEndCom();
+	bool waitForVal(const char *val, bool endCom, float timeout_s = -1);
+	bool waitForConfigOK(float timeout_s = -1);
+
+	const char* checkForLine();
+	bool checkForVal(const char *val, bool endCom);
+	bool checkForJsonVal(const char *key, const char *val);
+	bool checkForConfigOK();
+	bool checkForState(int state, int substate = -1, bool isSet = true);
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);
@@ -481,13 +483,17 @@ protected:
 	Stream *m_stream;
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
+	float m_runTimeout;
 
 	static const int m_infoArrayLen = 21;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
-#ifdef _WIN32
-	HANDLE ghMutex;
-#endif
+	//ActState m_actState; //****FixMe, work this out
+	int m_progress;
+	msTimeout m_timeout;
+
+	char m_jogAxis;
+	int m_jogDist_mm;
 };
 
 #endif // XYZV3_H

@@ -124,29 +124,32 @@ void updateStatus(float pct)
 void postHelp()
 {
 	printf("miniMover %s\n", g_ver);
-	printf("usage: miniMover <args>\n");
+	printf("usage: miniMover <args> [file]\n");
+	printf("  file - print file if .gcode, otherwise convert to gcode if .3w\n");
+	printf("  -d devName - set serial port device name or wifi ip address, -1 auto detects port\n");
+	//printf("  -po devName - set serial port device name, -1 auto detects port\n");
+	printf("  -c file - convert file\n");
+	printf("  -p file - print file\n");
+	printf("  -f file - upload firmware, experimental!\n");
+	printf("  -r - print raw status\n");
+	printf("  -s - print status\n");
 	printf("  -? - print help message\n");
+	printf("\n");
+	printf(" * The following only work on machines that lack an LCD *\n");
+	printf("\n");
 	printf("  -a+ - enable auto level\n");
 	printf("  -a- - disable auto level\n");
 	printf("  -b+ - enable buzzer\n");
 	printf("  -b- - disable buzzer\n");
 	printf("  -cl - clean nozzle\n");
 	printf("  -ca - calibrate bed\n");
-	printf("  -c file - convert file\n");
-	printf("  -d devName - set serial port device name or wifi ip address, -1 auto detects port\n");
-	printf("  -f file - upload firmware, experimental!\n");
 	printf("  -h - home printer\n");
 	printf("  -l - load filament\n");
 	printf("  -o num - increment/decrement z offset by num\n");
-	//printf("  -po devName - set serial port device name, -1 auto detects port\n");
-	printf("  -p file - print file\n");
-	printf("  -r - print raw status\n");
-	printf("  -s - print status\n");
 	printf("  -u - unload filament\n");
 	printf("  -x num - jog x axis by num, or 10 if num not provided\n");
 	printf("  -y num - jog y axis by num, or 10 if num not provided\n");
 	printf("  -z num - jog z axis by num, or 10 if num not provided\n");
-	printf("  file - print file if .gcode, otherwise convert to gcode if .3w\n");
 }
 
 bool isNetworkAddress(const char *addr)
@@ -545,21 +548,18 @@ int main(int argc, char **argv)
 						if(checkCon())
 						{
 							printf("starting clean nozzle\n");
-							if( xyz.cleanNozzleStart() &&
-								xyz.cleanNozzleRun())
+							xyz.cleanNozzleStart();
+							while(xyz.cleanNozzleRun())
 							{
-								printf("clean nozzle with a wire and press enter when finished\n");
-								getch();
-
-								if(xyz.cleanNozzleCancel())
+								if(xyz.cleanNozzlePromtToClean())
 								{
-									printf("clean nozzle succeeded\n");
+									printf("clean nozzle with a wire and press enter when finished\n");
+									getch();
+
+									xyz.cleanNozzleCancel();
 								}
-								else
-									printf("clean nozzle failed\n");
 							}
-							else
-								printf("clean nozzle failed\n");
+							printf("clean nozzle succeeded\n");
 						}
 					}
 					else if(argv[i][2] == 'a') // calibrate
@@ -567,27 +567,23 @@ int main(int argc, char **argv)
 						if(checkCon())
 						{
 							printf("starting calibration\n");
-							if( xyz.calibrateBedStart() &&
-								xyz.calibrateBedDetectorLowered())
+							xyz.calibrateBedStart();
+							while(xyz.calibrateBedRun())
 							{
-								printf("lower detector and hit enter to continue...\n");
-								getch();
-								if(xyz.calibrateBedRun())
+								if(xyz.calibrateBedPromptToLowerDetector())
+								{
+									printf("lower detector and hit enter to continue...\n");
+									getch();
+									xyz.calibrateBedDetectorLowered();
+								}
+								else if(xyz.calibrateBedPromptToRaiseDetector())
 								{
 									printf("raise detector and hit enter to continue...\n");
 									getch();
-									if(xyz.calibrateBedFinish())
-									{
-										printf("calibration completed succesfully\n");
-									}
-									else
-										printf("calibration failed\n");
+									xyz.calibrateBedDetectorRaised();
 								}
-								else
-									printf("calibration failed\n");
 							}
-							else
-								printf("calibration failed\n");
+							printf("calibration completed succesfully\n");
 						}
 					}
 					else // convert
@@ -639,32 +635,29 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						printf("start home printer\n");
-						if( xyz.homePrinterStart() &&
-							xyz.homePrinterRun())
-							printf("home printer succeeded\n");
-						else
-							printf("home printer failed\n");
+						xyz.homePrinterStart();
+						while(xyz.homePrinterRun())
+						{
+							// spin
+						}
+						printf("home printer succeeded\n");
 					}
 					break;
 				case 'l':
 					if(checkCon())
 					{
 						printf("starting load filament\n");
-						if( xyz.loadFilamentStart() &&
-							xyz.loadFilamentRun())
+						xyz.loadFilamentStart();
+						while(xyz.loadFilamentRun())
 						{
-							printf("wait for filament to come out of nozzle then hit enter\n");
-							getch();
-
-							if(xyz.loadFilamentCancel())
+							if(xyz.loadFilamentPromptToFinish())
 							{
-								printf("load filament succeeded\n");
+								printf("wait for filament to come out of nozzle then hit enter\n");
+								getch();
+								xyz.loadFilamentCancel();
 							}
-							else
-								printf("load filament failed\n");
 						}
-						else
-							printf("load filament failed\n");
+						printf("load filament succeeded\n");
 					}
 					break;
 				case 'o':
@@ -728,50 +721,26 @@ int main(int argc, char **argv)
 					debugPrint(DBG_REPORT, "test!");
 					if(checkCon())
 					{
-						/*
-						msTimer t;
-						debugPrint(DBG_REPORT, "query 'a'");
-						t.startTimer();
-						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, -1, 'a');
-						t.stopTimer();
-						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
-
-						debugPrint(DBG_REPORT, "query 'b'");
-						t.startTimer();
-						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, -1, 'b');
-						t.stopTimer();
-						debugPrint(DBG_REPORT, "b took %0.4f", t.getLastTime_s());
-
-						debugPrint(DBG_REPORT, "query 'a'");
-						t.startTimer();
-						for(int i=0; i<10; i++)
-							xyz.queryStatus(false, -1, 'a');
-						t.stopTimer();
-						debugPrint(DBG_REPORT, "a took %0.4f", t.getLastTime_s());
-						*/
-
 						xyz.getZOffset();
 
-						if(xyz.homePrinterStart())
-							if(xyz.homePrinterRun())
-								debugPrint(DBG_REPORT, "success");
-							else
-								debugPrint(DBG_REPORT, "run failed");
-						else
-							debugPrint(DBG_REPORT, "start failed");
+						xyz.homePrinterStart();
+						while(xyz.homePrinterRun())
+						{
+							// spin
+						}
+						debugPrint(DBG_REPORT, "test success");
 					}
 					break;
 				case 'u':
 					if(checkCon())
 					{
 						printf("start unload filament\n");
-						if( xyz.unloadFilamentStart() &&
-							xyz.unloadFilamentRun())
-							printf("unload filament succeeded\n");
-						else
-							printf("unload filament failed\n");
+						xyz.unloadFilamentStart();
+						while(xyz.unloadFilamentRun())
+						{
+							// spin
+						}
+						printf("unload filament succeeded\n");
 					}
 					break;
 				case 'x':
@@ -780,9 +749,11 @@ int main(int argc, char **argv)
 						t = atoi(argv[i+1]);
 					if(checkCon())
 					{
-						if( !xyz.jogPrinterStart('x', t) ||
-							!xyz.jogPrinterRun())
-							printf("jog printer failed\n");
+						xyz.jogPrinterStart('x', t);
+						while(xyz.jogPrinterRun())
+						{
+							// spin
+						}
 					}
 					i++;
 					break;
@@ -792,9 +763,11 @@ int main(int argc, char **argv)
 						t = atoi(argv[i+1]);
 					if(checkCon())
 					{
-						if( !xyz.jogPrinterStart('y', t) ||
-							!xyz.jogPrinterRun())
-							printf("jog printer failed\n");
+						xyz.jogPrinterStart('y', t);
+						while(xyz.jogPrinterRun())
+						{
+							// spin
+						}
 					}
 					i++;
 					break;
@@ -804,9 +777,11 @@ int main(int argc, char **argv)
 						t = atoi(argv[i+1]);
 					if(checkCon())
 					{
-						if( !xyz.jogPrinterStart('z', t) ||
-							!xyz.jogPrinterRun())
-							printf("jog printer failed\n");
+						xyz.jogPrinterStart('z', t);
+						while(xyz.jogPrinterRun())
+						{
+							// spin
+						}
 					}
 					i++;
 					break;

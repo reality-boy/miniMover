@@ -58,6 +58,10 @@ float msTime::getTime_ms()
 	return getTime_micro() / 1000.0f;
 }
 
+
+//-------------------
+
+
 msTimer::msTimer() 
 {
 	startTimer();
@@ -89,3 +93,40 @@ float msTimer::getLastTime_micro()
 { 
 	return m_elapsedTime; 
 }
+
+
+//-------------------------
+
+
+msTimeout::msTimeout()
+{
+	m_startTime = 0;
+	m_endTime = 0;
+}
+
+msTimeout::msTimeout(float timeout_s)
+{
+	setTimeout_s(timeout_s);
+}
+
+void msTimeout::setTimeout_s(float timeout_s)
+{
+	m_startTime = msTime::getTime_s();
+	m_endTime = m_startTime + timeout_s;
+}
+
+bool msTimeout::isTimeout()
+{
+	return msTime::getTime_s() > m_endTime;
+}
+
+float msTimeout::getElapsedTime_s()
+{
+	return msTime::getTime_s() - m_startTime;
+}
+
+float msTimeout::getElapsedTime_pct()
+{
+	return (msTime::getTime_s() - m_startTime) / m_endTime;
+}
+

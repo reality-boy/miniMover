@@ -123,7 +123,7 @@ int Stream::readLine(char *buf, int bufLen)
 	return 0;
 }
 
-int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
+int Stream::readLineWait(char *buf, int bufLen, float timeout_s)
 {
 	debugPrint(DBG_VERBOSE, "Stream::readLineWait()");
 
@@ -140,8 +140,7 @@ int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 			if(timeout_s < 0)
 				timeout_s = getDefaultTimeout();
 
-			float start = msTime::getTime_s();
-			float end = start + timeout_s;
+			msTimeout timeout(timeout_s);
 			do
 			{
 				// blocking call, no need to sleep
@@ -149,13 +148,11 @@ int Stream::readLineWait(char *buf, int bufLen, float timeout_s, bool report)
 				if(ret > 0)
 					return ret;
 			}
-			while(msTime::getTime_s() < end);
+			while(!timeout.isTimeout());
 
-			if(report)
-			{
-				float elapsed = msTime::getTime_s() - start;
-				debugPrint(DBG_WARN, "Stream::readLineWait triggered timeout %0.4f of %0.4f seconds", elapsed, timeout_s);
-			}
+			debugPrint(DBG_WARN, 
+				"Stream::readLineWait triggered timeout %0.4f of %0.4f seconds",
+				timeout.getElapsedTime_s(), timeout_s);
 		}
 		else
 			debugPrint(DBG_WARN, "Stream::readLineWait failed invalid connection");
