@@ -127,6 +127,7 @@ float msTimeout::getElapsedTime_s()
 
 float msTimeout::getElapsedTime_pct()
 {
-	return (msTime::getTime_s() - m_startTime) / m_endTime;
+	float elapsed = (msTime::getTime_s() - m_startTime) / (m_endTime - m_startTime);
+	return (elapsed < 1.0f) ? elapsed : 1.0f;
 }
 

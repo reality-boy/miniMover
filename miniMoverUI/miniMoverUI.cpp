@@ -241,7 +241,6 @@ bool runDoProcess(HWND hDlg)
 		{
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Calibrating Bed finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
@@ -255,7 +254,6 @@ bool runDoProcess(HWND hDlg)
 		{
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Clean nozzle finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
@@ -264,7 +262,6 @@ bool runDoProcess(HWND hDlg)
 		{
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Home printer finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
@@ -273,7 +270,6 @@ bool runDoProcess(HWND hDlg)
 		{
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Jog printer finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
@@ -287,8 +283,7 @@ bool runDoProcess(HWND hDlg)
 		if(!xyz.loadFilamentRun())
 		{
 			runSetButton(hDlg, 0, true, "OK");
-			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Load fillament printer finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Load fillament finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
@@ -296,8 +291,7 @@ bool runDoProcess(HWND hDlg)
 		if(!xyz.unloadFilamentRun())
 		{
 			runSetButton(hDlg, 0, true, "OK");
-			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Unload fillament printer finished, hit ok to exit");
-			runSetProgressBar(hDlg, 0);
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Unload fillament finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;

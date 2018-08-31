@@ -1065,6 +1065,10 @@ void XYZV3::setState(int state, float timeout_s)
 {
 	m_actState = (ActState)state;
 
+	// force progress bar to 100% on exit
+	if(state == ACT_FAILURE || state == ACT_SUCCESS)
+		m_progress = 100;
+
 	// get default if not specified
 	if(timeout_s < 0)
 		timeout_s = (m_stream) ? m_stream->getDefaultTimeout() : 5.0f;
@@ -1091,10 +1095,6 @@ bool XYZV3::calibrateBedRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_CB_START: // start
 		if(serialSendMessage("XYZv3/action=calibratejr:new"))
 			setState(ACT_CB_START_SUCCESS);
@@ -1106,7 +1106,7 @@ bool XYZV3::calibrateBedRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_HOME: // wait for signal to lower detector
 		if(!isWIFI() && checkForJsonVal("stat", "pressdetector"))
@@ -1116,14 +1116,14 @@ bool XYZV3::calibrateBedRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 25 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(10.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_ASK_LOWER: // ask user to lower detector
 		// waiting, nothing to do
 		if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 35 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(15.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_LOWERED: // notify printer detecotr was lowered
 		if(serialSendMessage("XYZv3/action=calibratejr:detectorok"))
@@ -1135,7 +1135,7 @@ bool XYZV3::calibrateBedRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 40 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(20.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_CALIB_RUN: // wait for calibration to finish
 		if(!isWIFI() && checkForJsonVal("stat", "ok")) // or stat:fail
@@ -1145,14 +1145,14 @@ bool XYZV3::calibrateBedRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 45 + 45 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(25.0f + 65.0f * 4.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_ASK_RAISE: // ask user to raise detector
 		// waiting, nothing to do
 		if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 90 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(90.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_RAISED: // notify printer detector was raised
 		if(serialSendMessage("XYZv3/action=calibratejr:release"))
@@ -1165,10 +1165,7 @@ bool XYZV3::calibrateBedRun()
 		else  if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 95 + 5 * m_timeout.getElapsedTime_pct();
-		break;
-	case ACT_SUCCESS:
-		m_progress = 100;
+			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	}
 
@@ -1220,10 +1217,6 @@ bool XYZV3::cleanNozzleRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_CL_START:
 		if(serialSendMessage("XYZv3/action=cleannozzle:new"))
 			setState(ACT_CL_START_SUCCESS);
@@ -1235,7 +1228,7 @@ bool XYZV3::cleanNozzleRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 	case ACT_CL_WARMUP_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
 			setState(ACT_CL_CLEAN_NOZLE, 240);
@@ -1244,7 +1237,7 @@ bool XYZV3::cleanNozzleRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 40 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(10.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CL_CLEAN_NOZLE:
 		//printf("clean nozzle with a wire and press enter when finished\n");
@@ -1252,7 +1245,7 @@ bool XYZV3::cleanNozzleRun()
 		if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 50 + 45 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(50.0f + 45.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CL_FINISH:
 		if(serialSendMessage("XYZv3/action=cleannozzle:cancel"))
@@ -1265,10 +1258,7 @@ bool XYZV3::cleanNozzleRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 95 + 5 * m_timeout.getElapsedTime_pct();
-		break;
-	case ACT_SUCCESS:
-		m_progress = 100;
+			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	}
 
@@ -1304,10 +1294,6 @@ bool XYZV3::homePrinterRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_HP_START:
 		if(serialSendMessage("XYZv3/action=home"))
 			setState(ACT_HP_START_SUCCESS);
@@ -1319,7 +1305,7 @@ bool XYZV3::homePrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_HP_HOME_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete"))
@@ -1329,10 +1315,7 @@ bool XYZV3::homePrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 85 * m_timeout.getElapsedTime_pct();
-		break;
-	case ACT_SUCCESS:
-		m_progress = 100;
+			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
 		break;
 	}
 
@@ -1359,10 +1342,6 @@ bool XYZV3::jogPrinterRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_JP_START:
 		if(serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}", m_jogAxis, (m_jogDist_mm < 0) ? '-' : '+', abs(m_jogDist_mm)))
 			setState(ACT_JP_START_SUCCESS);
@@ -1374,7 +1353,7 @@ bool XYZV3::jogPrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_JP_JOG_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
@@ -1385,10 +1364,7 @@ bool XYZV3::jogPrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 85 * m_timeout.getElapsedTime_pct();
-		break;
-	case ACT_SUCCESS:
-		m_progress = 100;
+			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
 		break;
 	}
 
@@ -1411,10 +1387,6 @@ bool XYZV3::loadFilamentRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_LF_START:
 		if(serialSendMessage("XYZv3/action=load:new"))
 			setState(ACT_LF_START_SUCCESS);
@@ -1426,7 +1398,7 @@ bool XYZV3::loadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_HEATING:
 		if(!isWIFI() && checkForJsonVal("stat", "heat"))
@@ -1436,7 +1408,7 @@ bool XYZV3::loadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 30 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(10.0f + 30.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_LOADING:
 		if(!isWIFI() && checkForJsonVal("stat", "load")) 
@@ -1446,7 +1418,7 @@ bool XYZV3::loadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 40 + 30 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(40.0f + 30.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_WAIT_LOAD:
 		// if user does not hit cancel/done then eventually one of these will be returned
@@ -1456,7 +1428,7 @@ bool XYZV3::loadFilamentRun()
 		if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 70 + 25 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(70.0f + 25.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_LOAD_FINISHED:
 		if(serialSendMessage("XYZv3/action=load:cancel"))
@@ -1469,9 +1441,6 @@ bool XYZV3::loadFilamentRun()
 			setState(ACT_SUCCESS);
 		else
 			setState(ACT_FAILURE);
-		break;
-	case ACT_SUCCESS:
-		m_progress = 100;
 		break;
 	}
 
@@ -1506,10 +1475,6 @@ bool XYZV3::unloadFilamentRun()
 
 	switch(m_actState)
 	{
-	case ACT_FAILURE:
-		//something went wrong
-		m_progress = 0;
-		break;
 	case ACT_UF_START:
 		if(serialSendMessage("XYZv3/action=unload:new"))
 			setState(ACT_UF_START_SUCCESS);
@@ -1521,7 +1486,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 5 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_HEATING:
 		if(!isWIFI() && checkForJsonVal("stat", "heat")) // could query temp and state with  XYZv3/query=jt
@@ -1531,7 +1496,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 10 + 40 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(10.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOADING:
 		if(!isWIFI() && checkForJsonVal("stat", "unload")) // could query temp and state with  XYZv3/query=jt
@@ -1541,7 +1506,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 50 + 40 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(50.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOAD_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
@@ -1551,7 +1516,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 90 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(90.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 
 	// only get here if cancel button pressed
@@ -1561,7 +1526,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 90 + 5 * m_timeout.getElapsedTime_pct();
+			m_progress = (int)(90.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_CANCEL_COMPLETE:
 		if(isWIFI() || checkForJsonVal("stat", "complete"))
@@ -1569,11 +1534,7 @@ bool XYZV3::unloadFilamentRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = 95 + 5 * m_timeout.getElapsedTime_pct();
-		break;
-
-	case ACT_SUCCESS:
-		m_progress = 100;
+			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	}
 
