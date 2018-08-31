@@ -61,7 +61,7 @@ bool autoDetectWifi(char *ssid, char *password, int &channel)
 				printf("ESSID is %s\n", (const char*)wreq.u.essid.pointer);
 			}
 		}
-		//****FixMe, fill this in
+		// ****FixMe, fill this in
 	}
 
 	return success;

@@ -34,6 +34,8 @@
 #include "socket.h"
 #include "xyzv3.h"
 
+const char* g_ver = "v0.9b";
+
 //****FixMe, keep track of 'end' messages and fire them
 // if we try to exit in middle of operation, like calibrating bed
 //****FixMe, rewrite message loop to be state driven
@@ -1167,6 +1169,8 @@ bool XYZV3::calibrateBedRun()
 		else // loop
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
+	default:
+		break;
 	}
 
 	// return true if not error or done
@@ -1260,6 +1264,8 @@ bool XYZV3::cleanNozzleRun()
 		else // loop
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
+	default:
+		break;
 	}
 
 	// return true if not error or done
@@ -1317,6 +1323,8 @@ bool XYZV3::homePrinterRun()
 		else // loop
 			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
 		break;
+	default:
+		break;
 	}
 
 	// return true if not error or done
@@ -1365,6 +1373,8 @@ bool XYZV3::jogPrinterRun()
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
+		break;
+	default:
 		break;
 	}
 
@@ -1441,6 +1451,8 @@ bool XYZV3::loadFilamentRun()
 			setState(ACT_SUCCESS);
 		else
 			setState(ACT_FAILURE);
+		break;
+	default:
 		break;
 	}
 
@@ -1535,6 +1547,8 @@ bool XYZV3::unloadFilamentRun()
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
+		break;
+	default:
 		break;
 	}
 

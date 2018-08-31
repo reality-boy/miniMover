@@ -14,7 +14,7 @@ that XYZMaker does do is slice a model for you.  You will need
 to use a third party slicing tool to generate the gcode.
 */
 
-const static char* g_ver = "v0.9b";
+extern const char* g_ver;
 
 // printer state word
 // items marked with state have substatus words as well.
