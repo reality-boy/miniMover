@@ -27,7 +27,6 @@ public:
 
 	// from base class
 	//int readLine(char *buf, int len);
-	//int readLineWait(char *buf, int bufLen, float timeout_s, bool report);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 

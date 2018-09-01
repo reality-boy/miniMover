@@ -93,6 +93,7 @@ enum ActionCommand
 	ACT_LOAD_FILLAMENT_START,
 	ACT_UNLOAD_FILLAMENT_START,
 	ACT_PRINT_FILE_START,
+	ACT_PRINT_FILE_MONITOR,
 	ACT_CONVERT_FILE_START,
 };
 
@@ -204,9 +205,21 @@ void runDoInit(HWND hDlg)
 	case ACT_PRINT_FILE_START:
 		g_run_doPause = true;
 		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Printing File");
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
+		break;
+	case ACT_PRINT_FILE_MONITOR:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Monitoring Print");
+		runSetButton(hDlg, 2, true, "Cancel");
+		runSetButton(hDlg, 1, true, "Pause/Resume");
+		runSetButton(hDlg, 0, true, "OK");
 		break;
 	case ACT_CONVERT_FILE_START:
 		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Converting File");
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
 		break;
 	default:
 		assert(false);
@@ -295,21 +308,30 @@ bool runDoProcess(HWND hDlg)
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		return true;
-		/*
 	case ACT_PRINT_FILE_START:
-		assert(false);
 		if(xyz.printFile(g_run_fileIn, printFileCallback))
-			return runSetState(hDlg, ACT_PRINT_FILE_MONITOR, "Send print succeeded, hit ok to finish");
-		else return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Send print failed to finish");
+		{
+			runSetButton(hDlg, 2, true, "Cancel");
+			runSetButton(hDlg, 1, true, "Pause/Resume");
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Printing, hit ok to exit");
+			g_run_act = ACT_PRINT_FILE_MONITOR;
+		}
+		return true;
+	case ACT_PRINT_FILE_MONITOR:
+		//****FixMe, run monitor
+		return true;
 	case ACT_CONVERT_FILE_START:
 		if(xyz.convertFile(g_run_fileIn, g_run_fileOut, g_run_infoIdx))
-			return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Convert file succeeded, hit ok to finish");
-		else return runSetState(hDlg, ACT_WAIT_ON_EXIT, "Convert file failed to finish");
-		*/
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Convert file finished, hit ok to exit");
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		return true;
 	}
 
 	// if we got to here then something is wrong, just bail
-	//assert(false);
 	return false;
 }
 
@@ -345,9 +367,10 @@ void runDoAction(HWND hDlg, int btn)
 		xyz.unloadFilamentCancel();
 		break;
 	case ACT_PRINT_FILE_START:
-		/*
+		break;
+	case ACT_PRINT_FILE_MONITOR:
 		if(btn == 0)
-			g_run_act = ACT_EXIT;
+			g_run_act = ACT_FINISH_WAIT;
 		else if(btn == 1)
 		{
 			if(g_run_doPause)
@@ -359,9 +382,10 @@ void runDoAction(HWND hDlg, int btn)
 		else if(btn == 2)
 		{
 			xyz.cancelPrint();
-			g_run_act = ACT_EXIT;
+			g_run_act = ACT_IDLE;
 		}
-		*/
+		break;
+	case ACT_CONVERT_FILE_START:
 		break;
 	}
 }

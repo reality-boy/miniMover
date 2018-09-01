@@ -448,13 +448,11 @@ protected:
 	//****FixMe, try to eliminate all these wait functions
 	const char* waitForLine(float timeout_s = -1);
 	bool waitForEndCom();
-	bool waitForVal(const char *val, bool endCom, float timeout_s = -1);
-	bool waitForConfigOK(float timeout_s = -1);
+	bool waitForConfigOK(bool endCom = true, float timeout_s = -1);
 
 	const char* checkForLine();
-	bool checkForVal(const char *val, bool endCom);
+	bool checkForConfigOK(bool endCom = true);
 	bool checkForJsonVal(const char *key, const char *val);
-	bool checkForConfigOK();
 	bool checkForState(int state, int substate = -1, bool isSet = true);
 
 	// file functions

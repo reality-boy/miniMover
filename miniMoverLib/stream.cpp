@@ -123,46 +123,6 @@ int Stream::readLine(char *buf, int bufLen)
 	return 0;
 }
 
-int Stream::readLineWait(char *buf, int bufLen, float timeout_s)
-{
-	debugPrint(DBG_VERBOSE, "Stream::readLineWait()");
-
-	assert(buf);
-	assert(bufLen > 0);
-
-	if(buf && bufLen > 0)
-	{
-		// make sure we return something
-		*buf = '\0';
-
-		if(isOpen())
-		{
-			if(timeout_s < 0)
-				timeout_s = getDefaultTimeout();
-
-			msTimeout timeout(timeout_s);
-			do
-			{
-				// blocking call, no need to sleep
-				int ret = readLine(buf, bufLen);
-				if(ret > 0)
-					return ret;
-			}
-			while(!timeout.isTimeout());
-
-			debugPrint(DBG_WARN, 
-				"Stream::readLineWait triggered timeout %0.4f of %0.4f seconds",
-				timeout.getElapsedTime_s(), timeout_s);
-		}
-		else
-			debugPrint(DBG_WARN, "Stream::readLineWait failed invalid connection");
-	}
-	else
-		debugPrint(DBG_WARN, "Stream::readLineWait failed invalid input");
-
-	return 0;
-}
-
 int Stream::writeStr(const char *buf)
 {
 	debugPrint(DBG_VERBOSE, "Stream::writeStr(%s)", buf);

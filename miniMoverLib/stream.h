@@ -37,8 +37,6 @@ public:
 
 	// read only to newline char, buffering rest of data, return immediately if not found
 	int readLine(char *buf, int bufLen);
-	// block for timeout seconds before returning
-	int readLineWait(char *buf, int bufLen, float timeout_s = -1);
 
 	// write a null terminated string
 	int writeStr(const char *buf);

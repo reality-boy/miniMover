@@ -643,12 +643,10 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 			if(q[0] == 'a')
 				memset(&m_status, 0, sizeof(m_status));
 
-			static const int len = 1024;
-			char buf[len];
 			bool foundState = false;
 			bool isDone = false; // only try so many times for the answer
-			int ret = m_stream->readLineWait(buf, len, timeout_s);
-			while(ret > 0 && !isDone)
+			const char *buf = waitForLine(timeout_s);
+			while(buf && !isDone)
 			{
 				if(buf[0] == '$') // end of message
 				{
@@ -703,7 +701,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 				}
 
 				if(!isDone)
-					ret = m_stream->readLineWait(buf, len, 0.5f);
+					buf = waitForLine(0.5f);
 			}
 
 			if(!isDone)
@@ -919,6 +917,7 @@ const char* XYZV3::errorCodeToStr(int code)
 	case 0x0207: return "M_CASSETTE_EMPTY";				// (0029, 0060) Cartrige 1 empty
 	case 0x0208: return "M_CASSET_EEPROM_WRITE_ERROR";	// (0007) Cartrige 1 chip error (write)
 	case 0x0209: return "M_CASSET_EEPROM_READ_ERROR";	// (0008) Cartrige 1 chip error (read)
+	case 0x020D: return "Unsuported file version";		//        ???? Only on mini?
 	case 0x020C: return "L_ERROR_SD_CARD";				// ??? is this (0040) Internal storage error, can not read/write sd card
 	case 0x020F: return "L_FILAMENT_NO_INSTALL";		//
 	case 0x0401: return "M_TOP_DOOR_OPEN";				//        top door open
@@ -1578,7 +1577,9 @@ int XYZV3::incrementZOffset(bool up)
 			const char* buf = waitForLine();
 			if(*buf)
 			{
-				waitForEndCom();
+				if(!waitForEndCom())
+					debugPrint(DBG_WARN, "XYZV3::incrementZOffset missing end com");
+
 				ret = atoi(buf);
 			}
 		}
@@ -1603,7 +1604,9 @@ int XYZV3::getZOffset()
 			const char* buf = waitForLine();
 			if(*buf)
 			{
-				waitForEndCom();
+				if(!waitForEndCom())
+					debugPrint(DBG_WARN, "XYZV3::getZOffset missing end com");
+
 				ret = atoi(buf);
 			}
 		}
@@ -1612,24 +1615,60 @@ int XYZV3::getZOffset()
 	return ret;
 }
 
-bool XYZV3::checkForConfigOK()
+bool XYZV3::checkForConfigOK(bool endCom)
 {
-	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK()");
+	debugPrint(DBG_LOG, "XYZV3::checkForConfigOK()");
 
-	if(!isWIFI())
-		return checkForVal("ok", true);
-	else
+	if(isWIFI())
 		return true;
+
+	// else check for ok
+
+	const char* buf = checkForLine();
+	if(*buf)
+	{
+		if(0 == strcmp("ok", buf))
+		{
+			if(endCom && !waitForEndCom())
+				debugPrint(DBG_WARN, "XYZV3::checkForConfigOK missing end com");
+
+			return true;
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::checkForConfigOK expected 'ok', got '%s'", buf);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::checkForConfigOK expected 'ok', got nothing");
+
+	return false;
 }
 
-bool XYZV3::waitForConfigOK(float timeout_s)
+bool XYZV3::waitForConfigOK(bool endCom, float timeout_s)
 {
 	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK(%0.2f)", timeout_s);
 
-	if(!isWIFI())
-		return waitForVal("ok", true, timeout_s);
-	else
+	if(isWIFI())
 		return true;
+
+	// else check for ok
+
+	const char* buf = waitForLine(timeout_s);
+	if(*buf)
+	{
+		if(0 == strcmp("ok", buf))
+		{
+			if(endCom && !waitForEndCom())
+				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK missing end com");
+
+			return true;
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got nothing");
+
+	return false;
 }
 
 bool XYZV3::setZOffset(int offset)
@@ -1756,7 +1795,7 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 		password && 
 		//****FixMe, may need to send XYZv3/config=disconnectap here
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForConfigOK(20.0f); // not returned on wifi
+		waitForConfigOK(true, 20.0f); // not returned on wifi
 
 	return success;
 }
@@ -1956,7 +1995,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 							else
 								m_stream->writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
-							if(waitForVal("ok", false))
+							if(waitForConfigOK(false))
 							{
 								pDat.isPrintActive = true;
 								success = true;
@@ -2035,7 +2074,7 @@ bool XYZV3::sendFileProcess()
 
 			// write out in one shot
 			m_stream->write(pDat.blockBuf, blockLen + 12);
-			success = waitForVal("ok", false);
+			success = waitForConfigOK(false);
 			if(!success) // bail on error
 				break;
 		} 
@@ -2064,7 +2103,7 @@ bool XYZV3::sendFileFinalize()
 	// close out printing
 	bool success = 
 		serialSendMessage("XYZv3/uploadDidFinish") &&
-		waitForVal("ok", false);
+		waitForConfigOK(false);
 
 	return success;
 }
@@ -2539,12 +2578,9 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 //****FixMe, does any wifi function return $, maybe we should chop it off here
 bool XYZV3::waitForEndCom()
 {
-	static const int len = 1024;
 	// check for '$' indicating end of message
-	char buf[len];
-
-	// don't wait as long for the terminating char
-	if(m_stream->readLineWait(buf, len, 0.1f))
+	const char* buf = waitForLine(0.1f);
+	if(buf)
 	{
 		if(buf[0] == '$')
 		{
@@ -2601,16 +2637,21 @@ const char* XYZV3::waitForLine(float timeout_s)
 
 	if(m_stream && m_stream->isOpen())
 	{
-		if(m_stream->readLineWait(buf, len, timeout_s))
-		{
-			if(buf[0] == '$' || buf[0] == 'E')
-			{
-				debugPrint(DBG_WARN, "XYZV3::waitForLine failed, got early '%s'", buf);
-				return "";
-			}
+		if(timeout_s < 0)
+			timeout_s = m_stream->getDefaultTimeout();
 
+		bool done = false;
+		msTimeout timeout(timeout_s);
+		do
+		{
+			// blocking call, no need to sleep
+			if(m_stream->readLine(buf, len))
+				done = true;
+		} 
+		while(!done && !timeout.isTimeout());
+
+		if(done)
 			return buf;
-		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::waitForLine failed, timed out");
 	}
@@ -2618,60 +2659,6 @@ const char* XYZV3::waitForLine(float timeout_s)
 		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
 
 	return "";
-}
-
-bool XYZV3::checkForVal(const char *val, bool endCom)
-{
-	debugPrint(DBG_LOG, "XYZV3::checkForVal(%s, %d)", val, endCom);
-
-	if(val)
-	{
-		const char* buf = checkForLine();
-		if(*buf)
-		{
-			if(endCom)
-				waitForEndCom();
-			if(0 == strcmp(val, buf))
-			{
-				return true;
-			}
-			else
-				debugPrint(DBG_WARN, "XYZV3::checkForVal expected '%s', got '%s'", val, buf);
-		}
-		else
-			debugPrint(DBG_VERBOSE, "XYZV3::checkForVal expected '%s', got nothing", val);
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::checkForVal invalid input");
-
-	return false;
-}
-
-bool XYZV3::waitForVal(const char *val, bool endCom, float timeout_s)
-{
-	debugPrint(DBG_LOG, "XYZV3::waitForVal(%s, %d, %0.2f)", val, endCom, timeout_s);
-
-	if(val)
-	{
-		const char* buf = waitForLine(timeout_s);
-		if(*buf)
-		{
-			if(endCom)
-				waitForEndCom();
-			if(0 == strcmp(val, buf))
-			{
-				return true;
-			}
-			else
-				debugPrint(DBG_WARN, "XYZV3::waitForVal expected '%s', got '%s'", val, buf);
-		}
-		else
-			debugPrint(DBG_WARN, "XYZV3::waitForVal expected '%s', got nothing", val);
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::waitForVal invalid input");
-
-	return false;
 }
 
 bool XYZV3::checkForJsonVal(const char *key, const char*val)

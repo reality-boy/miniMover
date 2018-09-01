@@ -24,6 +24,7 @@
 0057 Unable to detect extruder, Please reinstall the extruder and reconnect the flat cable, then restart the printer.
 0060 Cartrige 1 empty
 0201 Connection error between PC and printer
+020D Unsuported file version
 5001 Calibration failure
 5011 Right camera error
 5013 Left camera error
