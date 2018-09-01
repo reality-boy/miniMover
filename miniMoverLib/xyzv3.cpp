@@ -62,7 +62,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", "dv1MX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   150, 150, 150,   "da Vinci miniMaker"},
 	{"dv1MW0A000",   "dv1MW0A000", "3FM1WP", "dv1MW0A000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w"},
 	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini wA"},
-	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"},
+	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"}, // possibly 3FM3WP
 	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},
@@ -73,19 +73,18 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	// does not support 3w file format
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",    true,  false, true,    true, false, false,  true, false, false,   200, 200, 150,   "da Vinci Color"}, // no heated bed, but full color!
 };
+
 	//  unknown
-	//{"dvF110A000"},
-	//{"dvF110P000"},
-	//{"dvF11SA000"},
-	//{"dvF210B000"},
-	//{"dvF210A000"},
-	//{"dvF210P000"},
+	//{"dvF110A000"}, F11A
+	//{"dvF110P000"}, F11P
+	//{"dvF11SA000"}, F11SA
+	//{"dvF210B000"}, F21
+	//{"dvF210A000"}, F21A
+	//{"dvF210P000"}, F21P
 	//XYZprinting WiFi Box
-	//3FM3WP XYZprinting da Vinci mini w+
 	//3FNAWP XYZprinting da Vinci nano w
 	//3F3PMP XYZprinting da Vinci PartPro 300xT
 	//3FC1SP XYZprinting da Vinci Color AiO
-
 
 XYZV3::XYZV3() 
 {
