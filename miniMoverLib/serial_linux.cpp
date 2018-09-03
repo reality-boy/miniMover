@@ -218,9 +218,15 @@ void Serial::closeStream()
 
 	if(isOpen())
 	{
+		// drain buffers
+		Stream::clear();
+
 		tcdrain(m_handle);
 		close(m_handle);
 	}
+	else
+		debugPrint(DBG_WARN, "Serial::closeStream failed invalid connection");
+
 	m_handle = -1;
 	m_baudRate = -1;
 	m_deviceName[0] = '\0';
@@ -268,6 +274,7 @@ int Serial::read(char *buf, int len)
 	if(buf && len > 0)
 	{
 		buf[0] = '\0';
+
 		if(isOpen())
 		{
 #if 0 
@@ -308,8 +315,15 @@ int Serial::read(char *buf, int len)
 
 					return l;
 				}
+				else if(tLen == 0)
+				{
+					// no data yet
+				}
 				else
+				{
 					debugPrint(DBG_WARN, "Serial::read failed with error %d", errno);
+					closeStream();
+				}
 			}
 #else
 			int tLen = ::read(m_handle, buf, len-1);
@@ -320,8 +334,15 @@ int Serial::read(char *buf, int len)
 				debugPrint(DBG_LOG, "Serial::read returned %d bytes", tLen);
 				return tLen;
 			}
+			else if(tLen == 0)
+			{
+				// no data yet
+			}
 			else
+			{
 				debugPrint(DBG_WARN, "Serial::read failed with error %d", errno);
+				closeStream();
+			}
 #endif
 		}
 		else
@@ -352,7 +373,10 @@ int Serial::write(const char *buf, int len)
 				return tLen;
 			}
 			else
+			{
 				debugPrint(DBG_ERR, "Serial::write failed with error %d", errno);
+				closeStream();
+			}
 		}
 		else
 			debugPrint(DBG_WARN, "Serial::write failed invalid connection");

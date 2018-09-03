@@ -67,6 +67,8 @@ float g_timerShortRate = 0.10f;
 int g_timerShortInterval = (int)(g_timerShortRate * 1000);
 
 UINT_PTR g_timer = 0;
+bool g_block_update = false;
+
 
 // set by XYZV3Thread.cpp
 //int g_printPct = 0;
@@ -86,6 +88,7 @@ enum ActionCommand
 {
 	ACT_IDLE,
 	ACT_FINISH_WAIT,
+
 	ACT_CALIB_BED_START,
 	ACT_CLEAN_NOZZLE_START,
 	ACT_HOME_PRINTER_START,
@@ -434,8 +437,10 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
 void RunDialogStart(HWND hDlg, ActionCommand act)
 {
+	g_block_update = true;
 	g_run_act = act;
 	DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
+	g_block_update = false;
 }
 
 //-------------------------------------------
@@ -778,6 +783,11 @@ void MainDlgUpdate(HWND hDlg)
 #ifdef DEBUG_REDUCE_NOISE
 	debugReduceNoise(true);
 #endif
+
+	// skip update if requested to 
+	if(g_block_update)
+		return;
+
 	// don't set wait cursor since this triggers 2x a second
 	if(xyz.isStreamSet())
 	{
@@ -881,7 +891,7 @@ void MainDlgUpdate(HWND hDlg)
 		}
 		//else SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
 	}
-	//else SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETPOS, g_printPct, 0);
+	else MainDlgSetStatus(hDlg, "not connected");
 
 #ifdef DEBUG_REDUCE_NOISE
 	debugReduceNoise(false);
@@ -996,6 +1006,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
 
 		g_timer = SetTimer(hDlg, NULL, g_timerInterval, NULL);
+		g_block_update = false;
 
 		SendDlgItemMessage(hDlg, IDC_SPIN_ZOFF, UDM_SETRANGE, 0, MAKELONG( 1000, 1));
 		SendDlgItemMessage(hDlg, IDC_SPIN_WIFI_CHAN, UDM_SETRANGE, 0, MAKELONG( 14, 1));

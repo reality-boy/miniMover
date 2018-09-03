@@ -299,7 +299,7 @@ public:
 	// pass in NULL to disconnect from stream
 	// old stream is returned so you can deal with closing it
 	void setStream(Stream *s);
-	bool isStreamSet() { return m_stream != NULL; }
+	bool isStreamSet() { return m_stream != NULL && m_stream->isOpen(); }
 
 	// === query commands ===
 

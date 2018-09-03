@@ -34,6 +34,8 @@ public:
 	float getLastTime_ms();
 	float getLastTime_micro();
 
+	float getElapsedTime_s();
+
 protected:
 	float m_startTime;
 	float m_elapsedTime;

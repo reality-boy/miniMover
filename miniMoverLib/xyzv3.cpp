@@ -645,7 +645,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 			bool foundState = false;
 			bool isDone = false; // only try so many times for the answer
 			const char *buf = waitForLine(timeout_s);
-			while(buf && !isDone)
+			while(*buf && !isDone)
 			{
 				if(buf[0] == '$') // end of message
 				{
@@ -771,6 +771,7 @@ bool XYZV3::nozzleIDIsLaser(int id)
 const char* XYZV3::stateCodesToStr(int state, int subState)
 {
 	static char tstr[512];
+	tstr[0] = '\0';
 
 	switch(state)
 	{
@@ -1573,7 +1574,7 @@ int XYZV3::incrementZOffset(bool up)
 	{
 		if(!isWIFI())
 		{
-			const char* buf = waitForLine();
+			const char *buf = waitForLine();
 			if(*buf)
 			{
 				if(!waitForEndCom())
@@ -1600,7 +1601,7 @@ int XYZV3::getZOffset()
 	{
 		if(serialSendMessage("XYZv3/config=zoffset:get"))
 		{
-			const char* buf = waitForLine();
+			const char *buf = waitForLine();
 			if(*buf)
 			{
 				if(!waitForEndCom())
@@ -1623,7 +1624,7 @@ bool XYZV3::checkForConfigOK(bool endCom)
 
 	// else check for ok
 
-	const char* buf = checkForLine();
+	const char *buf = checkForLine();
 	if(*buf)
 	{
 		if(0 == strcmp("ok", buf))
@@ -1651,7 +1652,7 @@ bool XYZV3::waitForConfigOK(bool endCom, float timeout_s)
 
 	// else check for ok
 
-	const char* buf = waitForLine(timeout_s);
+	const char *buf = waitForLine(timeout_s);
 	if(*buf)
 	{
 		if(0 == strcmp("ok", buf))
@@ -2578,7 +2579,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 bool XYZV3::waitForEndCom()
 {
 	// check for '$' indicating end of message
-	const char* buf = waitForLine(0.1f);
+	const char *buf = waitForLine(0.1f);
 	if(buf)
 	{
 		if(buf[0] == '$')
@@ -2669,7 +2670,7 @@ bool XYZV3::checkForJsonVal(const char *key, const char*val)
 		static const int len = 1024;
 		char tVal[len];
 
-		const char* buf = checkForLine();
+		const char *buf = checkForLine();
 		if(*buf)
 		{
 			waitForEndCom();

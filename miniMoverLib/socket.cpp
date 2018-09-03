@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "debug.h"
 #include "stream.h"
@@ -228,7 +229,7 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 	debugPrint(DBG_VERBOSE, "Socket::waitOnSocket(%d, %d)", timeout_ms, checkWrite);
 
 	int ret = -1;
-	if(m_isInit && IS_VALID(m_soc)) //really same as isOpen()
+	if(isOpen())
 	{
 		fd_set fdread;
 	    FD_ZERO(&fdread);
@@ -263,20 +264,29 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 					return 1; // success, connected with no timeout
 				}
 				else // failed with error
+				{
 					debugPrint(DBG_WARN, "Socket::waitOnSocket failed with error: %s", getLastErrorMessage(iResult));
+					closeStream();
+				}
 			}
 			else // failed with error
+			{
 				debugPrint(DBG_WARN, "Socket::waitOnSocket getsockopt failed with error: %s", getLastErrorMessage());
+				closeStream();
+			}
 
 			ret = -1;
 	    }
 		else if(ret == 0)
 			debugPrint(DBG_LOG, "Socket::waitOnSocket hit timeout, %d ms, error %s", timeout_ms, getLastErrorMessage());
 		else
+		{
 			debugPrint(DBG_WARN, "Socket::waitOnSocket failed with timeout, %d:%s", ret, getLastErrorMessage());
+			closeStream();
+		}
 	}
 	else
-		debugPrint(DBG_WARN, "Socket::waitOnSocket failed not connected to server!");
+		debugPrint(DBG_WARN, "Socket::waitOnSocket failed invalid connection");
 
 	return ret;
 }
@@ -294,6 +304,7 @@ Socket::Socket()
 	if(iResult == 0) 
 	{
 		m_isInit = true;
+		debugPrint(DBG_LOG, "Socket::Socket succeeded");
 	}
 	else
 		debugPrint(DBG_WARN, "Socket::Socket WSAStartup failed with error: %s", getLastErrorMessage(iResult));
@@ -316,7 +327,8 @@ bool Socket::openStream(const char *ip, int port)
 {
 	debugPrint(DBG_LOG, "Socket::openStream(%s, %d)", ip, port);
 
-	bool success = false;
+	assert(ip);
+	assert(port >= 0);
 
 	if(m_isInit)
 	{
@@ -335,20 +347,36 @@ bool Socket::openStream(const char *ip, int port)
 			addr.sin_port = htons(port);
 
 			// Connect the socket to the given IP and port
-			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR
 #ifdef USE_NON_BLOCKING
+			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR
 				|| WSAGetLastError() == WSAEWOULDBLOCK
 				|| WSAGetLastError() == WSAEINPROGRESS )
-				success = (waitOnSocket(5000, true) > 0);
+			{
+				if(waitOnSocket(5000, true) > 0)
+				{
+					debugPrint(DBG_LOG, "Socket::openStream succeeded");
+					return true;
+				}
+				else
+				{
+					debugPrint(DBG_WARN, "Socket::openStream socket connect failed with timeout: %s", getLastErrorMessage());
+					closesocket(m_soc);
+					m_soc = INVALID_SOCKET;
+				}
+			}
 #else
-				)
-				success = true;
+			if (connect(m_soc, (sockaddr*)&addr, sizeof(addr)) != SOCKET_ERROR)
+			{
+				debugPrint(DBG_LOG, "Socket::openStream succeeded");
+				return true;
+			}
 #endif
 			else
+			{
 				debugPrint(DBG_WARN, "Socket::openStream socket connect failed with error: %s", getLastErrorMessage());
-
-			if(!success)
 				closesocket(m_soc);
+				m_soc = INVALID_SOCKET;
+			}
 		}
 		else
 			debugPrint(DBG_WARN, "Socket::openStream socket failed with error: %s", getLastErrorMessage());
@@ -356,7 +384,7 @@ bool Socket::openStream(const char *ip, int port)
 	else
 		debugPrint(DBG_WARN, "Socket::openStream winsock not initialized");
 
-	return success;
+	return false;
 }
 
 void Socket::closeStream()
@@ -366,7 +394,7 @@ void Socket::closeStream()
 	if(isOpen()) 
 	{
 		// drain buffers
-		clear();
+		Stream::clear();
 
 		// tell server we are exiting
 		if(shutdown(m_soc, SD_BOTH) != SOCKET_ERROR) 
@@ -375,6 +403,7 @@ void Socket::closeStream()
 			if(closesocket(m_soc) != SOCKET_ERROR)
 			{
 				// success
+				debugPrint(DBG_LOG, "Socket::closeStream succeeded");
 			}
 			else
 				debugPrint(DBG_WARN, "Socket::closeStream close socket failed with error: %s", getLastErrorMessage());
@@ -383,7 +412,7 @@ void Socket::closeStream()
 			debugPrint(DBG_WARN, "Socket::closeStream shutdown failed with error: %s", getLastErrorMessage());
 	}
 	else
-		debugPrint(DBG_LOG, "Socket::closeStream Not connected to server!");
+		debugPrint(DBG_WARN, "Socket::closeStream failed invalid connection");
 
 	m_soc = INVALID_SOCKET;
 }
@@ -413,23 +442,26 @@ void Socket::clear() // is this ever needed?
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "Socket::clear() leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Socket::clear leftover data: %s", buf);
 		}
 		*/
 	}
+	else
+		debugPrint(DBG_WARN, "Socket::clear failed invalid connection");
 }
 
 int Socket::read(char *buf, int len)
 {
 	debugPrint(DBG_VERBOSE, "Socket::read()");
 
-	int bytesRead = 0;
+	assert(buf);
+	assert(len > 0);
 
-	if(buf)
+	if(buf && len > 0)
 	{
 		buf[0] = '\0';
 
-		if(isOpen() && len > 0) 
+		if(isOpen())
 		{
 #ifdef USE_NON_BLOCKING
 			// wait for data without blocking
@@ -445,13 +477,9 @@ int Socket::read(char *buf, int len)
 					if(tLen > 0)
 					{
 						// success
-						bytesRead = tLen;
-
-						if(bytesRead > (len-1))
-							bytesRead = len-1;
-						buf[bytesRead] = '\0';
-
-						debugPrint(DBG_VERBOSE, "Socket::read Bytes received: %d", tLen);
+						buf[tLen] = '\0';
+						debugPrint(DBG_VERBOSE, "Socket::read returned %d bytes", tLen);
+						return tLen;
 					}
 					else
 					{
@@ -469,39 +497,51 @@ int Socket::read(char *buf, int len)
 			else if(0 == ret)
 				debugPrint(DBG_VERBOSE, "Socket::read read timeout");
 			else // -1 == ret
-				debugPrint(DBG_WARN, "Socket::read read errored out");
+			{
+				debugPrint(DBG_WARN, "Socket::read read errored out: %s", getLastErrorMessage());
+				closeStream();
+			}
 #endif
 		}
 		else
-			debugPrint(DBG_WARN, "Socket::read Not connected to server!");
+			debugPrint(DBG_WARN, "Socket::read failed invalid connection");
 	}
 
-	return bytesRead;
+	return 0;
 }
 
 int Socket::write(const char *buf, const int len)
 {
 	debugPrint(DBG_VERBOSE, "Socket::write(%s, %d)", buf, len);
 
-	int bytesWritten = 0;
+	assert(buf);
+	assert(len > 0);
 
-	if(isOpen() && buf && len > 0) 
+	if(buf && len > 0)
 	{
-		//****FixMe, sleep is a hack that makes networking work
-		// figure out how to get around this!
-		Sleep(300);
-		int tLen = send(m_soc, buf, len, 0);
-		if(tLen != SOCKET_ERROR && tLen > 0)
+		if(isOpen())
 		{
-			// success
-			bytesWritten = tLen;
-			debugPrint(DBG_LOG, "Socket::write Bytes sent: %d:%d", len, tLen);
+			//****FixMe, sleep is a hack that makes networking work
+			// figure out how to get around this!
+			Sleep(300);
+			int tLen = send(m_soc, buf, len, 0);
+			if(tLen != SOCKET_ERROR && tLen > 0)
+			{
+				// success
+				debugPrint(DBG_LOG, "Socket::write sent: %d of %d bytes", tLen, len);
+				return tLen;
+			}
+			else
+			{
+				debugPrint(DBG_WARN, "Socket::write failed with error: %s", getLastErrorMessage());
+				closeStream();
+			}
 		}
 		else
-			debugPrint(DBG_WARN, "Socket::write failed to write bytes: %s", getLastErrorMessage());
+			debugPrint(DBG_WARN, "Socket::write failed invalid connection");
 	}
 	else
-		debugPrint(DBG_WARN, "Socket::write Not connected to server!");
+		debugPrint(DBG_WARN, "Socket::write failed invalid input");
 
-	return bytesWritten;
+	return 0;
 }

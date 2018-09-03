@@ -94,6 +94,11 @@ float msTimer::getLastTime_micro()
 	return m_elapsedTime; 
 }
 
+float msTimer::getElapsedTime_s()
+{
+	return (msTime::getTime_micro() - m_startTime) / 1000000.0f;
+}
+
 
 //-------------------------
 

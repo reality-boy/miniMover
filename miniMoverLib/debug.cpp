@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <time.h>
 
+#include "timer.h"
 #include "debug.h"
 
 FILE *g_debugLog = NULL;
@@ -18,6 +19,8 @@ debugLevel g_debugLevel = DBG_REPORT;
 // debug.txt log level
 debugLevel g_debugDiskLevel = DBG_LOG;
 bool g_doReduceNoise = false;
+
+msTimer g_time;
 
 void debugInit()
 {
@@ -34,6 +37,7 @@ void debugInit()
 			g_debugLog = fopen("debug.txt", "a");
 			if(g_debugLog)
 			{
+				g_time.startTimer();
 				time_t t = time(NULL);
 				fprintf(g_debugLog, "\nLog started %s\n", ctime(&t));
 				fflush(g_debugLog);
@@ -84,7 +88,7 @@ void debugPrint(debugLevel l, const char *format, ...)
 	// log to disk if error log is open
 	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 	{
-		fprintf(g_debugLog, "%s\n", msgBuf);
+		fprintf(g_debugLog, "%07.2f %s\n", g_time.getElapsedTime_s(), msgBuf);
 		fflush(g_debugLog);
 	}
 }
@@ -116,6 +120,7 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 		// log to disk if error log is open
 		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 		{
+			fprintf(g_debugLog, "%07.2f", g_time.getElapsedTime_s());
 			for(int i=0; i<len; i++)
 			{
 				fprintf(g_debugLog, " %02x", data[i]);
