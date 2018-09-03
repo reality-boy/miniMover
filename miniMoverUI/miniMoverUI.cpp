@@ -406,7 +406,7 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			else
 			{
 				KillTimer(hDlg, g_run_timer);
-			    EndDialog(hDlg, false); 
+			    EndDialog(hDlg, 0); 
 			}
             return TRUE; 
 
@@ -432,10 +432,10 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
     return FALSE; 
 } 
 
-bool RunDialogStart(HWND hDlg, ActionCommand act)
+void RunDialogStart(HWND hDlg, ActionCommand act)
 {
 	g_run_act = act;
-	return DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
+	DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
 }
 
 //-------------------------------------------
@@ -694,7 +694,7 @@ void setZOffset(HWND hDlg)
 	if(xyz.setZOffset(GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false)))
 	{
 		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-		MainDlgSetStatus(hDlg, "set z-offset complete");
+		MainDlgSetStatus(hDlg, "set z-offset succeeded");
 	}
 	else
 		MainDlgSetStatus(hDlg, "set z-offset failed");
@@ -710,7 +710,7 @@ void setMachineName(HWND hDlg)
 	if(xyz.setMachineName(tstr))
 	{
 		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-		MainDlgSetStatus(hDlg, "set machine name complete");
+		MainDlgSetStatus(hDlg, "set machine name succeeded");
 	}
 	else
 		MainDlgSetStatus(hDlg, "set machine name failed");
@@ -1051,9 +1051,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MainDlgSetStatus(hDlg, "printing file");
 			if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
 			{
-				if(RunDialogStart(hDlg, ACT_PRINT_FILE_START))
-					MainDlgSetStatus(hDlg, "printing file complete");
-				else MainDlgSetStatus(hDlg, "printing file failed");
+				RunDialogStart(hDlg, ACT_PRINT_FILE_START);
+				MainDlgSetStatus(hDlg, "printing file finished");
 			}
 			else MainDlgSetStatus(hDlg, "printing file failed to open file");
 			break;
@@ -1075,9 +1074,8 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					if(getFilePath(hDlg, g_run_fileOut, sizeof(g_run_fileOut), false))
 					{
-						if(RunDialogStart(hDlg, ACT_CONVERT_FILE_START))
-							MainDlgSetStatus(hDlg, "converting file complete");
-						else MainDlgSetStatus(hDlg, "converting file failed");
+						RunDialogStart(hDlg, ACT_CONVERT_FILE_START);
+						MainDlgSetStatus(hDlg, "convert file finished");
 					}
 					else MainDlgSetStatus(hDlg, "converting failed to open destination file");
 				}
@@ -1088,91 +1086,80 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_LOAD:
 			MainDlgSetStatus(hDlg, "loading filament");
-			if(RunDialogStart(hDlg, ACT_LOAD_FILLAMENT_START))
-				MainDlgSetStatus(hDlg, "loading filament complete");
-			else MainDlgSetStatus(hDlg, "loading filament failed");
+			RunDialogStart(hDlg, ACT_LOAD_FILLAMENT_START);
+			MainDlgSetStatus(hDlg, "loading filament finished");
 			break;
 
 		case IDC_BUTTON_UNLOAD: 
 			MainDlgSetStatus(hDlg, "unloading filament");
-			if(RunDialogStart(hDlg, ACT_UNLOAD_FILLAMENT_START))
-				MainDlgSetStatus(hDlg, "unloading filament complete");
-			else MainDlgSetStatus(hDlg, "unloading filament failed");
+			RunDialogStart(hDlg, ACT_UNLOAD_FILLAMENT_START);
+			MainDlgSetStatus(hDlg, "unloading filament finished");
 			break;
 
 		case IDC_BUTTON_CLEAN: 
 			MainDlgSetStatus(hDlg, "cleaning nozzle");
-			if(RunDialogStart(hDlg, ACT_CLEAN_NOZZLE_START))
-				MainDlgSetStatus(hDlg, "cleaning nozzle complete");
-			else MainDlgSetStatus(hDlg, "cleaning nozzle failed");
+			RunDialogStart(hDlg, ACT_CLEAN_NOZZLE_START);
+			MainDlgSetStatus(hDlg, "cleaning nozzle finished");
 			break;
 
 		case IDC_BUTTON_CALIB: 
 			MainDlgSetStatus(hDlg, "calibrating bed");
-			if(RunDialogStart(hDlg, ACT_CALIB_BED_START))
-				MainDlgSetStatus(hDlg, "calibrating bed complete");
-			else MainDlgSetStatus(hDlg, "calibrating bed failed");
+			RunDialogStart(hDlg, ACT_CALIB_BED_START);
+			MainDlgSetStatus(hDlg, "calibrating bed finished");
 			break;
 
 		case IDC_BUTTON_HOME: 
 			MainDlgSetStatus(hDlg, "homing printer");
-			if(RunDialogStart(hDlg, ACT_HOME_PRINTER_START))
-				MainDlgSetStatus(hDlg, "homing printer complete");
-			else MainDlgSetStatus(hDlg, "homing printer failed");
+			RunDialogStart(hDlg, ACT_HOME_PRINTER_START);
+			MainDlgSetStatus(hDlg, "homing printer finished");
 			break;
 
 		case IDC_BUTTON_XP: 
 			MainDlgSetStatus(hDlg, "move x");
 			g_run_jogAxis = 'x';
 			g_run_jogDist = getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move x complete");
-			else MainDlgSetStatus(hDlg, "move x failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move x finished");
 			break;
 
 		case IDC_BUTTON_XM: 
 			MainDlgSetStatus(hDlg, "move x");
 			g_run_jogAxis = 'x';
 			g_run_jogDist = -getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move x complete");
-			else MainDlgSetStatus(hDlg, "move x failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move x finished");
 			break;
 
 		case IDC_BUTTON_YP: 
 			MainDlgSetStatus(hDlg, "move y");
 			g_run_jogAxis = 'y';
 			g_run_jogDist = getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move y complete");
-			else MainDlgSetStatus(hDlg, "move y failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move y finished");
 			break;
 
 		case IDC_BUTTON_YM: 
 			MainDlgSetStatus(hDlg, "move y");
 			g_run_jogAxis = 'y';
 			g_run_jogDist = -getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move y complete");
-			else MainDlgSetStatus(hDlg, "move y failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move y finished");
 			break;
 
 		case IDC_BUTTON_ZP: 
 			MainDlgSetStatus(hDlg, "move z");
 			g_run_jogAxis = 'z';
 			g_run_jogDist = getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move z complete");
-			else MainDlgSetStatus(hDlg, "move z failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move z finished");
 			break;
 
 		case IDC_BUTTON_ZM: 
 			MainDlgSetStatus(hDlg, "move z");
 			g_run_jogAxis = 'z';
 			g_run_jogDist = -getMoveDist(hDlg);
-			if(RunDialogStart(hDlg, ACT_JOG_PRINTER_START))
-				MainDlgSetStatus(hDlg, "move z complete");
-			else MainDlgSetStatus(hDlg, "move z failed");
+			RunDialogStart(hDlg, ACT_JOG_PRINTER_START);
+			MainDlgSetStatus(hDlg, "move z finished");
 			break;
 
 		case IDC_BUTTON_WIFI_AUTO:
@@ -1192,7 +1179,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 					if('\0' != password[0])
 					{
 						SetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, password);
-						MainDlgSetStatus(hDlg, "auto detect wifi complete");
+						MainDlgSetStatus(hDlg, "auto detect wifi succeeded");
 					}
 					else
 					{
@@ -1238,7 +1225,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				else if(xyz.setWifi(ssid, password, chan))
 				{
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-					MainDlgSetStatus(hDlg, "set wifi parameters complete");
+					MainDlgSetStatus(hDlg, "set wifi parameters succeeded");
 					g_wifiOptionsEdited = false;
 				}
 				else MainDlgSetStatus(hDlg, "set wifi parameters failed");
@@ -1266,7 +1253,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				if(xyz.setEnergySaving(id * 3))
 				{
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-					MainDlgSetStatus(hDlg, "set energy saving complete");
+					MainDlgSetStatus(hDlg, "set energy saving succeeded");
 				}
 				else MainDlgSetStatus(hDlg, "set energy saving failed");
 				SetCursor(defaultCursor);
@@ -1282,7 +1269,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				if(xyz.setLanguage(XYZPrintingLang[id].abrv))
 				{
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-					MainDlgSetStatus(hDlg, "set language complete");
+					MainDlgSetStatus(hDlg, "set language succeeded");
 				}
 				else MainDlgSetStatus(hDlg, "set language failed");
 				SetCursor(defaultCursor);
