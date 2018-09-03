@@ -365,10 +365,14 @@ XYZv3/query=i
 	i:3FM1XPUS5CA68P0591
 	$
 
-	// printer status
-	// j:st,sb
-	//   st - status id
-	//   sb - substatus id, optional
+// printer status
+// j:st,sb
+//   st - status id
+//   sb - substatus id, optional
+XYZv3/query=j
+	j:9511,0
+	$
+
    status ID:
 
    // These don't seem to have substates
@@ -429,14 +433,10 @@ XYZv3/query=i
 	9800 STATE_PRINT_SCANNER_IDLE
 	9801 STATE_PRINT_SCANNER_RUNNING
 
-XYZv3/query=j
-	j:9511,0
-	$
-
-	// material type
-	// k:xx
-	//   xx is material type, in hex?
-	//   one of 41 46 47 50 51 54 56
+// material type
+// k:xx
+//   xx is material type, in hex?
+//   one of 41 46 47 50 51 54 56
 	switch (FILAMANEE.material)
 	{
 	case 41: return "ABS";
@@ -815,7 +815,7 @@ XYZv3/config=engrave:placeobject
 // set energy level
 // where E is energy value (whatever that is, probably lazer engraving energy)
 //****Note, this may be the energy saving level as seen in the jr 3in1, that controls how long the led lights stay on for, in min
-// E seems to range from 0.0 to 0.9
+// E seems to range from 0.0 to 0.9 or more likely 0 to 9
 
 XYZv3/config=energy:[E] 
 	ok
@@ -957,7 +957,7 @@ XYZv3/action=cleannozzle:new			// send
 	cleannozzle:{"stat":"start"}		// recive immediately
 	$
 
-// in loop
+// loop start
 XYZv3/query=jt							// send
 	j:9536,51<nl>t:1,196,0				// recive immediately, status 'STATE_PRINT_CLEAN_NOZZLE' substate 51 heating?
 	$
@@ -976,7 +976,7 @@ XYZv3/action=cleannozzle:cancel			// send
 //XYZv3/query=a							// xyz queries for this, why?
 	cleannozzle:{"stat":"ok"}			// recieve immediately?
 	$
-// end loop
+// loop end
 
 //-------------
 // home printer
@@ -1032,7 +1032,7 @@ XYZv3/action=load:new						// send
 	load:{"stat":"start"}					// return immediately
 	$
 
-// then in loop
+// loop start
 XYZv3/query=jt								// send to get status
 	j:9530,11.t:1,205,210					// returns immediately, 
 	$
@@ -1049,7 +1049,7 @@ XYZv3/query=jt								// send to get status
 	load:{"stat":"complete"}				// return, load succeeded, sent after a long delay, if you don't send cancel
 	$
 // or state is 9511
-// end loop
+// loop end
 
 // send when filament comes out of nozzle, or to cancel, after heating
 XYZv3/action=load:cancel
@@ -1071,7 +1071,7 @@ XYZv3/action=unload:new							// send
 	unload:{"stat":"start"}						// return immediate
 	$
 
-// then in loop
+// loop start
 XYZv3/query=jt									// send
 	j:9531,21.t:1,22,155						// return immediately
 	$
@@ -1084,7 +1084,7 @@ XYZv3/query=jt									// send
 	$
 	unload:{"stat":"complete"}					// break after recieving this, or when state goes to 9511
 	$
-// end loop
+// loop end
 
 // send this to cancel
 XYZv3/action=unload:cancel						// cancels unload, available as soon as stat goes to unload
