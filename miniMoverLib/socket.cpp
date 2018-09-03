@@ -312,9 +312,9 @@ Socket::~Socket()
 	m_isInit = false;
 }
 
-bool Socket::openSocket(const char *ip, int port) 
+bool Socket::openStream(const char *ip, int port) 
 {
-	debugPrint(DBG_LOG, "Socket::openSocket(%s, %d)", ip, port);
+	debugPrint(DBG_LOG, "Socket::openStream(%s, %d)", ip, port);
 
 	bool success = false;
 
@@ -345,16 +345,16 @@ bool Socket::openSocket(const char *ip, int port)
 				success = true;
 #endif
 			else
-				debugPrint(DBG_WARN, "Socket::openSocket socket connect failed with error: %s", getLastErrorMessage());
+				debugPrint(DBG_WARN, "Socket::openStream socket connect failed with error: %s", getLastErrorMessage());
 
 			if(!success)
 				closesocket(m_soc);
 		}
 		else
-			debugPrint(DBG_WARN, "Socket::openSocket socket failed with error: %s", getLastErrorMessage());
+			debugPrint(DBG_WARN, "Socket::openStream socket failed with error: %s", getLastErrorMessage());
 	}
 	else
-		debugPrint(DBG_WARN, "Socket::openSocket winsock not initialized");
+		debugPrint(DBG_WARN, "Socket::openStream winsock not initialized");
 
 	return success;
 }

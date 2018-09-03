@@ -16,6 +16,8 @@ public:
 
 	// functions handled by derived class
 
+	// bool openStream(whatever parameters define the stream)
+
 	// close connection
 	virtual void closeStream() = 0;
 
@@ -33,6 +35,9 @@ public:
 
 	virtual bool isWIFI() = 0;
 
+	// default communication timeout
+	virtual float getDefaultTimeout() = 0;
+
 	// local functions, don't override
 
 	// read only to newline char, buffering rest of data, return immediately if not found
@@ -40,11 +45,9 @@ public:
 
 	// write a null terminated string
 	int writeStr(const char *buf);
+
 	// write a string formatted by printf
 	int writePrintf(const char *fmt, ...);
-
-	// default communication timeout
-	virtual float getDefaultTimeout() = 0;
 
 private:
 

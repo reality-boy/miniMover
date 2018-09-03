@@ -14,23 +14,22 @@ public:
 	Socket();
 	~Socket();
 
-	bool openSocket(const char *ip, int port);
+	bool openStream(const char *ip, int port);
 
-	void closeStream();
-	bool isOpen();
-	void clear();
-	int read(char *buf, int len);
-	int write(const char *buf, int len);
+	virtual void closeStream();
+	virtual bool isOpen();
+	virtual void clear();
+	virtual int read(char *buf, int len);
+	virtual int write(const char *buf, int len);
 
-	bool isWIFI() { return true; }
+	virtual bool isWIFI() { return true; }
 
+	virtual float getDefaultTimeout() { return 20.0f; }
 
 	// from base class
 	//int readLine(char *buf, int len);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
-
-	float getDefaultTimeout() { return 20.0f; }
 
 protected:
 	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);

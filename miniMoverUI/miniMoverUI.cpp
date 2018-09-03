@@ -911,7 +911,7 @@ void MainDlgConnect(HWND hDlg)
 	{
 		// try serial first
 		int id = SerialHelper::queryForPorts("XYZ");
-		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
+		if(id >= 0 && g_serial.openStream(SerialHelper::getPortDeviceName(id), 115200))
 		{
 			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
@@ -920,7 +920,7 @@ void MainDlgConnect(HWND hDlg)
 		// fall back to wifi if no serial
 		else if(g_wifiList.m_count > 0)
 		{
-			if(g_soc.openSocket(g_wifiList.m_list[0].m_ip, g_wifiList.m_list[0].m_port))
+			if(g_soc.openStream(g_wifiList.m_list[0].m_ip, g_wifiList.m_list[0].m_port))
 			{
 				xyz.setStream(&g_soc);
 				MainDlgSetStatus(hDlg, "connected");
@@ -933,7 +933,7 @@ void MainDlgConnect(HWND hDlg)
 	else if(comID >= g_listSerialOffset)
 	{
 		int id = comID - g_listSerialOffset;
-		if(id >= 0 && g_serial.openSerial(SerialHelper::getPortDeviceName(id), 115200))
+		if(id >= 0 && g_serial.openStream(SerialHelper::getPortDeviceName(id), 115200))
 		{
 			xyz.setStream(&g_serial);
 			MainDlgSetStatus(hDlg, "connected");
@@ -946,7 +946,7 @@ void MainDlgConnect(HWND hDlg)
 		int id = comID - g_listWifiOffset;
 		if(id >=0 && id < g_wifiList.m_count)
 		{
-			if(g_soc.openSocket(g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port))
+			if(g_soc.openStream(g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port))
 			{
 				Sleep(100);
 				xyz.setStream(&g_soc);

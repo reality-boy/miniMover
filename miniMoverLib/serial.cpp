@@ -192,9 +192,9 @@ bool Serial::setupConfig(const char *portStr, HANDLE h)
 }
 */
 
-bool Serial::openSerial(const char *deviceName, int baudRate)
+bool Serial::openStream(const char *deviceName, int baudRate)
 {
-	debugPrint(DBG_LOG, "Serial::openSerial(%s, %d)", deviceName, baudRate);
+	debugPrint(DBG_LOG, "Serial::openStream(%s, %d)", deviceName, baudRate);
 
 	assert(deviceName);
 	assert(baudRate > 0);
@@ -250,34 +250,34 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 										strcpy(m_deviceName, deviceName);
 										m_baudRate = baudRate;
 
-										debugPrint(DBG_LOG, "Serial::openSerial connected to %s : %d", m_deviceName, m_baudRate);
+										debugPrint(DBG_LOG, "Serial::openStream connected to %s : %d", m_deviceName, m_baudRate);
 
 										return true;
 									}
 									else
-										debugPrint(DBG_WARN, "Serial::openSerial SetupComm failed with error %d", GetLastError());
+										debugPrint(DBG_WARN, "Serial::openStream SetupComm failed with error %d", GetLastError());
 								}
 								else
-									debugPrint(DBG_WARN, "Serial::openSerial SetCommMask failed with error %d", GetLastError());
+									debugPrint(DBG_WARN, "Serial::openStream SetCommMask failed with error %d", GetLastError());
 							}
 							else
-								debugPrint(DBG_WARN, "Serial::openSerial SetCommTimeouts failed with error %d", GetLastError());
+								debugPrint(DBG_WARN, "Serial::openStream SetCommTimeouts failed with error %d", GetLastError());
 						}
 						else
-							debugPrint(DBG_WARN, "Serial::openSerial GetCommTimeouts failed with error %d", GetLastError());
+							debugPrint(DBG_WARN, "Serial::openStream GetCommTimeouts failed with error %d", GetLastError());
 					}
 					else
-						debugPrint(DBG_WARN, "Serial::openSerial SetCommState failed with error %d", GetLastError());
+						debugPrint(DBG_WARN, "Serial::openStream SetCommState failed with error %d", GetLastError());
 				}
 				else
-					debugPrint(DBG_WARN, "Serial::openSerial GetCommState failed with error %d", GetLastError());
+					debugPrint(DBG_WARN, "Serial::openStream GetCommState failed with error %d", GetLastError());
 			}
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::openSerial CreateFile failed with error %d", GetLastError());
+			debugPrint(DBG_WARN, "Serial::openStream CreateFile failed with error %d", GetLastError());
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::openSerial failed invalid input");
+		debugPrint(DBG_WARN, "Serial::openStream failed invalid input");
 
 	// Close if already open
 	closeStream();

@@ -119,9 +119,9 @@ int baudFlag(int BaudRate)
     }
 }
 
-bool Serial::openSerial(const char *deviceName, int baudRate)
+bool Serial::openStream(const char *deviceName, int baudRate)
 {
-	debugPrint(DBG_LOG, "Serial::openSerial(%s, %d)", deviceName, baudRate);
+	debugPrint(DBG_LOG, "Serial::openStream(%s, %d)", deviceName, baudRate);
 
 	assert(deviceName);
 	assert(baudRate > 0);
@@ -198,13 +198,13 @@ bool Serial::openSerial(const char *deviceName, int baudRate)
 				return true;
 			}
 			else
-				debugPrint(DBG_WARN, "Serial::openSerial tcsetattr failed with error %d", errno);
+				debugPrint(DBG_WARN, "Serial::openStream tcsetattr failed with error %d", errno);
 		}
 		else
-			debugPrint(DBG_WARN, "Serial::openSerial open failed with error %d", errno);
+			debugPrint(DBG_WARN, "Serial::openStream open failed with error %d", errno);
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::openSerial failed invalid input");
+		debugPrint(DBG_WARN, "Serial::openStream failed invalid input");
 
 	// Close if already open
 	closeStream();

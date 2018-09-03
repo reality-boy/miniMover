@@ -45,22 +45,22 @@ public:
 	Serial(); 
 	~Serial();
 
-	bool openSerial(const char *deviceName, int baudRate);
+	bool openStream(const char *deviceName, int baudRate);
 
-	void closeStream();
-	bool isOpen();
-	void clear();
-	int read(char *buf, int len);
-	int write(const char *buf, int len);
+	virtual void closeStream();
+	virtual bool isOpen();
+	virtual void clear();
+	virtual int read(char *buf, int len);
+	virtual int write(const char *buf, int len);
 
-	bool isWIFI() { return false; }
+	virtual bool isWIFI() { return false; }
+
+	virtual float getDefaultTimeout() { return 5.0f; }
 
 	// from base class
 	//int readLine(char *buf, int bufLen);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
-
-	float getDefaultTimeout() { return 5.0f; }
 
 protected:
 

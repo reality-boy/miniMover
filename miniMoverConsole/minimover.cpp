@@ -180,7 +180,7 @@ bool checkCon()
 		{
 			//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
 			// this will allow us to support a custom wifi to usb adapter
-			if(soc.openSocket(tDevice, 9100))
+			if(soc.openStream(tDevice, 9100))
 			{
 				xyz.setStream(&soc);
 
@@ -201,7 +201,7 @@ bool checkCon()
 			}
 
 			// if name
-			if(tDevice && tDevice[0] && serial.openSerial(tDevice, 115200))
+			if(tDevice && tDevice[0] && serial.openStream(tDevice, 115200))
 			{
 				xyz.setStream(&serial);
 
