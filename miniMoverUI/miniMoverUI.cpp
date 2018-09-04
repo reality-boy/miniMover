@@ -744,6 +744,7 @@ int getMoveDist(HWND hDlg)
 	if(t == 0) return 1;
 	if(t == 1) return 10;
 	if(t == 2) return 100;
+	if(t == 3) return 300;
 	return 1;
 }
 
@@ -1017,6 +1018,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"1 mm");
 		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"10 mm");
 		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"100 mm");
+		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_ADDSTRING, 0, (LPARAM)"300 mm");
 		SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_SETCURSEL, 1, 0); // default to something
 
 		hwndListInfo = GetDlgItem(hDlg, IDC_LIST_STATUS);
