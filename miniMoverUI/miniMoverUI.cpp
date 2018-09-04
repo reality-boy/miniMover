@@ -288,9 +288,10 @@ bool runDoProcess(HWND hDlg)
 	case ACT_JOG_PRINTER_START:
 		if(!xyz.jogPrinterRun())
 		{
-			runSetButton(hDlg, 0, true, "OK");
-			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Jog printer finished, hit ok to exit");
-			g_run_act = ACT_FINISH_WAIT;
+			// jog is special, just close the dialog when finished in case
+			// user wants to keep jogging
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Jog printer finished");
+			g_run_act = ACT_IDLE;
 		}
 		else
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());

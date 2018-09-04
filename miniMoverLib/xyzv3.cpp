@@ -1379,7 +1379,7 @@ bool XYZV3::homePrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
+			m_progress = (int)(10.0f + 90.0f * 4.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
 		break;
@@ -1430,7 +1430,7 @@ bool XYZV3::jogPrinterRun()
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
-			m_progress = (int)(10.0f + 85.0f * m_timeout.getElapsedTime_pct());
+			m_progress = (int)(10.0f + 90.0f * 4.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
 		break;
