@@ -313,6 +313,7 @@ public:
 
 	// get progress of action
 	int getProgress();
+	const char* getStateStr();
 	void setState(int state, float timeout_s = -1);
 
 	// run auto bed leveling routine

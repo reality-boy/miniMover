@@ -1076,8 +1076,67 @@ void XYZV3::setState(int state, float timeout_s)
 	m_timeout.setTimeout_s(timeout_s);
 }
 
-//****FixMe, return state string
-//****FixMe, better error handling!
+const char* XYZV3::getStateStr()
+{
+	switch(m_actState)
+	{
+	case ACT_FAILURE: return "error";
+	case ACT_SUCCESS: return "success";
+
+	// Calibrate Bed
+	case ACT_CB_START: return "initializing";
+	case ACT_CB_START_SUCCESS: return "initializing";
+	case ACT_CB_HOME: return "homing";
+	case ACT_CB_ASK_LOWER: return "lower detector";
+	case ACT_CB_LOWERED: return "calibrating";
+	case ACT_CB_CALIB_START: return "calibrating";
+	case ACT_CB_CALIB_RUN: return "calibrating";
+	case ACT_CB_ASK_RAISE: return "raise detector";
+	case ACT_CB_RAISED: return "finishing";
+	case ACT_CB_COMPLETE: return "finishing";
+
+	// Clean Nozzle
+	case ACT_CL_START: return "initializing";
+	case ACT_CL_START_SUCCESS: return "initializing";
+	case ACT_CL_WARMUP_COMPLETE: return "warming up";
+	case ACT_CL_CLEAN_NOZLE: return "clean nozle";
+	case ACT_CL_FINISH: return "finishing";
+	case ACT_CL_COMPLETE: return "finishing";
+
+	// Home printer
+	case ACT_HP_START: return "initializing";
+	case ACT_HP_START_SUCCESS: return "initializing";
+	case ACT_HP_HOME_COMPLETE: return "homing";
+
+	// Jog Printer
+	case ACT_JP_START: return "initializing";
+	case ACT_JP_START_SUCCESS: return "initializing";
+	case ACT_JP_JOG_COMPLETE: return "jogging";
+
+	// Load Fillament
+	case ACT_LF_START: return "initializing";
+	case ACT_LF_START_SUCCESS: return "initializing";
+	case ACT_LF_HEATING: return "heating";
+	case ACT_LF_LOADING: return "loading";
+	case ACT_LF_WAIT_LOAD: return "check nozle";
+	case ACT_LF_LOAD_FINISHED: return "finishing";
+	case ACT_LF_LOAD_COMPLETE: return "finishing";
+
+	// Unload Fillament
+	case ACT_UF_START: return "initializing";
+	case ACT_UF_START_SUCCESS: return "initializing";
+	case ACT_UF_HEATING: return "heating";
+	case ACT_UF_UNLOADING: return "unloading";
+	case ACT_UF_UNLOAD_COMPLETE: return "finishing";
+	// only get here if cancel button pressed
+	case ACT_UF_CANCEL: return "canceling";
+	case ACT_UF_CANCEL_COMPLETE: return "canceling";
+
+	default: 
+		assert(false);
+		return "unknown";
+	}
+}
 
 //--------------
 

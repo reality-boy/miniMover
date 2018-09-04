@@ -397,19 +397,17 @@ void Socket::closeStream()
 		Stream::clear();
 
 		// tell server we are exiting
-		if(shutdown(m_soc, SD_BOTH) != SOCKET_ERROR) 
+		if(shutdown(m_soc, SD_BOTH) == SOCKET_ERROR) 
+			debugPrint(DBG_WARN, "Socket::closeStream shutdown failed with error: %s", getLastErrorMessage());
+
+		// actually close the socket
+		if(closesocket(m_soc) != SOCKET_ERROR)
 		{
-			// actually close the socket
-			if(closesocket(m_soc) != SOCKET_ERROR)
-			{
-				// success
-				debugPrint(DBG_LOG, "Socket::closeStream succeeded");
-			}
-			else
-				debugPrint(DBG_WARN, "Socket::closeStream close socket failed with error: %s", getLastErrorMessage());
+			// success
+			debugPrint(DBG_LOG, "Socket::closeStream succeeded");
 		}
 		else
-			debugPrint(DBG_WARN, "Socket::closeStream shutdown failed with error: %s", getLastErrorMessage());
+			debugPrint(DBG_WARN, "Socket::closeStream close socket failed with error: %s", getLastErrorMessage());
 	}
 	else
 		debugPrint(DBG_WARN, "Socket::closeStream failed invalid connection");

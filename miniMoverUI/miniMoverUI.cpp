@@ -250,7 +250,7 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Raise calibration sensor and hit ok");
 		} else {
 			runSetButton(hDlg, 0, false);
-			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "calibrating");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		}
 
 		if(!xyz.calibrateBedRun())
@@ -265,6 +265,8 @@ bool runDoProcess(HWND hDlg)
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Clean nozzle with wire and hit ok when finished");
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 
 		if(!xyz.cleanNozzleRun())
 		{
@@ -280,6 +282,8 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Home printer finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_JOG_PRINTER_START:
 		if(!xyz.jogPrinterRun())
@@ -288,6 +292,8 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Jog printer finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_LOAD_FILLAMENT_START:
 		if(xyz.loadFilamentPromptToFinish())
@@ -295,6 +301,8 @@ bool runDoProcess(HWND hDlg)
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Wait for fillament to come out of nozzle then hit ok");
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 
 		if(!xyz.loadFilamentRun())
 		{
@@ -310,6 +318,8 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Unload fillament finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_PRINT_FILE_START:
 		if(xyz.printFile(g_run_fileIn, printFileCallback))
@@ -320,9 +330,12 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Printing, hit ok to exit");
 			g_run_act = ACT_PRINT_FILE_MONITOR;
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_PRINT_FILE_MONITOR:
 		//****FixMe, run monitor
+		SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_CONVERT_FILE_START:
 		if(xyz.convertFile(g_run_fileIn, g_run_fileOut, g_run_infoIdx))
@@ -331,6 +344,8 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Convert file finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	}
 
