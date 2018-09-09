@@ -2217,7 +2217,6 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 	debugPrint(DBG_LOG, "XYZV3::encryptFile(%s, %s, %d)", inPath, outPath, infoIdx);
 
 	bool success = false;
-	const int bodyOffset = 8192;
 
 	// encrypt to currently connected printer
 	const XYZPrinterInfo *info = (m_stream && m_stream->isOpen()) ? m_info : NULL; 
@@ -2278,86 +2277,41 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 					// add back in print time info in xyz format
 					// work out length of header
 					// padd full file to 16 byte boundary buffer
-					int headerLen = 0, bodyLen = 0;
-					char *bodyBuf = NULL, *headerBuf = NULL;
-					if(processGCode(gcode, gcodeLen, fileNum, fileIsV5, fileIsZip, &headerBuf, &headerLen, &bodyBuf, &bodyLen))
+					char *processedBuf = NULL;
+					int processHeaderLen = 0;
+					int processTotalLen = 0;
+
+					if(processGCode(gcode, gcodeLen, fileNum, &processedBuf, &processHeaderLen, &processTotalLen))
 					{
-						//==================
-						// write header info
+						char *headerBuf = NULL;
+						int headerLen = 0;
 
-						// write file id
-						fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), fo);
+						if(encryptHeader(processedBuf, processHeaderLen, fileIsV5, &headerBuf, &headerLen))
+						{
+							char *bodyBuf = NULL;
+							int bodyLen = 0;
 
-						// id, what is this
-						writeByte(fo, 1);
+							if(encryptBody(processedBuf, processTotalLen, fileIsZip, &bodyBuf, &bodyLen))
+							{
+								if(writeFile(fo, fileIsV5, fileIsZip, headerBuf, headerLen, bodyBuf, bodyLen))
+								{
+									// yeay, it worked
+									success = true;
+								}
 
-						// file format version is 2 or 5
-						if(fileIsV5)
-							writeByte(fo, 5);
-						else
-							writeByte(fo, 2);
-						
-						// pad to 4 bytes
-						writeByte(fo, 0);
-						writeByte(fo, 0);
+								// cleanup
+								delete [] bodyBuf;
+								bodyBuf = NULL;
+							}
 
-						// offset to zip marker
-						int pos1 = ftell(fo) + 4; // count from next byte after count
-						// force at least 16 bytes of padding, is this needed?
-						int zipOffset = roundUpTo16(pos1 + 4684) - pos1;
-						writeWord(fo, zipOffset);
-						writeRepeatByte(fo, 0, zipOffset);
-
-						// zip format marker
-						if(fileIsZip)
-							fwrite("TagEa128", 1, strlen("TagEa128"), fo);
-						else
-							fwrite("TagEJ256", 1, strlen("TagEJ256"), fo);
-
-						// optional header len
-						if(fileIsV5)
-							writeWord(fo, headerLen);
-
-						// offset to header
-						int pos2 = ftell(fo) + 4; // count from next byte after count
-						// force at least 16 bytes of padding, is this needed?
-						int headerOffset = roundUpTo16(pos2 + 68) - pos2; 
-						writeWord(fo, headerOffset);
-
-						// mark current file location
-						int offset1 = ftell(fo);
-
-						//?? 
-						if(fileIsV5)
-							writeWord(fo, 1);
-
-						int crc32 = calcXYZcrc32(bodyBuf, bodyLen);
-						writeWord(fo, crc32);
-
-						// zero pad to header offset
-						int pad1 = headerOffset - (ftell(fo) - offset1);
-						writeRepeatByte(fo, 0, pad1);
-
-						// write encrypted and padded header out
-						fwrite(headerBuf, 1, headerLen, fo);
-
-						// mark current file location
-						int pad2 = bodyOffset - ftell(fo);
-						// pad with zeros to start of body
-						writeRepeatByte(fo, 0, pad2);
-
-						// write encrypted and padded body out
-						fwrite(bodyBuf, 1, bodyLen, fo);
-
-						// yeay, it worked
-						success = true;
+							// cleanup
+							delete [] headerBuf;
+							headerBuf = NULL;
+						}
 
 						// cleanup
-						delete [] headerBuf;
-						headerBuf = NULL;
-
-						delete [] bodyBuf;
-						bodyBuf = NULL;
+						delete [] processedBuf;
+						processedBuf = NULL;
 					}
 
 					delete [] gcode;
@@ -2405,7 +2359,6 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 			if(fo)
 			{
-				const int bodyOffset = 8192;
 				char buf[64];
 
 				// get file length
@@ -2467,7 +2420,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 //#define PARCE_HEADER
 #ifdef PARCE_HEADER
 					if(headerLen < 1)
-						headerLen = bodyOffset - ftell(f);
+						headerLen = m_bodyOffset - ftell(f);
 					char *hbuf = new char[headerLen + 1];
 					if(hbuf)
 					{
@@ -2509,7 +2462,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					// body contains duplicate header and body of gcode file
 					// and always starts at 8192 (0x2000)
 
-					fseek(f, bodyOffset, SEEK_SET);
+					fseek(f, m_bodyOffset, SEEK_SET);
 					int bodyLen = totalLen - ftell(f);
 					int bufLen = bodyLen + 1;
 					char *bbuf = new char[bufLen];
@@ -2546,6 +2499,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 									// reset decrypter every block
 									AES_init_ctx_iv(&ctx, key, iv);
+
+									//****FixMe, loop over this in blocks of 1,000
 									AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+readOffset, len);
 
 									// remove any padding from body
@@ -2604,6 +2559,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 								uint8_t iv[16] = {0}; // 16 zeros
 								const char *key = "@xyzprinting.com@xyzprinting.com";
 								AES_init_ctx_iv(&ctx, key, iv);
+
+								//****FixMe, loop over this in blocks of 1,000
 								AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
 							}
 
@@ -3042,15 +2999,18 @@ bool XYZV3::checkLineIsHeader(const char* lineBuf)
 	return true; // else just white space, assume header
 }
 
-bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen)
+bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *fileNum, char **processedBuf, int *headerLen, int *totalLen)
 {
-	bool success = false;
-	const int lineLen = 1024;
-	char lineBuf[lineLen];
-
 	// validate parameters
-	if(gcode && gcodeLen > 1 && headerBuf && headerLen && bodyBuf && bodyLen)
+	if(gcode && gcodeLen > 1 && processedBuf && headerLen && headerLen && totalLen)
 	{
+		*processedBuf = NULL;
+		*headerLen = 0;
+		*totalLen = 0;
+
+		const int lineLen = 1024;
+		char lineBuf[lineLen];
+
 		// parse header once to get info on print time
 		int printTime = 1;
 		int totalFacets = 50;
@@ -3225,136 +3185,243 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 				tcode = readLineFromBuf(tcode, lineBuf, lineLen);
 			}
 
-			//==============
-			// fix up header
+			*processedBuf = bBuf;
+			*headerLen = headerEnd;
+			*totalLen = bbufOffset;
 
-			// padded out to 16 byte boundary
-			// and copy so we can encrypt it seperately
-			int hLen = roundUpTo16(headerEnd); 
-			char *hBuf = new char[hLen+1];
-			if(hBuf)
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool XYZV3::encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char **headerBuf, int *headerLen)
+{
+	bool success = false;
+
+	// validate parameters
+	if(gcode && headerBuf && headerLen)
+	{
+		//==============
+		// fix up header
+
+		*headerBuf = NULL;
+		*headerLen = 0;
+
+		// padded out to 16 byte boundary
+		// and copy so we can encrypt it seperately
+		int hLen = roundUpTo16(gcodeLen); 
+		char *hBuf = new char[hLen+1];
+		if(hBuf)
+		{
+			memcpy(hBuf, gcode, gcodeLen);
+
+			// don't forget to tag the padding
+			pkcs7pad(hBuf, gcodeLen);
+			hBuf[hLen] = '\0';
+
+			// encrypt the header in CBC mode
+			// it appears that v5 files don't always encrypt
+			if(!fileIsV5)
 			{
-				memcpy(hBuf, bBuf, headerEnd);
+				struct AES_ctx ctx;
+				uint8_t iv[16] = {0}; // 16 zeros
 
-				// don't forget to tag the padding
-				pkcs7pad(hBuf, headerEnd);
-				hBuf[hLen] = '\0';
-
-				// encrypt the header in CBC mode
-				// it appears that v5 files don't always encrypt
-				if(!fileIsV5)
-				{
-					struct AES_ctx ctx;
-					uint8_t iv[16] = {0}; // 16 zeros
-
-					const char *hkey = "@xyzprinting.com";
-					AES_init_ctx_iv(&ctx, hkey, iv);
-					AES_CBC_encrypt_buffer(&ctx, (uint8_t*)hBuf, hLen);
-				}
-
-				//============
-				// fix up body
-
-				if(fileIsZip)
-				{
-					mz_zip_archive zip;
-					memset(&zip, 0, sizeof(zip));
-					if(mz_zip_writer_init_heap(&zip, 0, 0))
-					{
-						if(mz_zip_writer_add_mem(&zip, "sample.gcode", bBuf, bbufOffset, MZ_DEFAULT_COMPRESSION))
-						{
-							char *zBuf;
-							size_t zBufLen;
-							if(mz_zip_writer_finalize_heap_archive(&zip, (void**)&zBuf, &zBufLen))
-							{
-								// encryption is handled on a block by block basis and adds 16 bytes to each block
-								const int blockLen = 0x2000;
-								int newLen = zBufLen + (zBufLen / blockLen + 1) * 16;
-
-								// on the off chance our zip file is larger than the asci file then allocate more memory
-								// this should never happen assuming the zip file can be compressed at all
-								if(newLen > bBufMaxLen)
-								{
-									delete [] bBuf;
-									bBuf = new char[newLen];
-								}
-
-								// encrypt body
-								struct AES_ctx ctx;
-								uint8_t iv[16] = {0}; // 16 zeros
-								const char *key = "@xyzprinting.com";
-
-								int readOffset = 0;
-								int writeOffset = 0;
-
-								// decrypt in blocks
-								for(readOffset = 0; readOffset < (int)zBufLen; readOffset += blockLen)
-								{
-									// last block is smaller, so account for it
-									int len = ((zBufLen - readOffset) < blockLen) ? (zBufLen - readOffset) : blockLen;
-
-									// and stash in new buf
-									memcpy(bBuf+writeOffset, zBuf+readOffset, len);
-
-									// add padding to body
-									len = pkcs7pad(bBuf+writeOffset, len);
-
-									// reset decrypter every block
-									AES_init_ctx_iv(&ctx, key, iv);
-									AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf+writeOffset, len);
-
-									writeOffset += len;
-								}
-
-								*bodyLen = writeOffset;
-								*headerLen = hLen;
-								*headerBuf = hBuf;
-								*bodyBuf = bBuf;
-
-								success = true;
-							}
-						}
-						// clean up zip memory
-						mz_zip_writer_end(&zip);
-					}
-				}
-				else
-				{
-					int bLen = pkcs7pad(bBuf, bbufOffset);
-
-					// encrypt body using ECB mode
-					struct AES_ctx ctx;
-					uint8_t iv[16] = {0}; // 16 zeros
-					const char *bkey = "@xyzprinting.com@xyzprinting.com";
-					AES_init_ctx_iv(&ctx, bkey, iv);
-					AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
-
-					// bBuf already padded out, no need to copy it over
-					// just mark the padding
-					*bodyLen = bLen;
-					*headerLen = hLen;
-					*headerBuf = hBuf;
-					*bodyBuf = bBuf;
-
-					success = true;
-				}
+				const char *hkey = "@xyzprinting.com";
+				AES_init_ctx_iv(&ctx, hkey, iv);
+				AES_CBC_encrypt_buffer(&ctx, (uint8_t*)hBuf, hLen);
 			}
 
-			if(!success)
-				delete [] bBuf;
-		}
+			*headerBuf = hBuf;
+			*headerLen = hLen;
 
-		// make sure we return something
-		if(!success)
-		{
-			*headerBuf = NULL;
-			*headerLen = 0;
-			*bodyBuf = NULL;
-			*bodyLen = 0;
+			success = true;
 		}
 	}
 
 	return success;
+}
+
+bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **bodyBuf, int *bodyLen)
+{
+	bool success = false;
+
+	// validate parameters
+	if(gcode && bodyBuf && bodyLen)
+	{
+		//============
+		// fix up body
+
+		*bodyBuf = NULL;
+		*bodyLen = 0;
+
+		if(fileIsZip)
+		{
+			mz_zip_archive zip;
+			memset(&zip, 0, sizeof(zip));
+			if(mz_zip_writer_init_heap(&zip, 0, 0))
+			{
+				if(mz_zip_writer_add_mem(&zip, "sample.gcode", gcode, gcodeLen, MZ_DEFAULT_COMPRESSION))
+				{
+					char *zBuf;
+					size_t zBufLen;
+					if(mz_zip_writer_finalize_heap_archive(&zip, (void**)&zBuf, &zBufLen))
+					{
+						// encryption is handled on a block by block basis and adds 16 bytes to each block
+						const int blockLen = 0x2000;
+						int newLen = zBufLen + (zBufLen / blockLen + 1) * 16;
+
+						char *bBuf = new char[newLen];
+						if(bBuf)
+						{
+							// encrypt body
+							struct AES_ctx ctx;
+							uint8_t iv[16] = {0}; // 16 zeros
+							const char *key = "@xyzprinting.com";
+
+							int readOffset = 0;
+							int writeOffset = 0;
+
+							// decrypt in blocks
+							for(readOffset = 0; readOffset < (int)zBufLen; readOffset += blockLen)
+							{
+								// last block is smaller, so account for it
+								int len = ((zBufLen - readOffset) < blockLen) ? (zBufLen - readOffset) : blockLen;
+
+								// and stash in new buf
+								memcpy(bBuf+writeOffset, zBuf+readOffset, len);
+
+								// add padding to body
+								len = pkcs7pad(bBuf+writeOffset, len);
+
+								// reset decrypter every block
+								AES_init_ctx_iv(&ctx, key, iv);
+
+								//****FixMe, loop over this in blocks of 1,000
+								AES_CBC_encrypt_buffer(&ctx, (uint8_t*)bBuf+writeOffset, len);
+
+								writeOffset += len;
+							}
+
+							*bodyBuf = bBuf;
+							*bodyLen = writeOffset;
+
+							success = true;
+						}
+					}
+				}
+				// clean up zip memory
+				mz_zip_writer_end(&zip);
+			}
+		}
+		else
+		{
+			int bLen = roundUpTo16(gcodeLen); 
+			char *bBuf = new char[bLen+1];
+			if(bBuf)
+			{
+				memcpy(bBuf, gcode, gcodeLen);
+
+				// don't forget to tag the padding
+				pkcs7pad(bBuf, gcodeLen);
+				bBuf[bLen] = '\0';
+
+				// encrypt body using ECB mode
+				struct AES_ctx ctx;
+				uint8_t iv[16] = {0}; // 16 zeros
+				const char *bkey = "@xyzprinting.com@xyzprinting.com";
+				AES_init_ctx_iv(&ctx, bkey, iv);
+
+				//****FixMe, loop over this in blocks of 1,000
+				AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
+
+				*bodyBuf = bBuf;
+				*bodyLen = bLen;
+
+				success = true;
+			}
+		}
+	}
+
+	return success;
+}
+
+bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *headerBuf, int headerLen, char *bodyBuf, int bodyLen)
+{
+	if(fo && headerBuf && bodyBuf)
+	{
+		//==================
+		// write header info
+
+		// write file id
+		fwrite("3DPFNKG13WTW", 1, strlen("3DPFNKG13WTW"), fo);
+
+		// id, what is this
+		writeByte(fo, 1);
+
+		// file format version is 2 or 5
+		if(fileIsV5)
+			writeByte(fo, 5);
+		else
+			writeByte(fo, 2);
+		
+		// pad to 4 bytes
+		writeByte(fo, 0);
+		writeByte(fo, 0);
+
+		// offset to zip marker
+		int pos1 = ftell(fo) + 4; // count from next byte after count
+		// force at least 16 bytes of padding, is this needed?
+		int zipOffset = roundUpTo16(pos1 + 4684) - pos1;
+		writeWord(fo, zipOffset);
+		writeRepeatByte(fo, 0, zipOffset);
+
+		// zip format marker
+		if(fileIsZip)
+			fwrite("TagEa128", 1, strlen("TagEa128"), fo);
+		else
+			fwrite("TagEJ256", 1, strlen("TagEJ256"), fo);
+
+		// optional header len
+		if(fileIsV5)
+			writeWord(fo, headerLen);
+
+		// offset to header
+		int pos2 = ftell(fo) + 4; // count from next byte after count
+		// force at least 16 bytes of padding, is this needed?
+		int headerOffset = roundUpTo16(pos2 + 68) - pos2; 
+		writeWord(fo, headerOffset);
+
+		// mark current file location
+		int offset1 = ftell(fo);
+
+		//?? 
+		if(fileIsV5)
+			writeWord(fo, 1);
+
+		int crc32 = calcXYZcrc32(bodyBuf, bodyLen);
+		writeWord(fo, crc32);
+
+		// zero pad to header offset
+		int pad1 = headerOffset - (ftell(fo) - offset1);
+		writeRepeatByte(fo, 0, pad1);
+
+		// write encrypted and padded header out
+		fwrite(headerBuf, 1, headerLen, fo);
+
+		// mark current file location
+		int pad2 = m_bodyOffset - ftell(fo);
+		// pad with zeros to start of body
+		writeRepeatByte(fo, 0, pad2);
+
+		// write encrypted and padded body out
+		fwrite(bodyBuf, 1, bodyLen, fo);
+
+		return true;
+	}
+	
+	return false;
 }
 
 int XYZV3::getInfoCount()

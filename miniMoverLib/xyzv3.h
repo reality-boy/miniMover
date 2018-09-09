@@ -266,7 +266,7 @@ struct XYZPrinterLangSt
    zh	chinese
    
 */
-const int XYZPrintingLangCount = 9;
+const int XYZPrintingLangCount = 10;
 const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
 {
 	{ "en", "English" },
@@ -277,6 +277,7 @@ const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] =
 	{ "jp", "Japanese" },
 	// dont really know if these exist
 	// found refference to them in pdf document
+	{ "pt", "Portuguese" },
 	{ "tw", "Taiwanese" }, // Guoyu?
 	{ "cn", "Chinese" }, // Mandarin?
 	{ "kr", "Korean" },
@@ -444,6 +445,8 @@ protected:
 	int rssiToPct(int rssi);
 	bool findJsonVal(const char *str, const char *key, char *val);
 
+	bool parseStatusSubstring(const char *str);
+
 	// serial functions
 
 	//****FixMe, try to eliminate all these wait functions
@@ -455,6 +458,8 @@ protected:
 	bool checkForConfigOK(bool endCom = true);
 	bool checkForJsonVal(const char *key, const char *val);
 	bool checkForState(int state, int substate = -1, bool isSet = true);
+
+	bool isWIFI();
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);
@@ -473,11 +478,15 @@ protected:
 	unsigned int calcXYZcrc32(char *buf, int len);
 	const char* readLineFromBuf(const char* buf, char *lineBuf, int lineLen);
 	bool checkLineIsHeader(const char* lineBuf);
-	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, bool fileIsV5, bool fileIsZip, char **headerBuf, int *headerLen, char **bodyBuf, int *bodyLen);
 
-	bool parseStatusSubstring(const char *str);
+	// encryptFile
+	bool processGCode(const char *gcode, const int gcodeLen, const char *fileNum, char **processedBuf, int *headerLen, int *totalLen);
+	bool encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char **headerBuf, int *headerLen);
+	bool encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **bodyBuf, int *bodyLen);
+	bool writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *headerBuf, int headerLen, char *bodyBuf, int bodyLen);
 
-	bool isWIFI();
+	// decryptFile
+
 
 	Stream *m_stream;
 	XYZPrinterStatus m_status;
@@ -493,6 +502,8 @@ protected:
 
 	char m_jogAxis;
 	int m_jogDist_mm;
+
+	const static int m_bodyOffset = 8192;
 };
 
 #endif // XYZV3_H
