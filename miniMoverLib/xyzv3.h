@@ -372,6 +372,7 @@ public:
 	// old stream is returned so you can deal with closing it
 	void setStream(Stream *s);
 	bool isStreamSet() { return m_stream != NULL && m_stream->isOpen(); }
+	bool isWIFI();
 
 	// === query commands ===
 
@@ -537,8 +538,6 @@ protected:
 	bool checkForConfigOK(bool endCom = true);
 	bool checkForJsonVal(const char *key, const char *val);
 	bool checkForState(int state, int substate = -1, bool isSet = true);
-
-	bool isWIFI();
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);

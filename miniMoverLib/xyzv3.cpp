@@ -1121,7 +1121,7 @@ void XYZV3::calibrateBedStart()
 // call in loop while true to pump status
 bool XYZV3::calibrateBedRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun()");
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1245,7 +1245,7 @@ void XYZV3::cleanNozzleStart()
 // call in loop while true to pump status
 bool XYZV3::cleanNozzleRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun()");
+	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1324,7 +1324,7 @@ void XYZV3::homePrinterStart()
 
 bool XYZV3::homePrinterRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::homePrinterRun()");
+	debugPrint(DBG_LOG, "XYZV3::homePrinterRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1374,7 +1374,7 @@ void XYZV3::jogPrinterStart(char axis, int dist_mm)
 
 bool XYZV3::jogPrinterRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun()");
+	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1421,7 +1421,7 @@ void XYZV3::loadFilamentStart()
 
 bool XYZV3::loadFilamentRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun()");
+	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1511,7 +1511,7 @@ void XYZV3::unloadFilamentStart()
 
 bool XYZV3::unloadFilamentRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun()");
+	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1848,7 +1848,7 @@ void XYZV3::printFileStart(const char *path)
 
 bool XYZV3::printFileRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::printFileRun()");
+	debugPrint(DBG_LOG, "XYZV3::printFileRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -1981,7 +1981,7 @@ void XYZV3::uploadFirmwareStart(const char *path)
 
 bool XYZV3::uploadFirmwareRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun()");
+	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun() %d", m_actState);
 
 	switch(m_actState)
 	{
@@ -2211,7 +2211,7 @@ void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoId
 
 bool XYZV3::convertFileRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::convertFileRun()");
+	debugPrint(DBG_LOG, "XYZV3::convertFileRun() %d", m_actState);
 
 	switch(m_actState)
 	{

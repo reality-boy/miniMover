@@ -237,10 +237,16 @@ void runDoInit(HWND hDlg)
 
 int runGetTimeout()
 {
-	return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 1000 : 
-			(g_run_act == ACT_PRINT_FILE_START ||
-			 g_run_act == ACT_CONVERT_FILE_START ||
-			 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 1 : 50;
+	if(xyz.isWIFI())
+		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 3000 : 
+				(g_run_act == ACT_PRINT_FILE_START ||
+				 g_run_act == ACT_CONVERT_FILE_START ||
+				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 50 : 500;
+	else
+		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 1000 : 
+				(g_run_act == ACT_PRINT_FILE_START ||
+				 g_run_act == ACT_CONVERT_FILE_START ||
+				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 1 : 50;
 }
 
 bool runDoProcess(HWND hDlg)
