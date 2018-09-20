@@ -109,18 +109,6 @@ Serial serial;
 Socket soc;
 char deviceName[SERIAL_MAX_DEV_NAME_LEN] = "";
 
-void updateStatus(float pct)
-{
-	//****FixMe, could output dots based on pct complete
-	(void)pct;
-
-	// notify the user that we are still uploading
-	static int printCount = 0;
-	if(printCount % 4 == 0)
-		printf(".");
-	printCount++;
-}
-
 void postHelp()
 {
 	printf("miniMover %s\n", g_ver);
@@ -425,7 +413,17 @@ bool handlePrintFile(const char *path)
 {
 	if(path && checkCon())
 	{
-		if(xyz.printFile(path, updateStatus))
+		xyz.printFileStart(path);
+		int printCount = 0;
+		while(xyz.printFileRun())
+		{
+			// notify the user that we are still uploading
+			if(printCount % 4 == 0)
+				printf(".");
+			printCount++;
+		}
+
+		if(xyz.getState() == ACT_SUCCESS)
 		{
 			printf("\n");
 			// check status and wait for user to pause/cancel print
@@ -517,10 +515,16 @@ int main(int argc, char **argv)
 				{
 					printf("starting convert file\n");
 					checkCon(); 
-					if(xyz.convertFile(argv[i]))
+					xyz.convertFileStart(argv[i]);
+					while(xyz.convertFileRun())
+					{
+						//****FixMe, print progress
+					}
+
+					if(xyz.getState() == ACT_SUCCESS)
 						printf("convert file succeeded\n");
 					else
-						printf("convert file failed to convert %s\n", argv[i]);
+						printf("convert file failed\n");
 				}
 				else
 					printf("unknown file type %s\n", argv[i]);
@@ -592,10 +596,15 @@ int main(int argc, char **argv)
 						{
 							printf("starting convert file\n");
 							checkCon(); 
-							if(xyz.convertFile(argv[i+1]))
+							xyz.convertFileStart(argv[i+1]);
+							while(xyz.convertFileRun())
+							{
+								//****FixMe, print progress
+							}
+							if(xyz.getState() == ACT_SUCCESS)
 								printf("convert file succeeded\n");
 							else
-								printf("convert file failed to convert %s\n", argv[i+1]);
+								printf("convert file failed\n");
 							i++;
 						}
 						else
@@ -621,10 +630,19 @@ int main(int argc, char **argv)
 						if(checkCon())
 						{
 							printf("starting update firmware\n");
-							if(xyz.writeFirmware(argv[i+1], updateStatus))
+							xyz.uploadFirmwareStart(argv[i+1]);
+							int printCount = 0;
+							while(xyz.uploadFirmwareRun())
+							{
+								// notify the user that we are still uploading
+								if(printCount % 4 == 0)
+									printf(".");
+								printCount++;
+							}
+							if(xyz.getState() == ACT_SUCCESS)
 								printf("update firmware succeeded\n");
 							else
-								printf("update firmware failed to upload %s\n", argv[i+1]);
+								printf("update firmware failed\n");
 						}
 						i++;
 					}

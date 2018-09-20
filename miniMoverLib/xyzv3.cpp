@@ -6,7 +6,6 @@
 #else
 #include <unistd.h>
 //****FixMe, deal with these more properly!
-# define MAX_PATH 260
 # define GetTempPath(MAX_PATH, tpath)(tpath[0] = '\0')
 # define GetTempFileName(tpath, a, b, tfile)(strcpy(tfile, "temp.tmp"))
 #endif
@@ -96,6 +95,13 @@ XYZV3::XYZV3()
 	m_info = NULL;
 	//m_actState = ACT_FAILURE;
 	m_progress = 0;
+
+	m_jogAxis = ' ';
+	m_jogDist_mm = 0;
+	m_infoIdx = 0;
+	m_fileIsTemp = false;
+	m_filePath[0] = '\0';
+	m_fileOutPath[0] = '\0';
 } 
 
 XYZV3::~XYZV3() 
@@ -998,73 +1004,11 @@ int XYZV3::rssiToPct(int rssi)
 	return (rssi + 100) * 2;
 }
 
-//--------------
+// === action commands ===
 
-enum ActState
+void XYZV3::setState(ActState state, float timeout_s)
 {
-	ACT_FAILURE,			// something went wrong
-	ACT_SUCCESS,			// something went right
-
-	// Calibrate Bed
-	ACT_CB_START,			// start
-	ACT_CB_START_SUCCESS,	// wait on success
-	ACT_CB_HOME,			// wait for signal to lower detector
-	ACT_CB_ASK_LOWER,		// ask user to lower detector
-	ACT_CB_LOWERED,			// notify printer detecotr was lowered
-	ACT_CB_CALIB_START,		// wait for calibration to start
-	ACT_CB_CALIB_RUN,		// wait for calibration to finish
-	ACT_CB_ASK_RAISE,		// ask user to raise detector
-	ACT_CB_RAISED,			// notify printer detector was raised
-	ACT_CB_COMPLETE,		// wait for end of calibration
-
-	// Clean Nozzle
-	ACT_CL_START,
-	ACT_CL_START_SUCCESS,
-	ACT_CL_WARMUP_COMPLETE,
-	ACT_CL_CLEAN_NOZLE,
-	ACT_CL_FINISH,
-	ACT_CL_COMPLETE,
-
-	// Home printer
-	ACT_HP_START,
-	ACT_HP_START_SUCCESS,
-	ACT_HP_HOME_COMPLETE,
-
-	// Jog Printer
-	ACT_JP_START,
-	ACT_JP_START_SUCCESS,
-	ACT_JP_JOG_COMPLETE,
-
-	// Load Fillament
-	ACT_LF_START,
-	ACT_LF_START_SUCCESS,
-	ACT_LF_HEATING,
-	ACT_LF_LOADING,
-	ACT_LF_WAIT_LOAD,
-	ACT_LF_LOAD_FINISHED,
-	ACT_LF_LOAD_COMPLETE,
-
-	// Unload Fillament
-	ACT_UF_START,
-	ACT_UF_START_SUCCESS,
-	ACT_UF_HEATING,
-	ACT_UF_UNLOADING,
-	ACT_UF_UNLOAD_COMPLETE,
-	// only get here if cancel button pressed
-	ACT_UF_CANCEL,
-	ACT_UF_CANCEL_COMPLETE,
-};
-
-ActState m_actState;
-
-int XYZV3::getProgress()
-{
-	return m_progress;
-}
-
-void XYZV3::setState(int state, float timeout_s)
-{
-	m_actState = (ActState)state;
+	m_actState = state;
 
 	// force progress bar to 100% on exit
 	if(state == ACT_FAILURE || state == ACT_SUCCESS)
@@ -1074,6 +1018,11 @@ void XYZV3::setState(int state, float timeout_s)
 	if(timeout_s < 0)
 		timeout_s = (m_stream) ? m_stream->getDefaultTimeout() : 5.0f;
 	m_timeout.setTimeout_s(timeout_s);
+}
+
+ActState XYZV3::getState()
+{
+	return m_actState;
 }
 
 const char* XYZV3::getStateStr()
@@ -1132,11 +1081,32 @@ const char* XYZV3::getStateStr()
 	case ACT_UF_CANCEL: return "canceling";
 	case ACT_UF_CANCEL_COMPLETE: return "canceling";
 
+	// convert file
+	case ACT_CF_START: return "initializing";
+	case ACT_CF_COMPLETE: return "finishing";
+
+	// print file
+	case ACT_PF_START: return "initializing";
+	case ACT_PF_SEND: return "uploading file";
+	case ACT_PF_SEND_PROCESS: return "uploading file";
+	case ACT_PF_COMPLETE: return "finishing";
+
+	// upload firmware
+	case ACT_FW_START: return "initializing";
+	case ACT_FW_SEND_PROCESS: return "uploading firmware";
+	case ACT_FW_COMPLETE: return "finishing";
+
 	default: 
 		assert(false);
 		return "unknown";
 	}
 }
+
+int XYZV3::getProgress()
+{
+	return m_progress;
+}
+
 
 //--------------
 
@@ -1622,7 +1592,7 @@ void XYZV3::unloadFilamentCancel()
 	setState(ACT_UF_CANCEL);
 }
 
-//---------------------------
+// === config commands ===
 
 int XYZV3::incrementZOffset(bool up)
 {
@@ -1859,6 +1829,87 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 	return success;
 }
 
+// === upload commands ===
+
+// print a gcode or 3w file, convert as needed
+void XYZV3::printFileStart(const char *path)
+{
+	debugPrint(DBG_LOG, "XYZV3::printFileStart(%s)", path);
+	m_progress = 0;
+
+	if(path && m_stream && m_stream->isOpen())
+	{
+		strncpy(m_filePath, path, MAX_PATH);
+		m_filePath[MAX_PATH-1] = '\0';
+		m_fileIsTemp = false;
+		setState(ACT_PF_START);
+	}
+}
+
+bool XYZV3::printFileRun()
+{
+	debugPrint(DBG_LOG, "XYZV3::printFileRun()");
+
+	switch(m_actState)
+	{
+	case ACT_PF_START:
+		// if gcode convert to 3w file
+		if(isGcodeFile(m_filePath))
+		{
+			char tpath[MAX_PATH] = "";
+			char tfile[MAX_PATH] = "";
+			if( GetTempPath(MAX_PATH, tpath) &&
+				GetTempFileName(tpath, NULL, 0, tfile))
+			{
+				if(encryptFile(m_filePath, tfile, -1))
+				{
+					strcpy(m_filePath, tfile);
+					m_fileIsTemp = true;
+				}
+			}
+		}
+		// else if  3w just use file directly
+		else if(is3wFile(m_filePath))
+		{
+			//****FixMe, check if file format matches printer
+			// if not then decode to temp file and re-encode
+		}
+
+		if(m_filePath[0])
+			setState(ACT_PF_SEND);
+		else setState(ACT_FAILURE);
+		break;
+	case ACT_PF_SEND:
+		if(sendFileInit(m_filePath, true))
+			setState(ACT_PF_SEND_PROCESS);
+		else
+			setState(ACT_FAILURE);
+		break;
+	case ACT_PF_SEND_PROCESS:
+		if(!sendFileProcess())
+			setState(ACT_PF_COMPLETE);
+		m_progress = (int)(10.0 + 90.0f * getFileUploadPct());
+		break;
+	case ACT_PF_COMPLETE:
+		if(sendFileFinalize())
+		{
+			// cleanup temp file, if used
+			if(m_fileIsTemp)
+				remove(m_filePath);
+
+			setState(ACT_SUCCESS);
+		}
+		else
+			setState(ACT_FAILURE);
+		break;
+	default:
+		break;
+	}
+
+	// return true if not error or done
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+}
+
 bool XYZV3::cancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::cancelPrint()");
@@ -1914,85 +1965,49 @@ XYZv3/config=pdc:[7264]
 XYZv3/config=pde:[8046]
 */
 
-bool XYZV3::printFile(const char *path, XYZCallback cbStatus)
+// print a gcode or 3w file, convert as needed
+void XYZV3::uploadFirmwareStart(const char *path)
 {
-	debugPrint(DBG_LOG, "XYZV3::printFile(%s, %d)", path, cbStatus);
-
-	bool success = false;
+	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareStart(%s)", path);
+	m_progress = 0;
 
 	if(path && m_stream && m_stream->isOpen())
 	{
-		char tpath[MAX_PATH] = "";
-		char tfile[MAX_PATH] = "";
-		const char *filePath = NULL;
-
-		// if gcode convert to 3w file
-		if(isGcodeFile(path))
-		{
-			if(GetTempPath(MAX_PATH, tpath))
-			{
-				if(GetTempFileName(tpath, NULL, 0, tfile))
-				{
-					if(encryptFile(path, tfile, -1))
-					{
-						filePath = tfile;
-					}
-				}
-			}
-		}
-		// else if  3w just use file directly
-		else if(is3wFile(path))
-		{
-			filePath = path;
-		}
-		// else tPath is null and we fail
-
-		if(filePath)
-		if(sendFileInit(filePath, true))
-		{
-			while(sendFileProcess())
-			{
-				if(cbStatus)
-					cbStatus(getFileUploadPct());
-			}
-			if(cbStatus)
-				cbStatus(getFileUploadPct());
-
-			if(sendFileFinalize())
-				success = true;
-		}
-
-		// cleanup temp file, if used
-		if(tfile[0])
-			remove(tfile);
+		strncpy(m_filePath, path, MAX_PATH);
+		m_filePath[MAX_PATH-1] = '\0';
+		setState(ACT_FW_START);
 	}
-
-	return success;
 }
 
-bool XYZV3::writeFirmware(const char *path, XYZCallback cbStatus)
+bool XYZV3::uploadFirmwareRun()
 {
-	debugPrint(DBG_LOG, "XYZV3::writeFirmware(%s, %d)", path, cbStatus);
+	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun()");
 
-	if(true)
-		return false; // probably don't want to run this!
-
-	bool success = false;
-	if(sendFileInit(path, false)) // false is firmware
+	switch(m_actState)
 	{
-		while(sendFileProcess())
-		{
-			if(cbStatus)
-				cbStatus(getFileUploadPct());
-		}
-		if(cbStatus)
-			cbStatus(getFileUploadPct());
-
+	case ACT_FW_START:
+		if(sendFileInit(m_filePath, false))
+			setState(ACT_FW_SEND_PROCESS);
+		else
+			setState(ACT_FAILURE);
+		break;
+	case ACT_FW_SEND_PROCESS:
+		if(!sendFileProcess())
+			setState(ACT_PF_COMPLETE);
+		m_progress = (int)(10.0 + 90.0f * getFileUploadPct());
+		break;
+	case ACT_FW_COMPLETE:
 		if(sendFileFinalize())
-			success = true;
+			setState(ACT_SUCCESS);
+		else
+			setState(ACT_FAILURE);
+		break;
+	default:
+		break;
 	}
 
-	return success;
+	// return true if not error or done
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
@@ -2167,19 +2182,66 @@ bool XYZV3::sendFileFinalize()
 	return success;
 }
 
-bool XYZV3::convertFile(const char *inPath, const char *outPath, int infoIdx)
+// === file i/o ===
+
+// print a gcode or 3w file, convert as needed
+void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoIdx)
 {
-	debugPrint(DBG_LOG, "XYZV3::convertFile(%s, %s, %d)", inPath, outPath, infoIdx);
+	debugPrint(DBG_LOG, "XYZV3::convertFileStart(%s, %s, %d)", inPath, outPath, infoIdx);
+	m_progress = 0;
 
 	if(inPath)
 	{
-		if(isGcodeFile(inPath))
-			return encryptFile(inPath, outPath, infoIdx);
-		else if(is3wFile(inPath))
-			return decryptFile(inPath, outPath);
+		strncpy(m_filePath, inPath, MAX_PATH);
+		m_filePath[MAX_PATH-1] = '\0';
+
+		m_fileOutPath[0] = '\0';
+		if(outPath)
+		{
+			strncpy(m_fileOutPath, outPath, MAX_PATH);
+			m_fileOutPath[MAX_PATH-1] = '\0';
+		}
+
+		m_infoIdx = infoIdx;
+
+		m_fileIsTemp = false;
+		setState(ACT_CF_START);
+	}
+}
+
+bool XYZV3::convertFileRun()
+{
+	debugPrint(DBG_LOG, "XYZV3::convertFileRun()");
+
+	switch(m_actState)
+	{
+	case ACT_CF_START:
+		// if gcode convert to 3w file
+		if(isGcodeFile(m_filePath))
+		{
+			if(encryptFile(m_filePath, m_fileOutPath, m_infoIdx))
+				setState(ACT_CF_COMPLETE);
+			else setState(ACT_FAILURE);
+		}
+		// else if  3w just use file directly
+		else if(is3wFile(m_filePath))
+		{
+			if(decryptFile(m_filePath, m_fileOutPath))
+				setState(ACT_CF_COMPLETE);
+			else setState(ACT_FAILURE);
+		}
+		else setState(ACT_FAILURE);
+		break;
+	case ACT_CF_COMPLETE:
+		m_progress = 100;
+		setState(ACT_SUCCESS);
+		break;
+	default:
+		break;
 	}
 
-	return false;
+	// return true if not error or done
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::isGcodeFile(const char *path)
@@ -2216,6 +2278,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 {
 	debugPrint(DBG_LOG, "XYZV3::encryptFile(%s, %s, %d)", inPath, outPath, infoIdx);
 
+	//msTimer t;
 	bool success = false;
 
 	// encrypt to currently connected printer
@@ -2328,12 +2391,14 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 		}
 	}
 
+	//debugPrint(DBG_REPORT, "Encrypt File took %0.2f s", t.getElapsedTime_s());
 	return success;
 }
 
 bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 {
 	debugPrint(DBG_LOG, "XYZV3::decryptFile(%s, %s)", inPath, outPath);
+	//msTimer t;
 
 	bool success = false;
 
@@ -2465,15 +2530,15 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					fseek(f, m_bodyOffset, SEEK_SET);
 					int bodyLen = totalLen - ftell(f);
 					int bufLen = bodyLen + 1;
-					char *bbuf = new char[bufLen];
+					char *bBuf = new char[bufLen];
 
-					if(bbuf)
+					if(bBuf)
 					{
-						memset(bbuf, 0, bufLen);
-						fread(bbuf, 1, bodyLen, f);
-						bbuf[bodyLen] = '\0';
+						memset(bBuf, 0, bufLen);
+						fread(bBuf, 1, bodyLen, f);
+						bBuf[bodyLen] = '\0';
 
-						if(crc32 != (int)calcXYZcrc32(bbuf, bodyLen))
+						if(crc32 != (int)calcXYZcrc32(bBuf, bodyLen))
 							debugPrint(DBG_WARN, "XYZV3::decryptFile crc's don't match!!!");
 
 						if(fileIsZip)
@@ -2491,6 +2556,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 								int writeOffset = 0;
 								const int blockLen = 0x2010; // block grows by 16 bytes when pkcs7 padding is applied
 
+								//msTimer t1;
 								// decrypt in blocks
 								for(readOffset = 0; readOffset < bodyLen; readOffset += blockLen)
 								{
@@ -2501,16 +2567,18 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 									AES_init_ctx_iv(&ctx, key, iv);
 
 									//****FixMe, loop over this in blocks of 1,000
-									AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bbuf+readOffset, len);
+									AES_CBC_decrypt_buffer(&ctx, (uint8_t*)bBuf+readOffset, len);
 
 									// remove any padding from body
-									len = pkcs7unpad(bbuf+readOffset, len);
+									len = pkcs7unpad(bBuf+readOffset, len);
 
 									// and stash in new buf
-									memcpy(zbuf+writeOffset, bbuf+readOffset, len);
+									memcpy(zbuf+writeOffset, bBuf+readOffset, len);
 									writeOffset += len;
 								}
+								//debugPrint(DBG_REPORT, "CBC Decrypt took %0.2f s", t1.getElapsedTime_s());
 
+								//msTimer t2;
 								mz_zip_archive zip;
 								memset(&zip, 0, sizeof(zip));
 								if(mz_zip_reader_init_mem(&zip, zbuf, writeOffset, 0))
@@ -2523,6 +2591,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 										if(mz_zip_reader_get_filename(&zip, 0, tstr, tstr_len))
 											debugPrint(DBG_LOG, "XYZV3::decryptFile zip file name '%s'", tstr);
 
+										//****FixMe, replace with mz_zip_reader_extract_iter_new
 										size_t size = 0;
 										char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, 0, &size, 0);
 										if(tbuf)
@@ -2546,33 +2615,44 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 								delete [] zbuf;
 								zbuf = NULL;
+								//debugPrint(DBG_REPORT, "Unzip took %0.2f s", t2.getElapsedTime_s());
 							}
 						}
 						else
 						{
 							// first char in an unencrypted file will be ';'
 							// so check if no encrypted, v5 files sometimes are not encrypted
-							if(bbuf[0] != ';')
+							if(bBuf[0] != ';')
 							{
+								//msTimer t1;
 								// decrypt body
 								struct AES_ctx ctx;
 								uint8_t iv[16] = {0}; // 16 zeros
 								const char *key = "@xyzprinting.com@xyzprinting.com";
 								AES_init_ctx_iv(&ctx, key, iv);
 
-								//****FixMe, loop over this in blocks of 1,000
-								AES_ECB_decrypt_buffer(&ctx, (uint8_t*)bbuf, bodyLen);
+								// decrypt in blocks
+								const int blockLen = 0x2010;
+								for(int readOffset = 0; readOffset < bodyLen; readOffset += blockLen)
+								{
+									// last block is smaller, so account for it
+									int len = ((bodyLen - readOffset) < blockLen) ? (bodyLen - readOffset) : blockLen;
+
+									//****FixMe, loop over this in blocks of 1,000
+									AES_ECB_decrypt_buffer(&ctx, (uint8_t*)(bBuf + readOffset), len);
+								}
+								//debugPrint(DBG_REPORT, "EBC Decrypt took %0.2f s", t1.getElapsedTime_s());
 							}
 
 							// remove any padding from body
-							bodyLen = pkcs7unpad(bbuf, bodyLen);
+							bodyLen = pkcs7unpad(bBuf, bodyLen);
 
-							fwrite(bbuf, 1, bodyLen, fo);
+							fwrite(bBuf, 1, bodyLen, fo);
 							success = true;
 						}
 
-						delete [] bbuf;
-						bbuf = NULL;
+						delete [] bBuf;
+						bBuf = NULL;
 					}
 				}
 
@@ -2584,6 +2664,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 		}
 	}
 
+	//debugPrint(DBG_REPORT, "Decrypt File took %0.2f s", t.getElapsedTime_s());
 	return success;
 }
 
@@ -3258,10 +3339,12 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 
 		if(fileIsZip)
 		{
+			//msTimer t1;
 			mz_zip_archive zip;
 			memset(&zip, 0, sizeof(zip));
 			if(mz_zip_writer_init_heap(&zip, 0, 0))
 			{
+				//****FixMe, break this into loop?
 				if(mz_zip_writer_add_mem(&zip, "sample.gcode", gcode, gcodeLen, MZ_DEFAULT_COMPRESSION))
 				{
 					char *zBuf;
@@ -3272,9 +3355,12 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 						const int blockLen = 0x2000;
 						int newLen = zBufLen + (zBufLen / blockLen + 1) * 16;
 
+						//debugPrint(DBG_REPORT, "Zip took %0.2f s", t1.getElapsedTime_s());
+
 						char *bBuf = new char[newLen];
 						if(bBuf)
 						{
+							//msTimer t2;
 							// encrypt body
 							struct AES_ctx ctx;
 							uint8_t iv[16] = {0}; // 16 zeros
@@ -3303,6 +3389,7 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 
 								writeOffset += len;
 							}
+							//debugPrint(DBG_REPORT, "CBC Encrypt took %0.2f s", t2.getElapsedTime_s());
 
 							*bodyBuf = bBuf;
 							*bodyLen = writeOffset;
@@ -3327,14 +3414,24 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 				pkcs7pad(bBuf, gcodeLen);
 				bBuf[bLen] = '\0';
 
+				//msTimer t1;
 				// encrypt body using ECB mode
 				struct AES_ctx ctx;
 				uint8_t iv[16] = {0}; // 16 zeros
 				const char *bkey = "@xyzprinting.com@xyzprinting.com";
 				AES_init_ctx_iv(&ctx, bkey, iv);
 
-				//****FixMe, loop over this in blocks of 1,000
-				AES_ECB_encrypt_buffer(&ctx, (uint8_t*)bBuf, bLen);
+				// decrypt in blocks
+				const int blockLen = 0x2010;
+				for(int writeOffset = 0; writeOffset < bLen; writeOffset += blockLen)
+				{
+					// last block is smaller, so account for it
+					int len = ((bLen - writeOffset) < blockLen) ? (bLen - writeOffset) : blockLen;
+
+					//****FixMe, loop over this in blocks of 1,000
+					AES_ECB_encrypt_buffer(&ctx, (uint8_t*)(bBuf + writeOffset), len);
+				}
+				//debugPrint(DBG_REPORT, "EBC Encrypt took %0.2f s", t1.getElapsedTime_s());
 
 				*bodyBuf = bBuf;
 				*bodyLen = bLen;
@@ -3423,6 +3520,8 @@ bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *heade
 	
 	return false;
 }
+
+// === machine info ===
 
 int XYZV3::getInfoCount()
 {

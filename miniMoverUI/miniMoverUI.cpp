@@ -98,6 +98,7 @@ enum ActionCommand
 	ACT_PRINT_FILE_START,
 	ACT_PRINT_FILE_MONITOR,
 	ACT_CONVERT_FILE_START,
+	ACT_UPLOAD_FIRMWARE_START,
 };
 
 ActionCommand g_run_act = ACT_IDLE;
@@ -108,11 +109,6 @@ int g_run_jogDist = 1;
 char g_run_fileIn[MAX_PATH];
 char g_run_fileOut[MAX_PATH];
 int g_run_infoIdx = -1;
-
-void printFileCallback(float pct)
-{
-	//g_printPct = (int)(pct * 100);
-}
 
 void runSetButton(HWND hDlg, int num, bool enable, const char *str = NULL)
 {
@@ -206,20 +202,29 @@ void runDoInit(HWND hDlg)
 		runSetButton(hDlg, 0, true, "Cancel");
 		break;
 	case ACT_PRINT_FILE_START:
-		g_run_doPause = true;
 		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Printing File");
+		xyz.printFileStart(g_run_fileIn);
 		runSetButton(hDlg, 2, false);
 		runSetButton(hDlg, 1, false);
 		runSetButton(hDlg, 0, false);
 		break;
 	case ACT_PRINT_FILE_MONITOR:
 		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Monitoring Print");
+		g_run_doPause = true;
 		runSetButton(hDlg, 2, true, "Cancel");
-		runSetButton(hDlg, 1, true, "Pause/Resume");
+		runSetButton(hDlg, 1, true, "Pause");
 		runSetButton(hDlg, 0, true, "OK");
 		break;
 	case ACT_CONVERT_FILE_START:
 		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Converting File");
+		xyz.convertFileStart(g_run_fileIn, g_run_fileOut, g_run_infoIdx);
+		runSetButton(hDlg, 2, false);
+		runSetButton(hDlg, 1, false);
+		runSetButton(hDlg, 0, false);
+		break;
+	case ACT_UPLOAD_FIRMWARE_START:
+		SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Uploading Firmware");
+		xyz.uploadFirmwareStart(g_run_fileIn);
 		runSetButton(hDlg, 2, false);
 		runSetButton(hDlg, 1, false);
 		runSetButton(hDlg, 0, false);
@@ -230,9 +235,18 @@ void runDoInit(HWND hDlg)
 	}
 }
 
+int runGetTimeout()
+{
+	return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 1000 : 
+			(g_run_act == ACT_PRINT_FILE_START ||
+			 g_run_act == ACT_CONVERT_FILE_START ||
+			 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 1 : 50;
+}
+
 bool runDoProcess(HWND hDlg)
 {
-	runSetProgressBar(hDlg, xyz.getProgress());
+	if(g_run_act != ACT_PRINT_FILE_MONITOR)
+		runSetProgressBar(hDlg, xyz.getProgress());
 
 	switch(g_run_act)
 	{
@@ -323,26 +337,81 @@ bool runDoProcess(HWND hDlg)
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_PRINT_FILE_START:
-		if(xyz.printFile(g_run_fileIn, printFileCallback))
+		if(!xyz.printFileRun())
 		{
+			SetDlgItemText(hDlg, IDC_RUN_STATIC1, "Monitoring Print");
+			g_run_doPause = true;
 			runSetButton(hDlg, 2, true, "Cancel");
-			runSetButton(hDlg, 1, true, "Pause/Resume");
+			runSetButton(hDlg, 1, true, "Pause");
 			runSetButton(hDlg, 0, true, "OK");
-			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Printing, hit ok to exit");
 			g_run_act = ACT_PRINT_FILE_MONITOR;
 		}
 		else
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
 		return true;
 	case ACT_PRINT_FILE_MONITOR:
-		//****FixMe, run monitor
-		SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
+		if(g_run_doPause)
+			runSetButton(hDlg, 1, true, "Pause");
+		else
+			runSetButton(hDlg, 1, true, "Resume");
+
+		if(xyz.queryStatus())
+		{
+			const XYZPrinterStatus *st = xyz.getPrinterStatus();
+			if(st->isValid)
+			{
+				runSetProgressBar(hDlg, st->dPrintPercentComplete);
+
+				char tstr[1024] = "";
+
+				if(st->eErrorStatus != 0)
+					sprintf(tstr, "Status: %s, error: (0x%08x)%s", st->jPrinterStateStr, st->eErrorStatus, st->eErrorStatusStr);
+				else
+				{
+					sprintf(tstr, "Status: %s", st->jPrinterStateStr);
+
+					if(st->tExtruderCount > 1 && st->tExtruder2ActualTemp_C > 0)
+						sprintf(tstr+strlen(tstr), ", temp: %d C %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruder2ActualTemp_C, st->tExtruderTargetTemp_C);
+					else
+						sprintf(tstr+strlen(tstr), ", temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
+
+					if(st->bBedActualTemp_C > 30)
+						sprintf(tstr+strlen(tstr), ", bed: %d C / %d C", st->bBedActualTemp_C, st->OBedTargetTemp_C);
+
+					if(st->dPrintPercentComplete != 0 || st->dPrintElapsedTime_m != 0 || st->dPrintTimeLeft_m != 0)
+						sprintf(tstr+strlen(tstr), ", time: %d/%d min", st->dPrintElapsedTime_m, st->dPrintTimeLeft_m);
+				}
+
+				SetDlgItemText(hDlg, IDC_RUN_STATIC2, tstr);
+			}
+			// else just wait till next cycle
+
+			if( st->jPrinterState == PRINT_ENDING_PROCESS_DONE ||
+				st->jPrinterState == PRINT_NONE )
+			{
+				runSetButton(hDlg, 0, true, "OK");
+				runSetButton(hDlg, 1, false);
+				runSetButton(hDlg, 2, false);
+				SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Print job finished, hit ok to exit");
+				g_run_act = ACT_FINISH_WAIT;
+			}
+		}
 		return true;
 	case ACT_CONVERT_FILE_START:
-		if(xyz.convertFile(g_run_fileIn, g_run_fileOut, g_run_infoIdx))
+		if(!xyz.convertFileRun())
 		{
 			runSetButton(hDlg, 0, true, "OK");
 			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Convert file finished, hit ok to exit");
+			g_run_act = ACT_FINISH_WAIT;
+		}
+		else
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, xyz.getStateStr());
+		return true;
+	case ACT_UPLOAD_FIRMWARE_START:
+		if(!xyz.uploadFirmwareRun())
+		{
+			runSetButton(hDlg, 0, true, "OK");
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Upload firmware finished, hit ok to exit");
 			g_run_act = ACT_FINISH_WAIT;
 		}
 		else
@@ -389,7 +458,7 @@ void runDoAction(HWND hDlg, int btn)
 		break;
 	case ACT_PRINT_FILE_MONITOR:
 		if(btn == 0)
-			g_run_act = ACT_FINISH_WAIT;
+			g_run_act = ACT_IDLE;
 		else if(btn == 1)
 		{
 			if(g_run_doPause)
@@ -401,10 +470,16 @@ void runDoAction(HWND hDlg, int btn)
 		else if(btn == 2)
 		{
 			xyz.cancelPrint();
-			g_run_act = ACT_IDLE;
+			SetDlgItemText(hDlg, IDC_RUN_STATIC2, "Print job canceled, hit ok to exit");
+			runSetButton(hDlg, 0, true, "OK");
+			runSetButton(hDlg, 1, false);
+			runSetButton(hDlg, 2, false);
+			g_run_act = ACT_FINISH_WAIT;
 		}
 		break;
 	case ACT_CONVERT_FILE_START:
+		break;
+	case ACT_UPLOAD_FIRMWARE_START:
 		break;
 	}
 }
@@ -421,7 +496,10 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
 		case WM_TIMER:
 			if(runDoProcess(hDlg))
-				g_run_timer = SetTimer(hDlg, g_run_timer, 50, NULL);
+			{
+				int timeout = runGetTimeout();
+				g_run_timer = SetTimer(hDlg, g_run_timer, timeout, NULL);
+			}
 			else
 			{
 				KillTimer(hDlg, g_run_timer);
@@ -432,17 +510,15 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         case WM_COMMAND: 
             switch (LOWORD(wParam)) 
             { 
-            case ID_RUN_BTN1: 
-				runDoAction(hDlg, 2);
-				return TRUE;
-
-            case ID_RUN_BTN2: 
-				runDoAction(hDlg, 1);
-				return TRUE;
-
 			case IDOK:
             case IDCANCEL: 
 				runDoAction(hDlg, 0);
+				return TRUE;
+            case ID_RUN_BTN1: 
+				runDoAction(hDlg, 1);
+				return TRUE;
+            case ID_RUN_BTN2: 
+				runDoAction(hDlg, 2);
 				return TRUE;
             } 
     } 
@@ -456,6 +532,7 @@ void RunDialogStart(HWND hDlg, ActionCommand act)
 	g_block_update = true;
 	g_run_act = act;
 	DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
+	g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 	g_block_update = false;
 }
 
@@ -669,7 +746,12 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		else
 			listAddLine(hwndListInfo, "Extruder temp: %d C / %d C", st->tExtruder1ActualTemp_C, st->tExtruderTargetTemp_C);
 
-		bool isPrinting = st->jPrinterState >= PRINT_INITIAL && st->jPrinterState <= PRINT_PRINTING;
+		bool isPrinting = st->jPrinterState >= PRINT_INITIAL && st->jPrinterState <= PRINT_JOB_DONE;
+		if(isPrinting)
+			SendDlgItemMessage(hDlg, IDC_BUTTON_PRINT, WM_SETTEXT, 0, (LPARAM)"Monitor Print");
+		else
+			SendDlgItemMessage(hDlg, IDC_BUTTON_PRINT, WM_SETTEXT, 0, (LPARAM)"Print File");
+
 		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
 		{
 				//listAddLine(hwndListInfo, "No job running");
@@ -1077,13 +1159,25 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case IDC_BUTTON_PRINT:
-			MainDlgSetStatus(hDlg, "printing file");
-			if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
 			{
-				RunDialogStart(hDlg, ACT_PRINT_FILE_START);
-				MainDlgSetStatus(hDlg, "printing file finished");
+				const XYZPrinterStatus *st = xyz.getPrinterStatus();
+				bool isPrinting = st->jPrinterState >= PRINT_INITIAL && st->jPrinterState <= PRINT_JOB_DONE;
+				if(st->isValid && isPrinting)
+				{
+					MainDlgSetStatus(hDlg, "Monitoring print");
+					RunDialogStart(hDlg, ACT_PRINT_FILE_MONITOR);
+				}
+				else
+				{
+					MainDlgSetStatus(hDlg, "printing file");
+					if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
+					{
+						RunDialogStart(hDlg, ACT_PRINT_FILE_START);
+						MainDlgSetStatus(hDlg, "printing file finished");
+					}
+					else MainDlgSetStatus(hDlg, "printing file failed to open file");
+				}
 			}
-			else MainDlgSetStatus(hDlg, "printing file failed to open file");
 			break;
 
 		case IDC_BUTTON_CONVERT:

@@ -1,6 +1,10 @@
 #ifndef XYZV3_H
 #define XYZV3_H
 
+#ifndef MAX_PATH
+# define MAX_PATH 260
+#endif
+
 /*
 Class that allows you to control any XYZ da Vinci printer 
 that uses the version 3 communication protocol.  This includes
@@ -264,8 +268,8 @@ struct XYZPrinterLangSt
    pt	portuguese
    ru	russian
    zh	chinese
-   
 */
+
 const int XYZPrintingLangCount = 10;
 const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
 {
@@ -283,18 +287,85 @@ const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] =
 	{ "kr", "Korean" },
 };
 
-typedef void (*XYZCallback)(float pct);
+// internal action state
+enum ActState
+{
+	ACT_FAILURE,			// something went wrong
+	ACT_SUCCESS,			// something went right
+
+	// Calibrate Bed
+	ACT_CB_START,			// start
+	ACT_CB_START_SUCCESS,	// wait on success
+	ACT_CB_HOME,			// wait for signal to lower detector
+	ACT_CB_ASK_LOWER,		// ask user to lower detector
+	ACT_CB_LOWERED,			// notify printer detecotr was lowered
+	ACT_CB_CALIB_START,		// wait for calibration to start
+	ACT_CB_CALIB_RUN,		// wait for calibration to finish
+	ACT_CB_ASK_RAISE,		// ask user to raise detector
+	ACT_CB_RAISED,			// notify printer detector was raised
+	ACT_CB_COMPLETE,		// wait for end of calibration
+
+	// Clean Nozzle
+	ACT_CL_START,
+	ACT_CL_START_SUCCESS,
+	ACT_CL_WARMUP_COMPLETE,
+	ACT_CL_CLEAN_NOZLE,
+	ACT_CL_FINISH,
+	ACT_CL_COMPLETE,
+
+	// Home printer
+	ACT_HP_START,
+	ACT_HP_START_SUCCESS,
+	ACT_HP_HOME_COMPLETE,
+
+	// Jog Printer
+	ACT_JP_START,
+	ACT_JP_START_SUCCESS,
+	ACT_JP_JOG_COMPLETE,
+
+	// Load Fillament
+	ACT_LF_START,
+	ACT_LF_START_SUCCESS,
+	ACT_LF_HEATING,
+	ACT_LF_LOADING,
+	ACT_LF_WAIT_LOAD,
+	ACT_LF_LOAD_FINISHED,
+	ACT_LF_LOAD_COMPLETE,
+
+	// Unload Fillament
+	ACT_UF_START,
+	ACT_UF_START_SUCCESS,
+	ACT_UF_HEATING,
+	ACT_UF_UNLOADING,
+	ACT_UF_UNLOAD_COMPLETE,
+	// only get here if cancel button pressed
+	ACT_UF_CANCEL,
+	ACT_UF_CANCEL_COMPLETE,
+
+	// convert file
+	ACT_CF_START,
+	ACT_CF_COMPLETE,
+
+	// print file
+	ACT_PF_START,
+	ACT_PF_SEND,
+	ACT_PF_SEND_PROCESS,
+	ACT_PF_COMPLETE,
+
+	// upload firmware
+	ACT_FW_START,
+	ACT_FW_SEND_PROCESS,
+	ACT_FW_COMPLETE,
+};
 
 // master class
-// most functions will block while serial IO happens
 class XYZV3
 {
 public:
 	XYZV3();
 	~XYZV3(); 
 
-	//===========================
-	// serial communication
+	// === serial communication ===
 
 	// attach to a serial stream
 	// pass in NULL to disconnect from stream
@@ -312,10 +383,10 @@ public:
 
 	// === action commands ===
 
-	// get progress of action
-	int getProgress();
+	ActState getState();
 	const char* getStateStr();
-	void setState(int state, float timeout_s = -1);
+
+	int getProgress();
 
 	// run auto bed leveling routine
 	void calibrateBedStart(); 
@@ -375,33 +446,32 @@ public:
 
 	// === upload commands ===
 
+	// print a gcode or 3w file, convert as needed
+	void printFileStart(const char *path);
+	bool printFileRun();
+
+	// only work when print is in progress, after uploading
 	bool cancelPrint();
 	bool pausePrint();
 	bool resumePrint();
 	bool readyPrint(); // call to notify printer bed is clear
 
-	// print a gcode or 3w file, convert as needed
-	bool printFile(const char *path, XYZCallback cbStatus);
-
-	// load new firmware into the printer.
+	// upload a new firmware to printer
 	// probably not a good idea to mess with this!
-	bool writeFirmware(const char *path, XYZCallback cbStatus);
+	void uploadFirmwareStart(const char *path);
+	bool uploadFirmwareRun();
 
-	//=====================
-	// file i/o
-
-	// convert a gcode file to 3w format
-	// infoIdx is the index into the m_infoArray or -1 for auto
-	bool encryptFile(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
-
-	// convert a 3w file to gcode
-	bool decryptFile(const char *inPath, const char *outPath = NULL);
+	// === file i/o ===
 
 	// convert from gcode to 3w or back depending on file type
 	// infoIdx is the index into the m_infoArray or -1 for auto
-	bool convertFile(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
+	void convertFileStart(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
+	bool convertFileRun();
+
 	bool isGcodeFile(const char *path);
 	bool is3wFile(const char *path);
+
+	// === machine info ===
 
 	static int getInfoCount();
 	static const XYZPrinterInfo* indexToInfo(int index);
@@ -410,6 +480,15 @@ public:
 	static const char* serialToName(const char *serialNum);
 
 protected:
+
+	void setState(ActState state, float timeout_s = -1);
+
+	// convert a gcode file to 3w format
+	// infoIdx is the index into the m_infoArray or -1 for auto
+	bool encryptFile(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
+
+	// convert a 3w file to gcode
+	bool decryptFile(const char *inPath, const char *outPath = NULL);
 
 	// helper functions that upload a firmware or 3w file
 	bool sendFileInit(const char *path, bool isPrint);
@@ -449,7 +528,7 @@ protected:
 
 	// serial functions
 
-	//****FixMe, try to eliminate all these wait functions
+	//****FixMe, try to eliminate these wait functions
 	const char* waitForLine(float timeout_s = -1);
 	bool waitForEndCom();
 	bool waitForConfigOK(bool endCom = true, float timeout_s = -1);
@@ -487,7 +566,6 @@ protected:
 
 	// decryptFile
 
-
 	Stream *m_stream;
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
@@ -496,12 +574,16 @@ protected:
 	static const int m_infoArrayLen = 21;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
-	//ActState m_actState; //****FixMe, work this out
+	ActState m_actState;
 	int m_progress;
 	msTimeout m_timeout;
 
 	char m_jogAxis;
 	int m_jogDist_mm;
+	int m_infoIdx;
+	bool m_fileIsTemp;
+	char m_filePath[MAX_PATH];
+	char m_fileOutPath[MAX_PATH];
 
 	const static int m_bodyOffset = 8192;
 };

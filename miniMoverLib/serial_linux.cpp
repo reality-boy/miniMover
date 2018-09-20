@@ -234,7 +234,7 @@ void Serial::closeStream()
 
 bool Serial::isOpen()
 {
-	debugPrint(DBG_LOG, "Serial::isOpen()");
+	debugPrint(DBG_VERBOSE, "Serial::isOpen()");
 
 	return m_handle >= 0;
 }
