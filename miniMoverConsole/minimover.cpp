@@ -417,6 +417,7 @@ bool handlePrintFile(const char *path)
 		int printCount = 0;
 		while(xyz.printFileRun())
 		{
+			Sleep(10);
 			// notify the user that we are still uploading
 			if(printCount % 4 == 0)
 				printf(".");
@@ -432,6 +433,7 @@ bool handlePrintFile(const char *path)
 
 			while(true)
 			{
+				Sleep(300);
 				count++;
 				// check if they want to cancel or pause
 				if(kbhit())
@@ -518,6 +520,7 @@ int main(int argc, char **argv)
 					xyz.convertFileStart(argv[i]);
 					while(xyz.convertFileRun())
 					{
+						Sleep(300);
 						//****FixMe, print progress
 					}
 
@@ -555,6 +558,7 @@ int main(int argc, char **argv)
 							xyz.cleanNozzleStart();
 							while(xyz.cleanNozzleRun())
 							{
+								Sleep(300);
 								if(xyz.cleanNozzlePromtToClean())
 								{
 									printf("clean nozzle with a wire and press enter when finished\n");
@@ -574,6 +578,8 @@ int main(int argc, char **argv)
 							xyz.calibrateBedStart();
 							while(xyz.calibrateBedRun())
 							{
+								Sleep(300);
+
 								if(xyz.calibrateBedPromptToLowerDetector())
 								{
 									printf("lower detector and hit enter to continue...\n");
@@ -599,6 +605,7 @@ int main(int argc, char **argv)
 							xyz.convertFileStart(argv[i+1]);
 							while(xyz.convertFileRun())
 							{
+								Sleep(10);
 								//****FixMe, print progress
 							}
 							if(xyz.getState() == ACT_SUCCESS)
@@ -634,6 +641,7 @@ int main(int argc, char **argv)
 							int printCount = 0;
 							while(xyz.uploadFirmwareRun())
 							{
+								Sleep(10);
 								// notify the user that we are still uploading
 								if(printCount % 4 == 0)
 									printf(".");
@@ -656,6 +664,7 @@ int main(int argc, char **argv)
 						xyz.homePrinterStart();
 						while(xyz.homePrinterRun())
 						{
+							Sleep(300);
 							// spin
 						}
 						printf("home printer succeeded\n");
@@ -668,6 +677,7 @@ int main(int argc, char **argv)
 						xyz.loadFilamentStart();
 						while(xyz.loadFilamentRun())
 						{
+							Sleep(300);
 							if(xyz.loadFilamentPromptToFinish())
 							{
 								printf("wait for filament to come out of nozzle then hit enter\n");
@@ -744,6 +754,7 @@ int main(int argc, char **argv)
 						xyz.homePrinterStart();
 						while(xyz.homePrinterRun())
 						{
+							Sleep(300);
 							// spin
 						}
 						debugPrint(DBG_REPORT, "test success");
@@ -756,6 +767,7 @@ int main(int argc, char **argv)
 						xyz.unloadFilamentStart();
 						while(xyz.unloadFilamentRun())
 						{
+							Sleep(300);
 							// spin
 						}
 						printf("unload filament succeeded\n");
@@ -770,6 +782,7 @@ int main(int argc, char **argv)
 						xyz.jogPrinterStart('x', t);
 						while(xyz.jogPrinterRun())
 						{
+							Sleep(300);
 							// spin
 						}
 					}
@@ -784,6 +797,7 @@ int main(int argc, char **argv)
 						xyz.jogPrinterStart('y', t);
 						while(xyz.jogPrinterRun())
 						{
+							Sleep(300);
 							// spin
 						}
 					}
@@ -798,6 +812,7 @@ int main(int argc, char **argv)
 						xyz.jogPrinterStart('z', t);
 						while(xyz.jogPrinterRun())
 						{
+							Sleep(300);
 							// spin
 						}
 					}

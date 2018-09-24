@@ -119,7 +119,6 @@ int Stream::readLine(char *buf, int bufLen)
 	else
 		debugPrint(DBG_WARN, "Stream::readLine failed invalid input");
 		
-
 	return 0;
 }
 

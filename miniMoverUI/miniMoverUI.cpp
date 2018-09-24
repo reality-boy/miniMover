@@ -241,12 +241,12 @@ int runGetTimeout()
 		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 3000 : 
 				(g_run_act == ACT_PRINT_FILE_START ||
 				 g_run_act == ACT_CONVERT_FILE_START ||
-				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 50 : 500;
+				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 500 : 500;
 	else
 		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 1000 : 
 				(g_run_act == ACT_PRINT_FILE_START ||
 				 g_run_act == ACT_CONVERT_FILE_START ||
-				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 1 : 50;
+				 g_run_act == ACT_UPLOAD_FIRMWARE_START) ? 10 : 50;
 }
 
 bool runDoProcess(HWND hDlg)
@@ -1063,9 +1063,8 @@ void MainDlgConnect(HWND hDlg)
 		{
 			if(g_soc.openStream(g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port))
 			{
-				Sleep(100);
 				xyz.setStream(&g_soc);
-				Sleep(100);
+
 				MainDlgSetStatus(hDlg, "connected");
 				const char *name = XYZV3::serialToName(g_wifiList.m_list[id].m_serialNum);
 				setDialogStr(hDlg, "MiniMoverUI %s - %s (%s:%d)", g_ver, name, g_wifiList.m_list[id].m_ip, g_wifiList.m_list[id].m_port);

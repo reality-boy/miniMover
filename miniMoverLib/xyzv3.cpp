@@ -1141,7 +1141,7 @@ bool XYZV3::calibrateBedRun()
 	case ACT_CB_HOME: // wait for signal to lower detector
 		if(!isWIFI() && checkForJsonVal("stat", "pressdetector"))
 			setState(ACT_CB_ASK_LOWER, 240);
-		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 41, true))
+		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 41))
 			setState(ACT_CB_ASK_LOWER, 240);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1170,7 +1170,7 @@ bool XYZV3::calibrateBedRun()
 	case ACT_CB_CALIB_RUN: // wait for calibration to finish
 		if(!isWIFI() && checkForJsonVal("stat", "ok")) // or stat:fail
 			setState(ACT_CB_ASK_RAISE, 240);
-		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 44, true))
+		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 44))
 			setState(ACT_CB_ASK_RAISE, 240);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1202,7 +1202,7 @@ bool XYZV3::calibrateBedRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 bool XYZV3::calibrateBedPromptToLowerDetector()
@@ -1264,7 +1264,7 @@ bool XYZV3::cleanNozzleRun()
 	case ACT_CL_WARMUP_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
 			setState(ACT_CL_CLEAN_NOZLE, 240);
-		else if(isWIFI() && checkForState(STATE_PRINT_CLEAN_NOZZLE, 52, true))
+		else if(isWIFI() && checkForState(STATE_PRINT_CLEAN_NOZZLE, 52))
 			setState(ACT_CL_CLEAN_NOZLE, 240);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1297,7 +1297,7 @@ bool XYZV3::cleanNozzleRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 bool XYZV3::cleanNozzlePromtToClean()
@@ -1344,7 +1344,7 @@ bool XYZV3::homePrinterRun()
 	case ACT_HP_HOME_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete"))
 			setState(ACT_SUCCESS);
-		else if(isWIFI() && checkForState(STATE_PRINT_HOMING, -1, false))
+		else if(isWIFI() && checkForNotState(STATE_PRINT_HOMING, -1))
 			setState(ACT_SUCCESS);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1356,7 +1356,7 @@ bool XYZV3::homePrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 //---------------------------
@@ -1395,7 +1395,7 @@ bool XYZV3::jogPrinterRun()
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
 			setState(ACT_SUCCESS);
 		// we may fall into idle or error state before we can detect joging state, so just block if joging state detected
-		else if(isWIFI() && checkForState(STATE_PRINT_JOG_MODE, -1, false))
+		else if(isWIFI() && checkForNotState(STATE_PRINT_JOG_MODE, -1))
 			setState(ACT_SUCCESS);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1407,7 +1407,7 @@ bool XYZV3::jogPrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 //---------------------------
@@ -1451,7 +1451,7 @@ bool XYZV3::loadFilamentRun()
 	case ACT_LF_LOADING:
 		if(!isWIFI() && checkForJsonVal("stat", "load")) 
 			setState(ACT_LF_WAIT_LOAD, 240);
-		else if(isWIFI() && checkForState(STATE_PRINT_LOAD_FIALMENT, 12, true))
+		else if(isWIFI() && checkForState(STATE_PRINT_LOAD_FIALMENT, 12))
 			setState(ACT_LF_WAIT_LOAD, 240);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1485,7 +1485,7 @@ bool XYZV3::loadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 bool XYZV3::loadFilamentPromptToFinish()
 {
@@ -1541,7 +1541,7 @@ bool XYZV3::unloadFilamentRun()
 	case ACT_UF_UNLOADING:
 		if(!isWIFI() && checkForJsonVal("stat", "unload")) // could query temp and state with  XYZv3/query=jt
 			setState(ACT_UF_UNLOAD_COMPLETE, 240);
-		else if(isWIFI() && checkForState(STATE_PRINT_UNLOAD_FIALMENT, 22, true))
+		else if(isWIFI() && checkForState(STATE_PRINT_UNLOAD_FIALMENT, 22))
 			setState(ACT_UF_UNLOAD_COMPLETE, 360);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1551,7 +1551,7 @@ bool XYZV3::unloadFilamentRun()
 	case ACT_UF_UNLOAD_COMPLETE:
 		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
 			setState(ACT_SUCCESS);
-		else if(isWIFI() && checkForState(STATE_PRINT_UNLOAD_FIALMENT, 22, false))
+		else if(isWIFI() && checkForNotState(STATE_PRINT_UNLOAD_FIALMENT, 22))
 			setState(ACT_SUCCESS);
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1581,7 +1581,7 @@ bool XYZV3::unloadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 void XYZV3::unloadFilamentCancel()
@@ -1907,7 +1907,7 @@ bool XYZV3::printFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 bool XYZV3::cancelPrint()
@@ -2007,7 +2007,7 @@ bool XYZV3::uploadFirmwareRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
@@ -2241,7 +2241,7 @@ bool XYZV3::convertFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
 }
 
 bool XYZV3::isGcodeFile(const char *path)
@@ -2726,7 +2726,7 @@ const char* XYZV3::checkForLine()
 
 const char* XYZV3::waitForLine(float timeout_s)
 {
-	debugPrint(DBG_LOG, "XYZV3::waitForLine(%0.2f)", timeout_s);
+	debugPrint(DBG_VERBOSE, "XYZV3::waitForLine(%0.2f)", timeout_s);
 
 	static const int len = 1024;
 	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
@@ -2745,12 +2745,12 @@ const char* XYZV3::waitForLine(float timeout_s)
 			if(m_stream->readLine(buf, len))
 				done = true;
 		} 
-		while(!done && !timeout.isTimeout());
+		while(!done && !timeout.isTimeout() && m_stream->isOpen());
 
 		if(done)
 			return buf;
 		else
-			debugPrint(DBG_WARN, "XYZV3::waitForLine failed, timed out");
+			debugPrint(DBG_WARN, "XYZV3::waitForLine failed, timed out 0.2f", timeout_s);
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
@@ -2855,10 +2855,6 @@ bool XYZV3::checkForState(int state, int substate, bool isSet)
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::checkForState queryStatus() failed");
-
-	//****FixMe, loose our dependancy on this!
-	if(!success)
-		Sleep(300);
 
 	return success;
 }

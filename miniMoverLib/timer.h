@@ -1,10 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#ifndef	_WIN32
-# define Sleep(t) usleep((t) * 1000)
-#endif
- 
 // get time using high resolution clock
 class msTime
 {

@@ -66,6 +66,7 @@ void debugReduceNoise(bool doReduce)
 void debugPrint(debugLevel l, const char *format, ...)
 {
 	const static int BUF_SIZE  = 2048;
+	static char lastMsgBuf[BUF_SIZE] = "";
 	char msgBuf[BUF_SIZE];
 	va_list arglist;
 
@@ -77,19 +78,39 @@ void debugPrint(debugLevel l, const char *format, ...)
 	// regular debug print
 	if(l <= g_debugLevel)
 	{
+		if(0 != strcmp(lastMsgBuf, msgBuf))
+		{
 #if defined(_WIN32) && !defined(_CONSOLE)
-		OutputDebugString(msgBuf);
-		OutputDebugString("\n");
+			OutputDebugString("\n");
+			OutputDebugString(msgBuf);
 #else
-		printf("%s\n", msgBuf);
+			printf("\n%s", msgBuf);
 #endif
+			strcpy(lastMsgBuf, msgBuf);
+		}
+		else
+		{
+#if defined(_WIN32) && !defined(_CONSOLE)
+			OutputDebugString(".");
+#else
+			printf(".");
+#endif
+		}
 	}
 
 	// log to disk if error log is open
 	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 	{
-		fprintf(g_debugLog, "%07.2f %s\n", g_time.getElapsedTime_s(), msgBuf);
-		fflush(g_debugLog);
+		if(0 != strcmp(lastMsgBuf, msgBuf))
+		{
+			fprintf(g_debugLog, "\n%07.2f %s", g_time.getElapsedTime_s(), msgBuf);
+			fflush(g_debugLog);
+			strcpy(lastMsgBuf, msgBuf);
+		}
+		else
+		{
+			fprintf(g_debugLog, ".");
+		}
 	}
 }
 
@@ -102,30 +123,30 @@ void debugPrintArray(debugLevel l, const char* data, int len)
 		{
 #if defined(_WIN32) && !defined(_CONSOLE)
 			char tstr[25];
+			OutputDebugString("\n");
 			for(int i=0; i<len; i++)
 			{
 				sprintf(tstr, " %02x", data[i]);
 				OutputDebugString(tstr);
 			}
-			OutputDebugString("\n");
 #else
+			printf("\n");
 			for(int i=0; i<len; i++)
 			{
 				printf(" %02x", data[i]);
 			}
-			printf("\n");
 #endif
 		}
 
 		// log to disk if error log is open
 		if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 		{
+			fprintf(g_debugLog, "\n");
 			fprintf(g_debugLog, "%07.2f", g_time.getElapsedTime_s());
 			for(int i=0; i<len; i++)
 			{
 				fprintf(g_debugLog, " %02x", data[i]);
 			}
-			fprintf(g_debugLog, "\n");
 			fflush(g_debugLog);
 		}
 	}
