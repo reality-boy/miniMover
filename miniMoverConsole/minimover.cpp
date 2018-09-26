@@ -6,6 +6,7 @@
 # pragma warning(disable:4996) // live on the edge!
 #else
 # include <unistd.h>
+# define Sleep(t) usleep((t) * 1000)
 #endif
 
 #include <stdio.h>

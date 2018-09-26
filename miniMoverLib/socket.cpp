@@ -56,7 +56,7 @@ bool getXMLValue(const char *xml, const char* key, char *val)
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel)
 {
-	debugPrint(DBG_LOG, "autoDetectWifi(%s, %s, %d)", ssid, password, channel);
+	debugPrint(DBG_LOG, "autoDetectWifi()");
 
 	bool success = false;
 	if(ssid && password)

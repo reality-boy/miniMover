@@ -35,8 +35,8 @@ protected:
 	void setSocetTimeout(int readTimeout_ms, int writeTimeout_ms);
 	int waitOnSocket(int timeout_ms, bool checkWrite);
 
-#ifdef _WIN32
 	bool m_isInit;
+#ifdef _WIN32
 	SOCKET m_soc;
 #else
 	int m_soc;

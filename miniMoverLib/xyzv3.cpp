@@ -1132,6 +1132,9 @@ bool XYZV3::calibrateBedRun()
 	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun() %d", m_actState);
 	const char *val;
 
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
+
 	switch(m_actState)
 	{
 	case ACT_CB_START: // start
@@ -1242,7 +1245,7 @@ bool XYZV3::calibrateBedRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::calibrateBedPromptToLowerDetector()
@@ -1287,6 +1290,9 @@ bool XYZV3::cleanNozzleRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun() %d", m_actState);
 	const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -1357,7 +1363,7 @@ bool XYZV3::cleanNozzleRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::cleanNozzlePromtToClean()
@@ -1386,6 +1392,9 @@ bool XYZV3::homePrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::homePrinterRun() %d", m_actState);
 	const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -1429,7 +1438,7 @@ bool XYZV3::homePrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 //---------------------------
@@ -1449,6 +1458,9 @@ bool XYZV3::jogPrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun() %d", m_actState);
 	const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -1493,7 +1505,7 @@ bool XYZV3::jogPrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 //---------------------------
@@ -1509,6 +1521,9 @@ bool XYZV3::loadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun() %d", m_actState);
 	const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -1596,7 +1611,7 @@ bool XYZV3::loadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 bool XYZV3::loadFilamentPromptToFinish()
 {
@@ -1624,6 +1639,9 @@ bool XYZV3::unloadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun() %d", m_actState);
 	const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -1722,7 +1740,7 @@ bool XYZV3::unloadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 void XYZV3::unloadFilamentCancel()
@@ -1983,7 +2001,7 @@ void XYZV3::printFileStart(const char *path)
 	debugPrint(DBG_LOG, "XYZV3::printFileStart(%s)", path);
 	m_progress = 0;
 
-	if(path && m_stream && m_stream->isOpen())
+	if(path)
 	{
 		strncpy(m_filePath, path, MAX_PATH);
 		m_filePath[MAX_PATH-1] = '\0';
@@ -1997,6 +2015,9 @@ void XYZV3::printFileStart(const char *path)
 bool XYZV3::printFileRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::printFileRun() %d", m_actState);
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -2055,7 +2076,7 @@ bool XYZV3::printFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::cancelPrint()
@@ -2119,7 +2140,7 @@ void XYZV3::uploadFirmwareStart(const char *path)
 	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareStart(%s)", path);
 	m_progress = 0;
 
-	if(path && m_stream && m_stream->isOpen())
+	if(path)
 	{
 		strncpy(m_filePath, path, MAX_PATH);
 		m_filePath[MAX_PATH-1] = '\0';
@@ -2132,6 +2153,9 @@ void XYZV3::uploadFirmwareStart(const char *path)
 bool XYZV3::uploadFirmwareRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun() %d", m_actState);
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
 
 	switch(m_actState)
 	{
@@ -2157,7 +2181,7 @@ bool XYZV3::uploadFirmwareRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
@@ -2386,6 +2410,10 @@ bool XYZV3::convertFileRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::convertFileRun() %d", m_actState);
 
+	// convert file can run without a connection to printer 
+	//if(!m_stream || !m_stream->isOpen())
+	//	setState(ACT_FAILURE);
+
 	switch(m_actState)
 	{
 	case ACT_CF_START:
@@ -2414,7 +2442,8 @@ bool XYZV3::convertFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && (!m_stream || m_stream->isOpen());
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
+	// convert file can run without a connection to printer 
 }
 
 bool XYZV3::isGcodeFile(const char *path)
