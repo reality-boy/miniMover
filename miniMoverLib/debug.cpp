@@ -66,7 +66,8 @@ void debugReduceNoise(bool doReduce)
 void debugPrint(debugLevel l, const char *format, ...)
 {
 	const static int BUF_SIZE  = 2048;
-	static char lastMsgBuf[BUF_SIZE] = "";
+	static char lastPrintMsgBuf[BUF_SIZE] = "";
+	static char lastDiskMsgBuf[BUF_SIZE] = "";
 	char msgBuf[BUF_SIZE];
 	va_list arglist;
 
@@ -78,7 +79,7 @@ void debugPrint(debugLevel l, const char *format, ...)
 	// regular debug print
 	if(l <= g_debugLevel)
 	{
-		if(0 != strcmp(lastMsgBuf, msgBuf))
+		if(0 != strcmp(lastPrintMsgBuf, msgBuf))
 		{
 #if defined(_WIN32) && !defined(_CONSOLE)
 			OutputDebugString("\n");
@@ -86,7 +87,7 @@ void debugPrint(debugLevel l, const char *format, ...)
 #else
 			printf("\n%s", msgBuf);
 #endif
-			strcpy(lastMsgBuf, msgBuf);
+			strcpy(lastPrintMsgBuf, msgBuf);
 		}
 		else
 		{
@@ -101,11 +102,11 @@ void debugPrint(debugLevel l, const char *format, ...)
 	// log to disk if error log is open
 	if(g_debugLog != NULL && (l <= g_debugLevel || (!g_doReduceNoise && l <= g_debugDiskLevel)))
 	{
-		if(0 != strcmp(lastMsgBuf, msgBuf))
+		if(0 != strcmp(lastDiskMsgBuf, msgBuf))
 		{
 			fprintf(g_debugLog, "\n%07.2f %s", g_time.getElapsedTime_s(), msgBuf);
 			fflush(g_debugLog);
-			strcpy(lastMsgBuf, msgBuf);
+			strcpy(lastDiskMsgBuf, msgBuf);
 		}
 		else
 		{

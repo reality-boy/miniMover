@@ -64,6 +64,7 @@ enum XYZPrintStateCode
 	STATE_PRINT_CALIBRATE = 9535,			
 		// sub 40 - begin calibration
 		// sub 41 - ask to lower detector
+		// sub 42 - ???
 		// sub 43 - calibrating
 		// sub 44 - ask to raise detector
 
@@ -536,7 +537,8 @@ protected:
 
 	const char* checkForLine();
 	bool checkForConfigOK(bool endCom = true);
-	bool checkForJsonVal(const char *key, const char *val);
+	bool checkForJsonState(const char **val);
+	bool jsonValEquals(const char *tVal, const char *val);
 	bool checkForState(int state, int substate = -1, bool isSet = true);
 	bool checkForNotState(int state, int substate = -1) { return checkForState(state, substate, false); }
 

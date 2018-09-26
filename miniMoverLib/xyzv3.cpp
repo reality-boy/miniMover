@@ -98,7 +98,7 @@ XYZV3::XYZV3()
 
 	m_jogAxis = ' ';
 	m_jogDist_mm = 0;
-	m_infoIdx = 0;
+	m_infoIdx = -1;
 	m_fileIsTemp = false;
 	m_filePath[0] = '\0';
 	m_fileOutPath[0] = '\0';
@@ -148,6 +148,8 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 
 		success = true;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::serialSendMessage invalid input");
 
 	return success;
 }
@@ -584,6 +586,8 @@ bool XYZV3::parseStatusSubstring(const char *str)
 
 		return true;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::parseStatusSubstring invalid input");
 
 	return false;
 }
@@ -734,7 +738,11 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 			}
 			*/
 		}
+		else
+			debugPrint(DBG_VERBOSE, "XYZV3::queryStatus failed to query");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::queryStatus invalid input");
 
 	return success;
 }
@@ -1122,6 +1130,7 @@ void XYZV3::calibrateBedStart()
 bool XYZV3::calibrateBedRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1131,16 +1140,28 @@ bool XYZV3::calibrateBedRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_CB_START_SUCCESS: // wait on success
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_CB_HOME, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_CB_HOME, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_HOME: // wait for signal to lower detector
-		if(!isWIFI() && checkForJsonVal("stat", "pressdetector"))
-			setState(ACT_CB_ASK_LOWER, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "pressdetector"))
+				setState(ACT_CB_ASK_LOWER, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 41))
 			setState(ACT_CB_ASK_LOWER, 240);
 		else if(m_timeout.isTimeout())
@@ -1160,16 +1181,28 @@ bool XYZV3::calibrateBedRun()
 			setState(ACT_CB_CALIB_START);
 		else setState(ACT_FAILURE);
 	case ACT_CB_CALIB_START: // wait for calibration to start
-		if(isWIFI() || checkForJsonVal("stat", "processing"))
+		if(isWIFI())
 			setState(ACT_CB_CALIB_RUN, 240);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "processing"))
+				setState(ACT_CB_CALIB_RUN, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(20.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_CALIB_RUN: // wait for calibration to finish
-		if(!isWIFI() && checkForJsonVal("stat", "ok")) // or stat:fail
-			setState(ACT_CB_ASK_RAISE, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "ok")) // or stat:fail
+				setState(ACT_CB_ASK_RAISE, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForState(STATE_PRINT_CALIBRATE, 44))
 			setState(ACT_CB_ASK_RAISE, 240);
 		else if(m_timeout.isTimeout())
@@ -1190,8 +1223,15 @@ bool XYZV3::calibrateBedRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_CB_COMPLETE:
-		if(isWIFI() || checkForJsonVal("stat", "complete"))
+		if(isWIFI())
 			setState(ACT_SUCCESS);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete"))
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else  if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
@@ -1202,7 +1242,7 @@ bool XYZV3::calibrateBedRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 bool XYZV3::calibrateBedPromptToLowerDetector()
@@ -1227,7 +1267,7 @@ bool XYZV3::calibrateBedPromptToRaiseDetector()
 // ask user to raise detector, then call this
 void XYZV3::calibrateBedDetectorRaised()
 {
-	debugPrint(DBG_LOG, "XYZV3::calibrateBedFinish()");
+	debugPrint(DBG_LOG, "XYZV3::calibrateBedDetectorRaised()");
 	assert(m_actState == ACT_CB_ASK_RAISE);
 
 	setState(ACT_CB_RAISED);
@@ -1246,6 +1286,7 @@ void XYZV3::cleanNozzleStart()
 bool XYZV3::cleanNozzleRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1255,15 +1296,27 @@ bool XYZV3::cleanNozzleRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_CL_START_SUCCESS:
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_CL_WARMUP_COMPLETE, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_CL_WARMUP_COMPLETE, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 	case ACT_CL_WARMUP_COMPLETE:
-		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
-			setState(ACT_CL_CLEAN_NOZLE, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
+				setState(ACT_CL_CLEAN_NOZLE, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForState(STATE_PRINT_CLEAN_NOZZLE, 52))
 			setState(ACT_CL_CLEAN_NOZLE, 240);
 		else if(m_timeout.isTimeout())
@@ -1285,8 +1338,15 @@ bool XYZV3::cleanNozzleRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_CL_COMPLETE:
-		if(isWIFI() || checkForJsonVal("stat", "ok"))
+		if(isWIFI())
 			setState(ACT_SUCCESS);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "ok"))
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
@@ -1297,7 +1357,7 @@ bool XYZV3::cleanNozzleRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 bool XYZV3::cleanNozzlePromtToClean()
@@ -1325,6 +1385,7 @@ void XYZV3::homePrinterStart()
 bool XYZV3::homePrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::homePrinterRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1334,16 +1395,28 @@ bool XYZV3::homePrinterRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_HP_START_SUCCESS:
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_HP_HOME_COMPLETE, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_HP_HOME_COMPLETE, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_HP_HOME_COMPLETE:
-		if(!isWIFI() && checkForJsonVal("stat", "complete"))
-			setState(ACT_SUCCESS);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete"))
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForNotState(STATE_PRINT_HOMING, -1))
 			setState(ACT_SUCCESS);
 		else if(m_timeout.isTimeout())
@@ -1356,7 +1429,7 @@ bool XYZV3::homePrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 //---------------------------
@@ -1375,6 +1448,7 @@ void XYZV3::jogPrinterStart(char axis, int dist_mm)
 bool XYZV3::jogPrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1384,16 +1458,28 @@ bool XYZV3::jogPrinterRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_JP_START_SUCCESS:
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_JP_JOG_COMPLETE, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_JP_JOG_COMPLETE, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_JP_JOG_COMPLETE:
-		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
-			setState(ACT_SUCCESS);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		// we may fall into idle or error state before we can detect joging state, so just block if joging state detected
 		else if(isWIFI() && checkForNotState(STATE_PRINT_JOG_MODE, -1))
 			setState(ACT_SUCCESS);
@@ -1407,7 +1493,7 @@ bool XYZV3::jogPrinterRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 //---------------------------
@@ -1422,6 +1508,7 @@ void XYZV3::loadFilamentStart()
 bool XYZV3::loadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1431,16 +1518,28 @@ bool XYZV3::loadFilamentRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_LF_START_SUCCESS:
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_LF_HEATING, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_LF_HEATING, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_HEATING:
-		if(!isWIFI() && checkForJsonVal("stat", "heat"))
-			setState(ACT_LF_LOADING, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "heat"))
+				setState(ACT_LF_LOADING, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI())
 			setState(ACT_LF_LOADING, 360);
 		else if(m_timeout.isTimeout())
@@ -1449,8 +1548,13 @@ bool XYZV3::loadFilamentRun()
 			m_progress = (int)(10.0f + 30.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_LOADING:
-		if(!isWIFI() && checkForJsonVal("stat", "load")) 
-			setState(ACT_LF_WAIT_LOAD, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "load")) 
+				setState(ACT_LF_WAIT_LOAD, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForState(STATE_PRINT_LOAD_FIALMENT, 12))
 			setState(ACT_LF_WAIT_LOAD, 240);
 		else if(m_timeout.isTimeout())
@@ -1460,8 +1564,8 @@ bool XYZV3::loadFilamentRun()
 		break;
 	case ACT_LF_WAIT_LOAD:
 		// if user does not hit cancel/done then eventually one of these will be returned
-		// checkForJsonVal("stat", "fail");
-		// checkForJsonVal("stat", "complete");
+		// checkForJsonState("stat", "fail");
+		// checkForJsonState("stat", "complete");
 		// or state is PRINT_NONE
 		if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
@@ -1475,8 +1579,15 @@ bool XYZV3::loadFilamentRun()
 			setState(ACT_FAILURE);
 		break;
 	case ACT_LF_LOAD_COMPLETE:
-		if(isWIFI() || checkForJsonVal("stat", "complete"))
+		if(isWIFI())
 			setState(ACT_SUCCESS);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete"))
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else
 			setState(ACT_FAILURE);
 		break;
@@ -1485,7 +1596,7 @@ bool XYZV3::loadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 bool XYZV3::loadFilamentPromptToFinish()
 {
@@ -1512,6 +1623,7 @@ void XYZV3::unloadFilamentStart()
 bool XYZV3::unloadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun() %d", m_actState);
+	const char *val;
 
 	switch(m_actState)
 	{
@@ -1521,16 +1633,28 @@ bool XYZV3::unloadFilamentRun()
 		else setState(ACT_FAILURE);
 		break;
 	case ACT_UF_START_SUCCESS:
-		if(isWIFI() || checkForJsonVal("stat", "start"))
+		if(isWIFI())
 			setState(ACT_UF_HEATING, 120);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "start"))
+				setState(ACT_UF_HEATING, 120);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_HEATING:
-		if(!isWIFI() && checkForJsonVal("stat", "heat")) // could query temp and state with  XYZv3/query=jt
-			setState(ACT_UF_UNLOADING, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "heat")) // could query temp and state with  XYZv3/query=jt
+				setState(ACT_UF_UNLOADING, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI())
 			setState(ACT_UF_UNLOADING, 360);
 		else if(m_timeout.isTimeout())
@@ -1539,8 +1663,13 @@ bool XYZV3::unloadFilamentRun()
 			m_progress = (int)(10.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOADING:
-		if(!isWIFI() && checkForJsonVal("stat", "unload")) // could query temp and state with  XYZv3/query=jt
-			setState(ACT_UF_UNLOAD_COMPLETE, 240);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "unload")) // could query temp and state with  XYZv3/query=jt
+				setState(ACT_UF_UNLOAD_COMPLETE, 240);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForState(STATE_PRINT_UNLOAD_FIALMENT, 22))
 			setState(ACT_UF_UNLOAD_COMPLETE, 360);
 		else if(m_timeout.isTimeout())
@@ -1549,8 +1678,13 @@ bool XYZV3::unloadFilamentRun()
 			m_progress = (int)(50.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOAD_COMPLETE:
-		if(!isWIFI() && checkForJsonVal("stat", "complete")) // or state is PRINT_NONE
-			setState(ACT_SUCCESS);
+		if(!isWIFI() && checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(isWIFI() && checkForNotState(STATE_PRINT_UNLOAD_FIALMENT, 22))
 			setState(ACT_SUCCESS);
 		else if(m_timeout.isTimeout())
@@ -1569,8 +1703,15 @@ bool XYZV3::unloadFilamentRun()
 			m_progress = (int)(90.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_CANCEL_COMPLETE:
-		if(isWIFI() || checkForJsonVal("stat", "complete"))
+		if(isWIFI())
 			setState(ACT_SUCCESS);
+		else if(checkForJsonState(&val))
+		{
+			if(jsonValEquals(val, "complete"))
+				setState(ACT_SUCCESS);
+			else
+				setState(ACT_FAILURE);
+		}
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
@@ -1581,7 +1722,7 @@ bool XYZV3::unloadFilamentRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 void XYZV3::unloadFilamentCancel()
@@ -1611,8 +1752,12 @@ int XYZV3::incrementZOffset(bool up)
 
 				ret = atoi(buf);
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::incrementZOffset failed to recieve response");
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::incrementZOffset failed to send command");
 
 	return ret;
 }
@@ -1639,6 +1784,7 @@ int XYZV3::getZOffset()
 				ret = atoi(buf);
 			}
 		}
+		debugPrint(DBG_WARN, "XYZV3::getZOffset failed to send command");
 	}
 
 	return ret;
@@ -1844,6 +1990,8 @@ void XYZV3::printFileStart(const char *path)
 		m_fileIsTemp = false;
 		setState(ACT_PF_START);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::printFileStart invalid input");
 }
 
 bool XYZV3::printFileRun()
@@ -1907,7 +2055,7 @@ bool XYZV3::printFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 bool XYZV3::cancelPrint()
@@ -1977,6 +2125,8 @@ void XYZV3::uploadFirmwareStart(const char *path)
 		m_filePath[MAX_PATH-1] = '\0';
 		setState(ACT_FW_START);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::uploadFirmwareStart invalid input");
 }
 
 bool XYZV3::uploadFirmwareRun()
@@ -2007,7 +2157,7 @@ bool XYZV3::uploadFirmwareRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream && m_stream->isOpen();
 }
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
@@ -2037,7 +2187,6 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 			if(!isPrint)
 				len -= 16; // skip header on firmware
 			fseek(f, 0, SEEK_SET);
-
 			if(len > 0)
 			{
 				buf = new char[len];
@@ -2074,7 +2223,11 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 								pDat.isPrintActive = true;
 								success = true;
 							}
+							else
+								debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to send data");
 						}
+						else
+							debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
 					}
 
 					if(!success)
@@ -2087,14 +2240,25 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						if(pDat.blockBuf)
 							delete [] pDat.blockBuf;
 						pDat.blockBuf = NULL;
+
+						debugPrint(DBG_WARN, "XYZV3::sendFileInit failed");
 					}
 				}
+				else
+					debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::sendFileInit failed file has no data");
+
 			// close file if open
 			fclose(f);
 			f = NULL;
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to open file %s", path);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::sendFileInit invalid input");
 
 	return success;
 }
@@ -2122,6 +2286,7 @@ bool XYZV3::sendFileProcess()
 		int bMax = pDat.blockCount;
 		if(bMax > pDat.curBlock + 4)
 			bMax = pDat.curBlock + 4;
+
 		for(i=pDat.curBlock; i<bMax; i++)
 		{
 			int blockLen = (i+1 == pDat.blockCount) ? pDat.lastBlockSize : pDat.blockSize;
@@ -2150,10 +2315,16 @@ bool XYZV3::sendFileProcess()
 			m_stream->write(pDat.blockBuf, blockLen + 12);
 			success = waitForConfigOK(false);
 			if(!success) // bail on error
+			{
+				debugPrint(DBG_WARN, "XYZV3::sendFileProcess failed on write");
 				break;
-		} 
+			}
+		}
+
 		pDat.curBlock = i;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::sendFileProcess invalid input");
 
 	return success;
 }
@@ -2207,6 +2378,8 @@ void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoId
 		m_fileIsTemp = false;
 		setState(ACT_CF_START);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::convertFileStart invalid input");
 }
 
 bool XYZV3::convertFileRun()
@@ -2241,7 +2414,7 @@ bool XYZV3::convertFileRun()
 	}
 
 	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && m_stream->isOpen();
+	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS && (!m_stream || m_stream->isOpen());
 }
 
 bool XYZV3::isGcodeFile(const char *path)
@@ -2256,6 +2429,8 @@ bool XYZV3::isGcodeFile(const char *path)
 				   0 == strcmp(p, ".gco") ||
 				   0 == strcmp(p, ".g");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::isGcodeFile invalid input");
 
 	return false;
 }
@@ -2270,6 +2445,8 @@ bool XYZV3::is3wFile(const char *path)
 		if(p)
 			return 0 == strcmp(p, ".3w");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::is3wFile invalid input");
 
 	return false;
 }
@@ -2302,13 +2479,13 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 		FILE *fi = fopen(inPath, "rb");
 		if(fi)
 		{
+			char tPath[MAX_PATH] = "";
 			// and write to disk
 			FILE *fo = NULL;
 			if(outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
-				char tPath[MAX_PATH] = "";
 				strcpy(tPath, inPath);
 				char *ptr = strrchr(tPath, '.');
 				if(!ptr)
@@ -2361,35 +2538,51 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 									// yeay, it worked
 									success = true;
 								}
+								else
+									debugPrint(DBG_WARN, "XYZV3::encryptFile failed to write body");
 
 								// cleanup
 								delete [] bodyBuf;
 								bodyBuf = NULL;
 							}
+							else
+								debugPrint(DBG_WARN, "XYZV3::encryptFile failed to encrypt body");
 
 							// cleanup
 							delete [] headerBuf;
 							headerBuf = NULL;
 						}
+						else
+							debugPrint(DBG_WARN, "XYZV3::encryptFile failed to encrypt header");
 
 						// cleanup
 						delete [] processedBuf;
 						processedBuf = NULL;
 					}
+					else
+						debugPrint(DBG_WARN, "XYZV3::encryptFile failed to process gcode");
 
 					delete [] gcode;
 					gcode = NULL;
 				}
+				else
+					debugPrint(DBG_WARN, "XYZV3::encryptFile failed to allocate buffer");
 
 				// clean up file data
 				fclose(fo);
 				fo = NULL;
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::encryptFile failed to open out file %s", (outPath) ? outPath : tPath);
 
 			fclose(fi);
 			fi = NULL;
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::encryptFile failed to open in file %s", inPath);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::encryptFile invalid input");
 
 	//debugPrint(DBG_REPORT, "Encrypt File took %0.2f s", t.getElapsedTime_s());
 	return success;
@@ -2407,13 +2600,13 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 		FILE *f = fopen(inPath, "rb");
 		if(f)
 		{
+			char tPath[MAX_PATH];
 			// and write to disk
 			FILE *fo = NULL;
 			if(outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
-				char tPath[MAX_PATH];
 				strcpy(tPath, inPath);
 				char *ptr = strrchr(tPath, '.');
 				if(!ptr)
@@ -2531,7 +2724,6 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					int bodyLen = totalLen - ftell(f);
 					int bufLen = bodyLen + 1;
 					char *bBuf = new char[bufLen];
-
 					if(bBuf)
 					{
 						memset(bBuf, 0, bufLen);
@@ -2654,15 +2846,23 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						delete [] bBuf;
 						bBuf = NULL;
 					}
+					else
+						debugPrint(DBG_WARN, "XYZV3::decryptFile failed to allocate buffer");
 				}
 
 				fclose(fo);
 				fo = NULL;
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::decryptFile failed to open out file %s", (outPath) ? outPath : tPath);
 
 			fclose(f);
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::decryptFile failed to open in file %s", inPath);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::decryptFile invalid input");
 
 	//debugPrint(DBG_REPORT, "Decrypt File took %0.2f s", t.getElapsedTime_s());
 	return success;
@@ -2675,6 +2875,8 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 //****FixMe, does any wifi function return $, maybe we should chop it off here
 bool XYZV3::waitForEndCom()
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::waitForEndCom()");
+
 	// check for '$' indicating end of message
 	const char *buf = waitForLine(0.1f);
 	if(buf)
@@ -2745,7 +2947,7 @@ const char* XYZV3::waitForLine(float timeout_s)
 			if(m_stream->readLine(buf, len))
 				done = true;
 		} 
-		while(!done && !timeout.isTimeout() && m_stream->isOpen());
+		while(!done && !timeout.isTimeout() && m_stream && m_stream->isOpen());
 
 		if(done)
 			return buf;
@@ -2758,39 +2960,60 @@ const char* XYZV3::waitForLine(float timeout_s)
 	return "";
 }
 
-bool XYZV3::checkForJsonVal(const char *key, const char*val)
+bool XYZV3::checkForJsonState(const char **val)
 {
-	debugPrint(DBG_LOG, "XYZV3::checkForJsonVal(%s, %s)", key, val);
+	const static char *key = "stat";
+	debugPrint(DBG_VERBOSE, "XYZV3::checkForJsonState(%s)", key);
 
-	if(key && val)
+	if(val)
 	{
+		*val = NULL;
 		static const int len = 1024;
-		char tVal[len];
+		static char tVal[len]; //****Warning, returned by function!
 
 		const char *buf = checkForLine();
 		if(*buf)
 		{
 			waitForEndCom();
-			if(findJsonVal(buf, key, tVal))
+			if(findJsonVal(buf, key, tVal) && *tVal)
 			{
-				// check for exact match
-				if(0 == strcmp(val, tVal))
-					return true;
+				if(*tVal == '"')
+					*val = tVal + 1;
+				else 
+					*val = tVal;
 
-				// check for quoted match, probably not an ideal test
-				if(*tVal && 0 == strncmp(val, tVal+1, strlen(val)))
-					return true;
-
-				debugPrint(DBG_WARN, "XYZV3::checkForJsonVal no match, expected '%s:%s', got '%s'", key, val, tVal);
+				debugPrint(DBG_LOG, "XYZV3::checkForJsonState match found");
+				return true;
 			}
 			else
-				debugPrint(DBG_WARN, "XYZV3::checkForJsonVal expected '%s:%s', got '%s'", key, val, buf);
+				debugPrint(DBG_WARN, "XYZV3::checkForJsonState expected '%s', got '%s'", key, buf);
 		}
 		else
-			debugPrint(DBG_VERBOSE, "XYZV3::checkForJsonVal expected '%s:%s', got nothing", key, val);
+			debugPrint(DBG_VERBOSE, "XYZV3::checkForJsonState expected '%s', got nothing", key);
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::checkForJsonVal invalid input");
+		debugPrint(DBG_WARN, "XYZV3::checkForJsonState invalid input");
+
+	return false;
+}
+
+bool XYZV3::jsonValEquals(const char *tVal, const char *val)
+{
+	debugPrint(DBG_LOG, "XYZV3::jsonValEquals(%s, %s)", tVal, val);
+
+	if(tVal && val)
+	{
+		// check for exact match
+		if(0 == strncmp(val, tVal, strlen(val)))
+		{
+			debugPrint(DBG_LOG, "XYZV3::jsonValEquals match found");
+			return true;
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::jsonValEquals expected '%s', got '%s'", val, tVal);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::jsonValEquals invalid input");
 
 	return false;
 }
@@ -2812,7 +3035,6 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val)
 			offset += strlen(fullKey);
 		
 			sscanf(offset, "%[^,}]", val);
-
 			if(val)
 			{
 				// strip quotes, if found
@@ -2825,8 +3047,14 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val)
 				if(*val)
 					return true;
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::findJsonVal failed to find value '%s:%s'", key, val);
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::findJsonVal failed to find key '%s:%s'", key, val);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::findJsonVal invalid input");
 
 	return false;
 }
@@ -2851,7 +3079,7 @@ bool XYZV3::checkForState(int state, int substate, bool isSet)
 			debugPrint(DBG_LOG, "XYZV3::checkForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 		}
 		else
-			debugPrint(DBG_VERBOSE, "XYZV3::checkForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+			debugPrint(DBG_WARN, "XYZV3::checkForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::checkForState queryStatus() failed");
@@ -2876,39 +3104,66 @@ unsigned int XYZV3::swap32bit(unsigned int in)
 // read a word from a file, in big endian format
 int XYZV3::readWord(FILE *f)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::readWord()");
+
 	int i = 0;
 	if(f)
+	{
 		fread(&i, 4, 1, f);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::readWord invalid input");
+
 	return swap32bit(i);
 }
 
 // write a word to a file, in big endian format
 void XYZV3::writeWord(FILE *f, int i)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::writeWord(%d)", i);
+
 	if(f)
 	{
 		int t = swap32bit(i);
 		fwrite(&t, 4, 1, f);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::writeWord invalid input");
 }
 
 int XYZV3::readByte(FILE *f)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::readByte()");
+
 	char i = 0;
 	if(f)
+	{
+		//****FixMe, test?
 		fread(&i, 1, 1, f);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::readByte invalid input");
 
 	return (int)i;
 }
 
 void XYZV3::writeByte(FILE *f, char c)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::writeByte(%d)", c);
+
 	if(f)
+	{
+		//****FixMe, test?
 		fwrite(&c, 1, 1, f);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::writeByte invalid input");
 }
 
 void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::writeRepeatByte(%d, %d", byte, count);
+
 	if(f)
 	{
 		for(int i=0; i<count; i++)
@@ -2916,6 +3171,8 @@ void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 			fwrite(&byte, 1, 1, f);
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::writeRepeatByte invalid input");
 }
 
 int XYZV3::roundUpTo16(int in)
@@ -2925,6 +3182,8 @@ int XYZV3::roundUpTo16(int in)
 
 int XYZV3::pkcs7unpad(char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::pkcs7unpad()");
+
 	if(buf && len > 0)
 	{
 		int count = buf[len-1];
@@ -2933,6 +3192,8 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 
 		return len - count;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::pkcs7unpad invalid input");
 
 	return len;
 }
@@ -2940,6 +3201,8 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 //****Note, expects buf to have room to be padded out
 int XYZV3::pkcs7pad(char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::pkcs7pad()");
+
 	if(buf && len > 0)
 	{
 		// force padding even if we are on a byte boundary
@@ -2956,6 +3219,8 @@ int XYZV3::pkcs7pad(char *buf, int len)
 
 		return newLen;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::pkcs7pad invalid input");
 
 	return len;
 }
@@ -2963,6 +3228,8 @@ int XYZV3::pkcs7pad(char *buf, int len)
 // XYZ's version of CRC32, does not seem to match the standard algorithms
 unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::calcXYZcrc32()");
+
 	static const unsigned int hashTable[] = { 
 		0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615, 3915621685,
 		2657392035, 249268274, 2044508324, 3772115230, 2547177864, 162941995, 
@@ -3017,12 +3284,16 @@ unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 
 		num = (unsigned int)((unsigned long long)num ^ (long long)-1);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::calcXYZcrc32 invalid input");
 
 	return num;
 }
 
 const char* XYZV3::readLineFromBuf(const char* buf, char *lineBuf, int lineLen)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::readLineFromBuf()");
+
 	// zero out buffer
 	if(lineBuf)
 		*lineBuf = '\0';
@@ -3053,12 +3324,16 @@ const char* XYZV3::readLineFromBuf(const char* buf, char *lineBuf, int lineLen)
 		// return poiner to new string
 		return buf;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::readLineFromBuf invalid input");
 
 	return NULL;
 }
 
 bool XYZV3::checkLineIsHeader(const char* lineBuf)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::checkLineIsHeader()");
+
 	if(lineBuf)
 	{
 		// loop over every char
@@ -3072,12 +3347,16 @@ bool XYZV3::checkLineIsHeader(const char* lineBuf)
 			lineBuf++;
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::checkLineIsHeader invalid input");
 
 	return true; // else just white space, assume header
 }
 
 bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *fileNum, char **processedBuf, int *headerLen, int *totalLen)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::processGCode()");
+
 	// validate parameters
 	if(gcode && gcodeLen > 1 && processedBuf && headerLen && headerLen && totalLen)
 	{
@@ -3268,13 +3547,18 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 
 			return true;
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::processGCode failed to allocate buffer");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::processGCode invalid input");
 
 	return false;
 }
 
 bool XYZV3::encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char **headerBuf, int *headerLen)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::encryptHeader()");
 	bool success = false;
 
 	// validate parameters
@@ -3315,13 +3599,18 @@ bool XYZV3::encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char *
 
 			success = true;
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::encryptHeader failed to allocate buffer");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::encryptHeader invalid input");
 
 	return success;
 }
 
 bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **bodyBuf, int *bodyLen)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::encryptBody()");
 	bool success = false;
 
 	// validate parameters
@@ -3392,11 +3681,20 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 
 							success = true;
 						}
+						else
+							debugPrint(DBG_WARN, "XYZV3::encryptBody failed to allocate z buffer");
 					}
+					else
+						debugPrint(DBG_WARN, "XYZV3::encryptBody failed to finalize zip");
 				}
+				else
+					debugPrint(DBG_WARN, "XYZV3::encryptBody failed to add to zip");
+
 				// clean up zip memory
 				mz_zip_writer_end(&zip);
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::encryptBody failed to init zip");
 		}
 		else
 		{
@@ -3434,14 +3732,20 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 
 				success = true;
 			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::encryptBody failed to allocate buffer");
 		}
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::encryptBody invalid input");
 
 	return success;
 }
 
 bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *headerBuf, int headerLen, char *bodyBuf, int bodyLen)
 {
+	debugPrint(DBG_VERBOSE, "XYZV3::writeFile()");
+
 	if(fo && headerBuf && bodyBuf)
 	{
 		//==================
@@ -3513,6 +3817,8 @@ bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *heade
 
 		return true;
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::writeFile invalid input");
 	
 	return false;
 }
@@ -3529,7 +3835,11 @@ const XYZPrinterInfo* XYZV3::indexToInfo(int index)
 	debugPrint(DBG_VERBOSE, "XYZV3::indexToInfo(%d)", index);
 
 	if(index >= 0 && index < m_infoArrayLen)
+	{
 		return &m_infoArray[index];
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::indexToInfo index not found %d", index);
 
 	return NULL;
 }
@@ -3552,7 +3862,11 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 				return &m_infoArray[i];
 			}
 		}
+
+		debugPrint(DBG_WARN, "XYZV3::modelToInfo model number not found '%s'", modelNum);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::modelToInfo invalid input");
 
 	return NULL;
 }
@@ -3574,16 +3888,29 @@ const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
 				return &m_infoArray[i];
 			}
 		}
+
+		debugPrint(DBG_WARN, "XYZV3::serialToInfo serial number not found '%s'", serialNum);
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::serialToInfo invalid input");
 
 	return NULL;
 }
 
 const char* XYZV3::serialToName(const char *serialNum)
 {
-	const XYZPrinterInfo *inf = XYZV3::serialToInfo(serialNum);
-	if(inf)
-		return inf->screenName;
+	debugPrint(DBG_VERBOSE, "XYZV3::serialToName(%s)", serialNum);
+
+	if(serialNum)
+	{
+		const XYZPrinterInfo *inf = XYZV3::serialToInfo(serialNum);
+		if(inf)
+			return inf->screenName;
+		else
+			debugPrint(DBG_WARN, "XYZV3::serialToName serial number not found '%s'", serialNum);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::serialToName invalid input");
 
 	return serialNum;
 }

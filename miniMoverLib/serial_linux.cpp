@@ -225,7 +225,7 @@ void Serial::closeStream()
 		close(m_handle);
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::closeStream failed invalid connection");
+		debugPrint(DBG_VERBOSE, "Serial::closeStream failed invalid connection");
 
 	m_handle = -1;
 	m_baudRate = -1;
