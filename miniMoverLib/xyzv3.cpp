@@ -3133,7 +3133,7 @@ unsigned int XYZV3::swap32bit(unsigned int in)
 // read a word from a file, in big endian format
 int XYZV3::readWord(FILE *f)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::readWord()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::readWord()");
 
 	int i = 0;
 	if(f)
@@ -3149,7 +3149,7 @@ int XYZV3::readWord(FILE *f)
 // write a word to a file, in big endian format
 void XYZV3::writeWord(FILE *f, int i)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::writeWord(%d)", i);
+	//debugPrint(DBG_VERBOSE, "XYZV3::writeWord(%d)", i);
 
 	if(f)
 	{
@@ -3162,7 +3162,7 @@ void XYZV3::writeWord(FILE *f, int i)
 
 int XYZV3::readByte(FILE *f)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::readByte()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::readByte()");
 
 	char i = 0;
 	if(f)
@@ -3178,7 +3178,7 @@ int XYZV3::readByte(FILE *f)
 
 void XYZV3::writeByte(FILE *f, char c)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::writeByte(%d)", c);
+	//debugPrint(DBG_VERBOSE, "XYZV3::writeByte(%d)", c);
 
 	if(f)
 	{
@@ -3191,7 +3191,7 @@ void XYZV3::writeByte(FILE *f, char c)
 
 void XYZV3::writeRepeatByte(FILE *f, char byte, int count)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::writeRepeatByte(%d, %d", byte, count);
+	//debugPrint(DBG_VERBOSE, "XYZV3::writeRepeatByte(%d, %d", byte, count);
 
 	if(f)
 	{
@@ -3211,7 +3211,7 @@ int XYZV3::roundUpTo16(int in)
 
 int XYZV3::pkcs7unpad(char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::pkcs7unpad()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::pkcs7unpad()");
 
 	if(buf && len > 0)
 	{
@@ -3230,7 +3230,7 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 //****Note, expects buf to have room to be padded out
 int XYZV3::pkcs7pad(char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::pkcs7pad()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::pkcs7pad()");
 
 	if(buf && len > 0)
 	{
@@ -3257,7 +3257,7 @@ int XYZV3::pkcs7pad(char *buf, int len)
 // XYZ's version of CRC32, does not seem to match the standard algorithms
 unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::calcXYZcrc32()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::calcXYZcrc32()");
 
 	static const unsigned int hashTable[] = { 
 		0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615, 3915621685,
@@ -3321,7 +3321,7 @@ unsigned int XYZV3::calcXYZcrc32(char *buf, int len)
 
 const char* XYZV3::readLineFromBuf(const char* buf, char *lineBuf, int lineLen)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::readLineFromBuf()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::readLineFromBuf()");
 
 	// zero out buffer
 	if(lineBuf)
@@ -3361,7 +3361,7 @@ const char* XYZV3::readLineFromBuf(const char* buf, char *lineBuf, int lineLen)
 
 bool XYZV3::checkLineIsHeader(const char* lineBuf)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::checkLineIsHeader()");
+	//debugPrint(DBG_VERBOSE, "XYZV3::checkLineIsHeader()");
 
 	if(lineBuf)
 	{

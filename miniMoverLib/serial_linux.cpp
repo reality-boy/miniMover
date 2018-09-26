@@ -374,7 +374,7 @@ int Serial::write(const char *buf, int len)
 			}
 			else
 			{
-				debugPrint(DBG_ERR, "Serial::write failed with error %d", errno);
+				debugPrint(DBG_WARN, "Serial::write failed with error %d", errno);
 				closeStream();
 			}
 		}

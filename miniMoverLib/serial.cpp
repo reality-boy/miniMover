@@ -105,7 +105,7 @@ int SerialHelper::queryForPorts(const char *hint)
 								}
 								else
 								{
-									debugPrint(DBG_REPORT, "SerialHelper::queryForPorts failed to find display name for port %s", portInfo[m_portCount].deviceName);
+									debugPrint(DBG_LOG, "SerialHelper::queryForPorts failed to find display name for port %s", portInfo[m_portCount].deviceName);
 									sprintf(portInfo[m_portCount].displayName, portInfo[m_portCount].deviceName);
 								}
 
@@ -144,7 +144,7 @@ int SerialHelper::queryForPorts(const char *hint)
 			}
 		}
 		else
-			debugPrint(DBG_REPORT, "SerialHelper::queryForPorts failed to find any ports");
+			debugPrint(DBG_LOG, "SerialHelper::queryForPorts failed to find any ports");
 
 		SetupDiDestroyDeviceInfoList(hDevInfoSet);
 	}
@@ -447,7 +447,7 @@ int Serial::write(const char *buf, int len)
 			}
 			else
 			{
-				debugPrint(DBG_ERR, "Serial::write failed with error %d", GetLastError());
+				debugPrint(DBG_WARN, "Serial::write failed with error %d", GetLastError());
 				closeStream();
 			}
 		}

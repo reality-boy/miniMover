@@ -14,6 +14,7 @@
 #include "debug.h"
 
 FILE *g_debugLog = NULL;
+//int g_callCount = 0;
 
 // console log level
 debugLevel g_debugLevel = DBG_REPORT;
@@ -52,7 +53,8 @@ void debugFinalize()
 	if(g_debugLog)
 	{
 		time_t t = time(NULL);
-		fprintf(g_debugLog, "\nLog finished %s\n", ctime(&t));
+		fprintf(g_debugLog, "\n\nLog finished %s\n", ctime(&t));
+		//fprintf(g_debugLog, "Call count %d\n", g_callCount);
 
 		fclose(g_debugLog);
 		g_debugLog = NULL;
@@ -66,6 +68,8 @@ void debugReduceNoise(bool doReduce)
 
 void debugPrint(debugLevel l, const char *format, ...)
 {
+	//g_callCount++;
+
 	const static int BUF_SIZE  = 2048;
 	static char lastPrintMsgBuf[BUF_SIZE] = "";
 	static char lastDiskMsgBuf[BUF_SIZE] = "";
