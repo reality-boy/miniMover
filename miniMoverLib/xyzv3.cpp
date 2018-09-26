@@ -3861,7 +3861,7 @@ int XYZV3::getInfoCount()
 
 const XYZPrinterInfo* XYZV3::indexToInfo(int index)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::indexToInfo(%d)", index);
+	//debugPrint(DBG_VERBOSE, "XYZV3::indexToInfo(%d)", index);
 
 	if(index >= 0 && index < m_infoArrayLen)
 	{

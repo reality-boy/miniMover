@@ -270,7 +270,7 @@ bool Socket::openStream(const char *ip, int port)
 				|| errno == EWOULDBLOCK
 				|| errno == EINPROGRESS)
 			{
-				if(waitOnSocket(5000, true) > 0)
+				if(waitOnSocket(1000, true) > 0)
 				{
 					debugPrint(DBG_LOG, "Socket::openStream succeeded");
 					return true;
