@@ -271,7 +271,7 @@ struct XYZPrinterLangSt
    zh	chinese
 */
 
-const int XYZPrintingLangCount = 10;
+const int XYZPrintingLangCount = 6; // 10;
 const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] = 
 {
 	{ "en", "English" },
@@ -282,10 +282,14 @@ const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] =
 	{ "jp", "Japanese" },
 	// dont really know if these exist
 	// found refference to them in pdf document
-	{ "pt", "Portuguese" },
-	{ "tw", "Taiwanese" }, // Guoyu?
-	{ "cn", "Chinese" }, // Mandarin?
-	{ "kr", "Korean" },
+	// the frontend now supports 12 languages
+	//{ "pt", "Portuguese" },
+	//{ "tw", "Taiwanese" }, // Guoyu?
+	//{ "cn", "Chinese" }, // Mandarin?
+	//{ "kr", "Korean" },
+	//{ "ru", "Russian" },
+	// Chinese simplified (zh-Hans)
+	// Chinese traditional (zh-Hant)
 };
 
 // internal action state
@@ -573,7 +577,7 @@ protected:
 	const XYZPrinterInfo *m_info;
 	float m_runTimeout;
 
-	static const int m_infoArrayLen = 21;
+	static const int m_infoArrayLen = 24;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
 	ActState m_actState;

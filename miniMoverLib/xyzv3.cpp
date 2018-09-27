@@ -63,14 +63,19 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini wA"},
 	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"}, // possibly 3FM3WP
 	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
+	{"??dv1NX0A000", "dv1NW0A000", "??3FN1XP","??dv1NX0A000_V2",false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano w"},
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},
+	{"??dv1JP0A000", "dv1JPWA000", "??3F1JPP", "??dv1JP0A000_V2",true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
 	{"dvF1W0A000",  "daVinciAW10", "3F1AWP", "dvF1W0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0 Pro"},
+	{"??dvF1W0A000", "dv1JA0A000", "??3F1AWP", "??dvF1W0A000_V2",true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0A Pro"},
 	{"dvF1WSA000",  "daVinciAS10", "3F1ASP", "dvF1WSA000_V2",    true, false,  true,    true,  true, false,  true,  true,  true,   200, 200, 190,   "da Vinci 1.0 Pro 3in1"},
 	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   300, 300, 300,   "da Vinci Super"}, //0.4mm/0.6mm/0.8mm nozzles
 
 	// does not support 3w file format
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",    true,  false, true,    true, false, false,  true, false, false,   200, 200, 150,   "da Vinci Color"}, // no heated bed, but full color!
+//  da Vinci Super
+//  da Vinci PartPro200 xTCS
 };
 
 	//  unknown
@@ -1988,7 +1993,8 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 		password && 
 		//****FixMe, may need to send XYZv3/config=disconnectap here
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForConfigOK(true, 20.0f); // not returned on wifi
+		//****FixMe, may need to send query command to foce out ok response
+		waitForConfigOK(true, 30.0f); // not returned on wifi
 
 	return success;
 }
