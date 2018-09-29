@@ -138,8 +138,6 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 
 	if(m_stream && m_stream->isOpen() && format)
 	{
-		m_stream->clear();
-
 		const static int BUF_SIZE  = 2048;
 		char msgBuf[BUF_SIZE];
 		va_list arglist;
@@ -149,6 +147,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
+		m_stream->clear();
 		m_stream->writeStr(msgBuf);
 
 		success = true;
@@ -649,9 +648,7 @@ bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3
 		}
 		qStr[4] = '\0';
 
-		char tstr[128];
-		sprintf(tstr, "XYZv3/query=%s", qStr);
-		if(serialSendMessage(tstr))
+		if(serialSendMessage("XYZv3/query=%s", qStr))
 		{
 			// zero out results, only if updating everything
 			if(q[0] == 'a')
@@ -1993,8 +1990,7 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 		password && 
 		//****FixMe, may need to send XYZv3/config=disconnectap here
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		//****FixMe, may need to send query command to foce out ok response
-		waitForConfigOK(true, 30.0f); // not returned on wifi
+		waitForConfigOK(true, 5.0f); // not returned on wifi
 
 	return success;
 }
@@ -2241,12 +2237,10 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 						if(pDat.blockBuf)
 						{
-							m_stream->clear();
-
 							if(isPrint)
-								m_stream->writePrintf("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+								serialSendMessage("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
 							else
-								m_stream->writePrintf("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+								serialSendMessage("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
 							if(waitForConfigOK(false))
 							{
@@ -3086,7 +3080,7 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val)
 				debugPrint(DBG_WARN, "XYZV3::findJsonVal failed to find value '%s:%s'", key, val);
 		}
 		else
-			debugPrint(DBG_WARN, "XYZV3::findJsonVal failed to find key '%s:%s'", key, val);
+			debugPrint(DBG_VERBOSE, "XYZV3::findJsonVal failed to find key '%s:%s'", key, val);
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::findJsonVal invalid input");

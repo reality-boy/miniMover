@@ -17,7 +17,7 @@
 
 void Stream::clear()
 {
-	debugPrint(DBG_VERBOSE, "Stream::clear()");
+	debugPrint(DBG_LOG, "Stream::clear()");
 
 	// drain residual data in readline buffer
 	if(m_lineBufCount > 0)

@@ -236,8 +236,9 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 							cto.ReadIntervalTimeout = (blocking) ? 0 : MAXDWORD; // wait forever or wait ReadTotalTimeoutConstant
 							cto.ReadTotalTimeoutConstant = timeout_ms;
 							cto.ReadTotalTimeoutMultiplier = 0;
-							//cto.WriteTotalTimeoutMultiplier = 20000L / baudRate;
-							//cto.WriteTotalTimeoutConstant = 0;
+
+							cto.WriteTotalTimeoutConstant = timeout_ms;
+							cto.WriteTotalTimeoutMultiplier = 0;
 
 							if(SetCommTimeouts(m_handle, &cto))
 							{

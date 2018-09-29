@@ -893,6 +893,8 @@ void MainDlgUpdate(HWND hDlg)
 	if(g_block_update)
 		return;
 
+	debugPrint(DBG_LOG, "MainDlgUpdate()");
+
 	// don't set wait cursor since this triggers 2x a second
 	if(xyz.isStreamSet())
 	{
