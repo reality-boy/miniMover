@@ -251,8 +251,6 @@ int runGetTimeout()
 
 bool runDoProcess(HWND hDlg)
 {
-	debugPrint(DBG_LOG, "runDoProcess(%d)", g_run_act);
-
 	if(g_run_act != ACT_PRINT_FILE_MONITOR)
 		runSetProgressBar(hDlg, xyz.getProgress());
 
@@ -507,7 +505,6 @@ BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			{
 				int timeout = runGetTimeout();
 				g_run_timer = SetTimer(hDlg, g_run_timer, timeout, NULL);
-				debugPrint(DBG_LOG, "SetTimer() %d %d %d:%d", g_run_timer, timeout, wParam, lParam);
 			}
 			else
 			{
@@ -540,10 +537,7 @@ void RunDialogStart(HWND hDlg, ActionCommand act)
 {
 	g_block_update = true;
 	g_run_act = act;
-
 	DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RUN_DIALOG), hDlg, RunDialogProc);
-
-	// notify main window that we are done
 	g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 	g_block_update = false;
 }
