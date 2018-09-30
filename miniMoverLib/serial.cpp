@@ -234,11 +234,14 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 						if(GetCommTimeouts(m_handle, &cto))
 						{
 							cto.ReadIntervalTimeout = (blocking) ? 0 : MAXDWORD; // wait forever or wait ReadTotalTimeoutConstant
+
 							cto.ReadTotalTimeoutConstant = timeout_ms;
-							cto.ReadTotalTimeoutMultiplier = 0;
+							// don't set this, we want to time out quickly if no data available
+							cto.ReadTotalTimeoutMultiplier = 0; 
 
 							cto.WriteTotalTimeoutConstant = timeout_ms;
-							cto.WriteTotalTimeoutMultiplier = 0;
+							// when sending lots of data we want to extend the timeout
+							cto.WriteTotalTimeoutMultiplier = 2 * baudRate / (11 * 1000);
 
 							if(SetCommTimeouts(m_handle, &cto))
 							{
