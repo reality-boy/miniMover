@@ -758,6 +758,12 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		else
 			SendDlgItemMessage(hDlg, IDC_BUTTON_PRINT, WM_SETTEXT, 0, (LPARAM)"Print File");
 
+		bool isWifiConnected = strlen(st->WPHY) > 0 || strlen(st->N4NetIP) > 0;
+		if(isWifiConnected)
+			SendDlgItemMessage(hDlg, IDC_BUTTON_WIFI_SET, WM_SETTEXT, 0, (LPARAM)"Disconnect");
+		else
+			SendDlgItemMessage(hDlg, IDC_BUTTON_WIFI_SET, WM_SETTEXT, 0, (LPARAM)"Apply");
+
 		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
 		{
 				//listAddLine(hwndListInfo, "No job running");
@@ -1335,32 +1341,51 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_WIFI_SET:
 			{
-				SetCursor(waitCursor);
-				MainDlgSetStatus(hDlg, "set wifi parameters");
-
-				char ssid[64] = "";
-				char password[64] = "";
-				int chan = -1;
-
-				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, ssid, sizeof(ssid));
-				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, password, sizeof(password));
-				chan = GetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, NULL, false);
-
-				bool noPass = (0 == strcmp(password, "******"));
-				if(!*ssid || !*password || noPass || chan < 0)
+				const XYZPrinterStatus *st = xyz.getPrinterStatus();
+				bool isWifiConnected = !st || strlen(st->WPHY) > 0 || strlen(st->N4NetIP) > 0;
+				if(isWifiConnected)
 				{
-					MessageBox(NULL, "Invalid wifi settings.", "miniMover", MB_OK);
-					MainDlgSetStatus(hDlg, "set wifi parameters failed");
-				}
-				else if(xyz.setWifi(ssid, password, chan))
-				{
-					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
-					MainDlgSetStatus(hDlg, "set wifi parameters succeeded");
-					g_wifiOptionsEdited = false;
-				}
-				else MainDlgSetStatus(hDlg, "set wifi parameters failed");
+					SetCursor(waitCursor);
+					MainDlgSetStatus(hDlg, "disconnect from wifi");
 
-				SetCursor(defaultCursor);
+					if(xyz.sendDisconnectWifi())
+					{
+						g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
+						MainDlgSetStatus(hDlg, "disconnect from wifi succeeded");
+					}
+					else MainDlgSetStatus(hDlg, "disconnect from wifi failed");
+
+					SetCursor(defaultCursor);
+				}
+				else
+				{
+					SetCursor(waitCursor);
+					MainDlgSetStatus(hDlg, "set wifi parameters");
+
+					char ssid[64] = "";
+					char password[64] = "";
+					int chan = -1;
+
+					GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, ssid, sizeof(ssid));
+					GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, password, sizeof(password));
+					chan = GetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, NULL, false);
+
+					bool noPass = (0 == strcmp(password, "******"));
+					if(!*ssid || !*password || noPass || chan < 0)
+					{
+						MessageBox(NULL, "Invalid wifi settings.", "miniMover", MB_OK);
+						MainDlgSetStatus(hDlg, "set wifi parameters failed");
+					}
+					else if(xyz.setWifi(ssid, password, chan))
+					{
+						g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
+						MainDlgSetStatus(hDlg, "set wifi parameters succeeded");
+						g_wifiOptionsEdited = false;
+					}
+					else MainDlgSetStatus(hDlg, "set wifi parameters failed");
+
+					SetCursor(defaultCursor);
+				}
 			}
 			break;
 

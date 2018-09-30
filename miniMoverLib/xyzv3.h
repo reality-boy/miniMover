@@ -444,10 +444,11 @@ public:
 	bool setAutoLevel(bool enable);
 	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
 	bool setEnergySaving(int level); // level is 0-9 minutes till lights turn off?
-	bool sendDisconnectWifi(); // send before setWifi?
+	bool sendDisconnectWifi(); // send before setWifi
 	bool sendEngraverPlaceObject(); //****FixMe, what does this do?
 	bool setMachineLife(int time_s); //****FixMe, what does this do?
 	bool setMachineName(const char *name);
+	//****Note, call sendDisconnectWifi() before calling this
 	bool setWifi(const char *ssid, const char *password, int channel);
 
 	// === upload commands ===

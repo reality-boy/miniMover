@@ -1857,6 +1857,12 @@ bool XYZV3::waitForConfigOK(bool endCom, float timeout_s)
 
 			return true;
 		}
+		else if(buf[0] == 'E')
+		{
+			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
+			if(endCom && !waitForEndCom())
+				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK missing end com");
+		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
 	}
@@ -1985,12 +1991,12 @@ bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
 {
 	debugPrint(DBG_LOG, "XYZV3::setWifi(%s, %s, %d)", ssid, password, channel);
 
+	//****FixMe, move to state machine
 	bool success = 
 		ssid && 
 		password && 
-		//****FixMe, may need to send XYZv3/config=disconnectap here
 		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForConfigOK(true, 5.0f); // not returned on wifi
+		waitForConfigOK(true, 25.0f); // not returned on wifi
 
 	return success;
 }
