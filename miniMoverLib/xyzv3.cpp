@@ -2488,7 +2488,7 @@ bool XYZV3::is3wFile(const char *path)
 
 bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 {
-	debugPrint(DBG_LOG, "XYZV3::encryptFile(%s, %s, %d)", inPath, outPath, infoIdx);
+	debugPrint(DBG_LOG, "XYZV3::encryptFile(%s, %s, %d)", (inPath) ? inPath : "", (outPath) ? outPath : "", infoIdx);
 
 	//msTimer t;
 	bool success = false;
@@ -2504,7 +2504,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 		//info = XYZV3::modelToInfo("dvF100B000");		// 1.0
 #endif
 
-	if(info && inPath)
+	if(info && inPath && *inPath)
 	{
 		const char *fileNum = info->fileNum;
 		bool fileIsV5 = info->fileIsV5;
@@ -2517,7 +2517,7 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 			char tPath[MAX_PATH] = "";
 			// and write to disk
 			FILE *fo = NULL;
-			if(outPath)
+			if(outPath && *outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
@@ -3333,31 +3333,36 @@ const char* XYZV3::readLineFromBuf(const char* buf, char *lineBuf, int lineLen)
 	if(lineBuf)
 		*lineBuf = '\0';
 
-	if(buf && *buf && lineBuf && lineLen > 0)
+	if(buf && lineBuf && lineLen > 0)
 	{
-		// search for newline or end of string
-		int i = 0;
-		while(*buf && *buf != '\n' && *buf != '\r' && i < (lineLen-2))
+		if(*buf)
 		{
-			lineBuf[i] = *buf;
-			buf++;
+			// search for newline or end of string
+			int i = 0;
+			while(*buf && *buf != '\n' && *buf != '\r' && i < (lineLen-2))
+			{
+				lineBuf[i] = *buf;
+				buf++;
+				i++;
+			}
+
+			// scroll past newline
+			if(*buf == '\r')
+				buf++;
+			if(*buf == '\n')
+				buf++;
+
+			// tack on newline and terminate string
+			lineBuf[i] = '\n';
 			i++;
+			lineBuf[i] = '\0';
+			i++;
+
+			// return poiner to new string
+			return buf;
 		}
-
-		// scroll past newline
-		if(*buf == '\r')
-			buf++;
-		if(*buf == '\n')
-			buf++;
-
-		// tack on newline and terminate string
-		lineBuf[i] = '\n';
-		i++;
-		lineBuf[i] = '\0';
-		i++;
-
-		// return poiner to new string
-		return buf;
+		else
+			debugPrint(DBG_VERBOSE, "XYZV3::readLineFromBuf buffer is empty");
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::readLineFromBuf invalid input");

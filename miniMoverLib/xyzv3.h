@@ -389,7 +389,7 @@ public:
 
 	// === action commands ===
 
-	ActState getState();
+	ActState getState(); //****FixMe, add this into ui code
 	const char* getStateStr();
 
 	int getProgress();

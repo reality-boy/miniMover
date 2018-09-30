@@ -521,7 +521,7 @@ int main(int argc, char **argv)
 					xyz.convertFileStart(argv[i]);
 					while(xyz.convertFileRun())
 					{
-						Sleep(300);
+						Sleep(10);
 						//****FixMe, print progress
 					}
 
@@ -824,13 +824,13 @@ int main(int argc, char **argv)
 					break;
 
 				//****FixMe, hook these up!
+				// setMachineName("name")
+				// sendDisconnectWifi()
+				// setWifi(const char *ssid, const char *password, int channel)
 				// restoreDefaults()
 				// setLanguage("en")
 				// setEnergySaving(0-9)
-				// sendDisconnectWifi()
 				// setMachineLife(int time_s)
-				// setMachineName("name")
-				// setWifi(const char *ssid, const char *password, int channel)
 				}
 			}
 		}
