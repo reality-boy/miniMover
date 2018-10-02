@@ -412,6 +412,7 @@ int Serial::read(char *buf, int len)
 					// success
 					buf[tLen] = '\0';
 					debugPrint(DBG_LOG, "Serial::read returned %d bytes", tLen);
+
 					return tLen;
 				}
 			}

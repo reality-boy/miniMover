@@ -407,7 +407,7 @@ void Socket::closeStream()
 			debugPrint(DBG_WARN, "Socket::closeStream close socket failed with error: %s", getLastErrorMessage());
 	}
 	else
-		debugPrint(DBG_WARN, "Socket::closeStream failed invalid connection");
+		debugPrint(DBG_VERBOSE, "Socket::closeStream failed invalid connection");
 
 	m_soc = INVALID_SOCKET;
 }
