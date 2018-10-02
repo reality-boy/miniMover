@@ -38,6 +38,9 @@ int Stream::readLineFromBuffer(char *buf, int bufLen)
 
 	if(buf && bufLen > 0)
 	{
+		// make sure we return something
+		*buf = '\0';
+
 		int i;
 		for(i=0; i<m_lineBufCount; i++)
 		{
@@ -49,19 +52,24 @@ int Stream::readLineFromBuffer(char *buf, int bufLen)
 		if(i < m_lineBufCount)
 		{
 			int len = i;
-			if(len > bufLen)
+			if(len >= bufLen)
 			{
 				debugPrint(DBG_WARN, "Stream::readLineFromBuffer data buffer too small, increase by %d bytes", len - bufLen);
-				len = bufLen;
+				len = bufLen-1;
 			}
 
 			strncpy(buf, m_lineBuf, len);
 			buf[len] = '\0';
+
 			m_lineBufCount -= len+1;
 			if(m_lineBufCount > 0)
-				memcpy(m_lineBuf, m_lineBuf+len+1, m_lineBufCount);
+			{
+				for(int i=0; i<m_lineBufCount; i++)
+					m_lineBuf[i] = m_lineBuf[i+len+1];
+			}
 			else
 				m_lineBufCount = 0;
+			m_lineBuf[m_lineBufCount] = '\0';
 
 			return len;
 		}
@@ -98,7 +106,7 @@ int Stream::readLine(char *buf, int bufLen)
 			}
 			else // not found, pull more data
 			{
-				len = m_lineBufLen - m_lineBufCount;
+				len = m_lineBufLen - m_lineBufCount - 1;
 				len = read(m_lineBuf + m_lineBufCount, len);
 				if(len > 0)
 				{

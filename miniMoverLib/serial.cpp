@@ -366,7 +366,10 @@ int Serial::read(char *buf, int len)
 
 				tbufBytes -= l;
 				if(tbufBytes > 0)
-					memcpy(tbuf, tbuf+l, tbufBytes);
+				{
+					for(int i=0; i<tbufBytes; i++)
+						tbuf[i] = tbuf[i+l];
+				}
 
 				debugPrint(DBG_LOG, "Serial::read cache returned %d bytes", l);
 
@@ -388,7 +391,10 @@ int Serial::read(char *buf, int len)
 
 						tbufBytes -= l;
 						if(tbufBytes > 0)
-							memcpy(tbuf, tbuf+l, tbufBytes);
+						{
+							for(int i=0; i<tbufBytes; i++)
+								tbuf[i] = tbuf[i+l];
+						}
 
 						debugPrint(DBG_LOG, "Serial::read returned %d bytes", l);
 
