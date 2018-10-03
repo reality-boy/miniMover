@@ -173,7 +173,7 @@ void WifiList::writeWifiList()
 							HKEY entryKey;
 							if(RegCreateKeyExA(HKEY_CURRENT_USER, tpath, 0, NULL, 0, KEY_WRITE, NULL, &entryKey, NULL) == ERROR_SUCCESS)
 							{
-								if(RegSetKeyValueA(entryKey, NULL, "ip", REG_SZ, &m_list[i].m_ip, strlen(m_list[i].m_ip)) == ERROR_SUCCESS)
+								if(RegSetKeyValueA(entryKey, NULL, "ip", REG_SZ, &m_list[i].m_ip, (DWORD)strlen(m_list[i].m_ip)) == ERROR_SUCCESS)
 								{
 									// success
 								}

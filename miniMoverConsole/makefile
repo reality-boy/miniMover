@@ -1,6 +1,6 @@
 PROG = minimover
 CC = g++
-CPPFLAGS = -g -Wall -I../miniMoverLib/ -D _DEBUG
+CPPFLAGS = -g -Wall -Wextra -I../miniMoverLib/ -D _DEBUG
 LDFLAGS = 
 OBJS = minimover.o xyzv3.o serial_linux.o stream.o miniz.o debug.o aes.o timer.o socket_linux.o 
 

@@ -490,7 +490,7 @@ void runDoAction(HWND hDlg, int btn)
 	}
 }
 
-BOOL CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
+INT_PTR CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 { 
     switch (message) 
     { 
@@ -834,7 +834,7 @@ void setMachineName(HWND hDlg)
 
 int getMoveDist(HWND hDlg)
 {
-	int t = SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_GETCURSEL, 0, 0);
+	int t = (int)SendDlgItemMessage(hDlg, IDC_COMBO_DIST, CB_GETCURSEL, 0, 0);
 	if(t == 0) return 1;
 	if(t == 1) return 10;
 	if(t == 2) return 100;
@@ -1014,7 +1014,7 @@ void MainDlgUpdate(HWND hDlg)
 void MainDlgConnect(HWND hDlg)
 {
 	// get dropdown entry
-	int comID = SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_GETCURSEL, 0, 0);
+	int comID = (int)SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_GETCURSEL, 0, 0);
 
 	// if error, default to auto
 	if(comID == CB_ERR)
@@ -1084,7 +1084,7 @@ void MainDlgConnect(HWND hDlg)
 		g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
 }
 
-BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch(msg) 
 	{
@@ -1195,7 +1195,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_CONVERT:
 			MainDlgSetStatus(hDlg, "converting file");
-			g_run_infoIdx = SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_GETCURSEL, 0, 0)-1;
+			g_run_infoIdx = (int)SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_GETCURSEL, 0, 0)-1;
 			if(getFilePath(hDlg, g_run_fileIn, sizeof(g_run_fileIn), true))
 			{
 				// fix up path
@@ -1404,7 +1404,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				SetCursor(waitCursor);
 				MainDlgSetStatus(hDlg, "set energy saving");
-				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
+				int id = (int)SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setEnergySaving(id * 3))
 				{
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
@@ -1420,7 +1420,7 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				SetCursor(waitCursor);
 				MainDlgSetStatus(hDlg, "set language");
-				int id = SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
+				int id = (int)SendDlgItemMessage(hDlg, IDC_COMBO_LANGUAGE, CB_GETCURSEL, 0, 0);
 				if(xyz.setLanguage(XYZPrintingLang[id].abrv))
 				{
 					g_timer = SetTimer(hDlg, g_timer, g_timerShortInterval, NULL);
