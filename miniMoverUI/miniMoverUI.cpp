@@ -492,6 +492,7 @@ void runDoAction(HWND hDlg, int btn)
 
 INT_PTR CALLBACK RunDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 { 
+	(void)lParam;
     switch (message) 
     { 
 		case WM_INITDIALOG:

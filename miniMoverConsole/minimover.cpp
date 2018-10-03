@@ -432,7 +432,8 @@ bool handlePrintFile(const char *path)
 			bool isPrintPaused = false;
 			int count = 0;
 
-			while(true)
+			bool done = false;
+			while(!done)
 			{
 				Sleep(300);
 				count++;
