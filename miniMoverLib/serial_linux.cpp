@@ -33,7 +33,7 @@
 
 int SerialHelper::m_portCount = 0;
 int SerialHelper::m_defaultPortID = -1;
-SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {"",""};
+SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0};
 
 int SerialHelper::queryForPorts(const char *hint)
 {
