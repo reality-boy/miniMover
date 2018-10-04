@@ -128,8 +128,16 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 
 	if(deviceName)
 	{
+		// prepend /dev/ if not provided
+		char name[SERIAL_MAX_DEV_NAME_LEN];
+		if(deviceName[0] == '/')
+			strncpy(name, deviceName, SERIAL_MAX_DEV_NAME_LEN);
+		else
+			snprintf(name, SERIAL_MAX_DEV_NAME_LEN, "/dev/%s", deviceName);
+		name[SERIAL_MAX_DEV_NAME_LEN-1] = '\0';
+
 		// if already connected just return
-		if(0 == strcmp(deviceName, m_deviceName) && 
+		if(0 == strcmp(name, m_deviceName) && 
 			m_baudRate == baudRate)
 			return true;
 
@@ -137,7 +145,7 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 		closeStream();
 
 		// Open port
-	    m_handle = open(deviceName, O_RDWR | O_NOCTTY);
+	    m_handle = open(name, O_RDWR | O_NOCTTY);
 	    if(isOpen())
 		{
 			// General configuration

@@ -49,6 +49,8 @@ public:
 	// write a string formatted by printf
 	int writePrintf(const char *fmt, ...);
 
+	static bool isNetworkAddress(const char *addr);
+
 private:
 
 	// helper function to read a line from m_lineBuf

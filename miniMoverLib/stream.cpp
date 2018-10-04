@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include <assert.h>
 
 #include "timer.h"
@@ -172,4 +173,31 @@ int Stream::writePrintf(const char *fmt, ...)
 		debugPrint(DBG_WARN, "Stream::writePrintf failed invalid input");
 
 	return 0;
+}
+
+bool Stream::isNetworkAddress(const char *addr)
+{
+	// auto detect serial port if no addres defined
+	if(!addr || !addr[0] || (addr[0] == '-' && addr[1] == '1'))
+		return false;
+
+	// linux serial port
+	if(0 == strncmp("/dev/tty", addr, strlen("/dev/tty")) ||
+	   0 == strncmp("tty", addr, strlen("tty")) ) // allow to skip /dev/
+		return false;
+
+	// windows serial port
+	if(0 == strncmp(addr, "\\\\.\\COM", strlen("\\\\.\\COM")) ||
+	   0 == strncmp(addr, "COM", strlen("COM")) ||
+	   0 == strncmp(addr, "com", strlen("com")) || // lower case is invalid, but logical
+	   0 == strncmp(addr, "port", strlen("port")) ) // not really a windows port
+		return false;
+
+	// is a simple number
+	if((isdigit(*addr) && strlen(addr) < 4) || // is a single number
+	    strlen(addr) < 8) // assume short strings are com ports
+		return false;
+
+	// else assume some sort of ip or dns name
+	return true;
 }

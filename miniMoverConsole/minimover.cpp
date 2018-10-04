@@ -141,31 +141,12 @@ void postHelp()
 	printf("  -z num - jog z axis by num, or 10 if num not provided\n");
 }
 
-bool isNetworkAddress(const char *addr)
-{
-	// auto detect serial port if no addres defined
-	if(!addr || !addr[0] || (addr[0] == '-' && addr[1] == '1'))
-		return false;
-
-	// linux serial port
-	if(0 == strncmp("/dev/tty", addr, strlen("/dev/tty")))
-		return false;
-
-	// windows serial port
-	if(0 == strncmp(addr, "\\\\.\\COM", strlen("\\\\.\\COM")) ||
-	   0 == strncmp(addr, "COM", strlen("COM")) )
-		return false;
-
-	// else assume some sort of ip or dns name
-	return true;
-}
-
 bool checkCon()
 {
 	if(!xyz.isStreamSet())
 	{
 		const char *tDevice = deviceName;
-		if(isNetworkAddress(tDevice))
+		if(Stream::isNetworkAddress(tDevice))
 		{
 			//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
 			// this will allow us to support a custom wifi to usb adapter

@@ -192,6 +192,18 @@ bool Serial::setupConfig(const char *portStr, HANDLE h)
 }
 */
 
+int getInt(const char *str)
+{
+	while(str && *str)
+	{
+		if(isdigit(*str))
+			return atoi(str);
+		str++;
+	}
+
+	return -1;
+}
+
 bool Serial::openStream(const char *deviceName, int baudRate)
 {
 	debugPrint(DBG_LOG, "Serial::openStream(%s, %d)", deviceName, baudRate);
@@ -202,10 +214,16 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 	bool blocking = false; // set to true to block till data arives
 	int timeout_ms = 50;
 
-	if(deviceName)
+	// try to pull port number from string
+	int port = getInt(deviceName);
+	if(port >= 0)
 	{
+		// then upconvert it to full port path
+		char name[SERIAL_MAX_DEV_NAME_LEN];
+		sprintf(name, "\\\\.\\COM%d", port);
+
 		// if already connected just return
-		if(0 == strcmp(deviceName, m_deviceName) && 
+		if(0 == strcmp(name, m_deviceName) && 
 			m_baudRate == baudRate)
 			return true;
 
@@ -213,10 +231,10 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 		closeStream();
 	
 		// open serial port
-		m_handle = CreateFileA( deviceName, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		m_handle = CreateFileA( name, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if(isOpen())
 		{
-			//if(setupConfig(deviceName, m_handle))
+			//if(setupConfig(name, m_handle))
 			{
 				// setup serial port baud rate
 				DCB dcb = {0};
@@ -251,7 +269,7 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 									{
 										clear();
 
-										strcpy(m_deviceName, deviceName);
+										strcpy(m_deviceName, name);
 										m_baudRate = baudRate;
 
 										debugPrint(DBG_LOG, "Serial::openStream connected to %s : %d", m_deviceName, m_baudRate);
