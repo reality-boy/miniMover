@@ -169,7 +169,7 @@ void AES_init_ctx(struct AES_ctx* ctx, const char* key)
 {
 	if(key)
 	{
-		size_t c = strlen(key);
+		int c = strlen(key);
 		if(c == AES_128_KEYLEN)
 			ctx->isAES256 = false;
 		else if(c == AES_256_KEYLEN)
@@ -459,7 +459,7 @@ static void Cipher(state_t* state, uint8_t* RoundKey, bool isAES256)
 {
 	const unsigned int Nb = 4;						// The number of columns comprising a state in AES. This is a constant in AES. Value=4
 	const unsigned int Nk = (isAES256) ? 8 : 4;		// The number of 32 bit words in a key.
-	const uint8_t Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
+	const unsigned int Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
 	(void)Nb;
 	(void)Nk;
 
@@ -490,7 +490,7 @@ static void InvCipher(state_t* state, uint8_t* RoundKey, bool isAES256)
 {
 	const unsigned int Nb = 4;						// The number of columns comprising a state in AES. This is a constant in AES. Value=4
 	const unsigned int Nk = (isAES256) ? 8 : 4;		// The number of 32 bit words in a key.
-	const uint8_t Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
+	const unsigned int Nr = (isAES256) ? 14 : 10;	// The number of rounds in AES Cipher.
 	(void)Nb;
 	(void)Nk;
 
