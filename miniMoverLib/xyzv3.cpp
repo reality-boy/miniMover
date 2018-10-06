@@ -3075,7 +3075,7 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val)
 				// strip quotes, if found
 				if(*val == '"')
 				{
-					int len = strlen(val)-1;
+					int len = strlen(val);
 					for(int i=0; i<len; i++)
 						val[i] = val[i+1];
 				}
