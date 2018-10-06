@@ -28,6 +28,10 @@ int SerialHelper::m_portCount = 0;
 int SerialHelper::m_defaultPortID = -1;
 SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0};
 
+#ifndef GUID_DEVCLASS_PORTS
+    DEFINE_GUID(GUID_DEVCLASS_PORTS, 0x4D36E978, 0xE325, 0x11CE, 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18 );
+#endif
+
 // enumerate all available ports and find there string name as well
 // only usb serial ports have a string name, but that is most serial devices these days
 // based on CEnumerateSerial http://www.naughter.com/enumser.html
@@ -39,8 +43,9 @@ int SerialHelper::queryForPorts(const char *hint)
 	m_defaultPortID = -1;
 	bool hintFound = false;
 
-	HDEVINFO hDevInfoSet = SetupDiGetClassDevsA( &GUID_DEVINTERFACE_COMPORT, 
-								NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+	HDEVINFO hDevInfoSet = SetupDiGetClassDevsA( &GUID_DEVCLASS_PORTS, //&GUID_DEVINTERFACE_COMPORT, 
+								NULL, NULL, DIGCF_PRESENT);// | DIGCF_DEVICEINTERFACE);
 	if(hDevInfoSet != INVALID_HANDLE_VALUE)
 	{
 		SP_DEVINFO_DATA devInfo;
@@ -115,6 +120,8 @@ int SerialHelper::queryForPorts(const char *hint)
 								debugPrint(DBG_WARN, "SerialHelper::queryForPorts m_maxPortCount exeeded %d", m_maxPortCount);
 						}
 					}
+					else
+						debugPrint(DBG_LOG, "SerialHelper::queryForPorts skipping device '%s'", tstr);
 				}
 				else
 					debugPrint(DBG_WARN, "SerialHelper::queryForPorts RegQueryValueEx failed with error %d", status);
