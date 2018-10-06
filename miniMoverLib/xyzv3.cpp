@@ -33,7 +33,7 @@
 #include "socket.h"
 #include "xyzv3.h"
 
-const char* g_ver = "v0.9b";
+const char* g_ver = "v0.9.5";
 
 //****FixMe, keep track of 'end' messages and fire them
 // if we try to exit in middle of operation, like calibrating bed
