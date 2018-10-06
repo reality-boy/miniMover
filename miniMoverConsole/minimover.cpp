@@ -186,7 +186,7 @@ bool checkCon()
 		// failed to find a printer, report to user
 		xyz.setStream(NULL);
 		if(tDevice)
-			printf("printer not found on port: %s\n", tDevice);
+			printf("printer not found on port: '%s'\n", tDevice);
 		else
 			printf("printer not found\n");
 
@@ -380,12 +380,12 @@ bool monitorPrintJob()
 				printf(" Error: (0x%08x)%s", st->eErrorStatus, st->eErrorStatusStr);
 
 			printf("\n");
+
+			// if not PRINT_NONE
+			return ( st->jPrinterState != PRINT_ENDING_PROCESS_DONE &&
+					 st->jPrinterState != PRINT_NONE);
 		}
 		// else just wait till next cycle
-
-		// if not PRINT_NONE
-		return ( st->jPrinterState != PRINT_ENDING_PROCESS_DONE &&
-				 st->jPrinterState != PRINT_NONE);
 	}
 
 	return true; // assume we are still printing if we got an update error
@@ -395,28 +395,31 @@ bool handlePrintFile(const char *path)
 {
 	if(path && checkCon())
 	{
+		printf("uploading file to printer\n");
+
 		xyz.printFileStart(path);
 		int printCount = 0;
 		while(xyz.printFileRun())
 		{
+			printCount++;
 			Sleep(10);
 			// notify the user that we are still uploading
 			if(printCount % 4 == 0)
 				printf(".");
-			printCount++;
 		}
+		printf("\n");
 
 		if(xyz.getState() == ACT_SUCCESS)
 		{
-			printf("\n");
+			printf("monitoring print\n");
+
 			// check status and wait for user to pause/cancel print
 			bool isPrintPaused = false;
 			int count = 0;
+			int interval = (xyz.isWIFI()) ? 2000 : 500;
 
 			while(true)
 			{
-				Sleep(300);
-				count++;
 				// check if they want to cancel or pause
 				if(kbhit())
 				{
@@ -433,20 +436,27 @@ bool handlePrintFile(const char *path)
 					if(c == ' ')
 					{
 						if(isPrintPaused)
+						{
+							printf("resuming print\n");
 							xyz.resumePrint();
+						}
 						else
+						{
+							printf("pausing print\n");
 							xyz.pausePrint();
+						}
 						isPrintPaused = !isPrintPaused;
 					}
 					else // any other key cancels print job
 					{
+						printf("canceling print\n");
 						xyz.cancelPrint();
 						break;
 					}
 				}
 
 				// update status and quit if done
-				if(count % 500 == 0)
+				if(count % interval == 0)
 				{
 					if(!monitorPrintJob())
 					{
@@ -455,6 +465,7 @@ bool handlePrintFile(const char *path)
 				}
 
 				Sleep(10); // don't spin too fast
+				count++;
 			}
 
 			return true;
@@ -493,7 +504,7 @@ int main(int argc, char **argv)
 					if(handlePrintFile(argv[i]))
 						printf("print file succeeded\n");
 					else
-						printf("print file failed to print %s\n", argv[i]);
+						printf("print file failed to print '%s'\n", argv[i]);
 				}
 				else if(xyz.is3wFile(argv[i]))
 				{
@@ -512,7 +523,7 @@ int main(int argc, char **argv)
 						printf("convert file failed\n");
 				}
 				else
-					printf("unknown file type %s\n", argv[i]);
+					printf("unknown file type '%s'\n", argv[i]);
 			}
 			else
 			{
@@ -701,7 +712,7 @@ int main(int argc, char **argv)
 						} else 
 							printf("device needs a name\n");
 					}
-					else
+					else // print file
 					{
 						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
@@ -711,7 +722,7 @@ int main(int argc, char **argv)
 								if(handlePrintFile(argv[i+1]))
 									printf("print file succeeded\n");
 								else
-									printf("print file failed to print %s\n", argv[i+1]);
+									printf("print file failed to print '%s'\n", argv[i+1]);
 							}
 							i++;
 						}
@@ -801,7 +812,7 @@ int main(int argc, char **argv)
 					i++;
 					break;
 				default:
-					printf("unknown argument %s\n", argv[i]);
+					printf("unknown argument '%s'\n", argv[i]);
 					break;
 
 				//****FixMe, hook these up!

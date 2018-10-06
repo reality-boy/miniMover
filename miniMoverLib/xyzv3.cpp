@@ -63,10 +63,10 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini wA"},
 	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"}, // possibly 3FM3WP
 	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
-	{"??dv1NX0A000", "dv1NW0A000", "??3FN1XP","??dv1NX0A000_V2",false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano w"},
+	{"??dv1NX0A000", "dv1NW0A000", "??3FN1XP","??dv1NX0A000_V2",false, false,  true,   false, false, false,  true, false, false,   120, 120, 120,   "da Vinci nano w"},
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},
-	{"??dv1JP0A000", "dv1JPWA000", "??3F1JPP", "??dv1JP0A000_V2",true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
+	{"??dv1JP0A000", "dv1JPWA000", "??3F1JPP", "??dv1JP0A000_V2",true, false,  true,    true, false, false,  true, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
 	{"dvF1W0A000",  "daVinciAW10", "3F1AWP", "dvF1W0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0 Pro"},
 	{"??dvF1W0A000", "dv1JA0A000", "??3F1AWP", "??dvF1W0A000_V2",true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0A Pro"},
 	{"dvF1WSA000",  "daVinciAS10", "3F1ASP", "dvF1WSA000_V2",    true, false,  true,    true,  true, false,  true,  true,  true,   200, 200, 190,   "da Vinci 1.0 Pro 3in1"},
