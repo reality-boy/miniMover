@@ -26,15 +26,25 @@ public:
 	void startTimer();
 	float stopTimer();
 
-	float getLastTime_s();
-	float getLastTime_ms();
-	float getLastTime_micro();
+	float getLastTime_s() const;
+	float getLastTime_ms() const;
+	float getLastTime_micro() const;
 
-	float getElapsedTime_s();
+	float getElapsedTime_s() const;
+
+	float getMinTime_s() const;
+	float getAvgTime_s() const;
+	float getMaxTime_s() const;
 
 protected:
 	float m_startTime;
 	float m_elapsedTime;
+
+	// timer stats
+	float m_minTime;
+	int m_avgCount;
+	float m_avgTime;
+	float m_maxTime;
 };
 
 class msTimeout
@@ -44,9 +54,9 @@ public:
 	msTimeout(float timeout_s);
 
 	void setTimeout_s(float timeout_s);
-	bool isTimeout();
-	float getElapsedTime_s();
-	float getElapsedTime_pct();
+	bool isTimeout() const;
+	float getElapsedTime_s() const;
+	float getElapsedTime_pct() const;
 
 protected:
 	float m_startTime;

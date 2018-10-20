@@ -63,6 +63,11 @@ float msTime::getTime_ms()
 
 
 msTimer::msTimer() 
+	: m_minTime(-1.0f)
+	, m_avgCount(0)
+	, m_avgTime(0)
+	, m_maxTime(-1.0f)
+
 {
 	startTimer();
 }
@@ -75,28 +80,57 @@ void msTimer::startTimer()
 
 float msTimer::stopTimer() 
 { 
-	m_elapsedTime = msTime::getTime_micro() - m_startTime;
+	if(m_startTime > -1)
+	{
+		m_elapsedTime = msTime::getTime_micro() - m_startTime;
+
+		if(m_minTime < 0 || m_minTime > m_elapsedTime)
+			m_minTime = m_elapsedTime;
+
+		if(m_maxTime < m_elapsedTime)
+			m_maxTime = m_elapsedTime;
+
+		m_avgTime = ((m_avgTime * m_avgCount) + m_elapsedTime) / (m_avgCount + 1.0f);
+		m_avgCount++;
+	}
+	m_startTime = -1;
+
 	return getLastTime_s();
 }
 
-float msTimer::getLastTime_s()
+float msTimer::getLastTime_s() const
 { 
 	return m_elapsedTime / 1000000.0f;
 }
 
-float msTimer::getLastTime_ms()
+float msTimer::getLastTime_ms() const
 { 
 	return m_elapsedTime / 1000.0f; 
 }
 
-float msTimer::getLastTime_micro()
+float msTimer::getLastTime_micro() const
 { 
 	return m_elapsedTime; 
 }
 
-float msTimer::getElapsedTime_s()
+float msTimer::getElapsedTime_s() const
 {
 	return (msTime::getTime_micro() - m_startTime) / 1000000.0f;
+}
+
+float msTimer::getMinTime_s() const
+{
+	return m_minTime / 1000000.0f;
+}
+
+float msTimer::getAvgTime_s() const
+{
+	return m_avgTime / 1000000.0f;
+}
+
+float msTimer::getMaxTime_s() const
+{
+	return m_maxTime / 1000000.0f;
 }
 
 
@@ -120,17 +154,17 @@ void msTimeout::setTimeout_s(float timeout_s)
 	m_endTime = m_startTime + timeout_s;
 }
 
-bool msTimeout::isTimeout()
+bool msTimeout::isTimeout() const
 {
 	return msTime::getTime_s() > m_endTime;
 }
 
-float msTimeout::getElapsedTime_s()
+float msTimeout::getElapsedTime_s() const
 {
 	return msTime::getTime_s() - m_startTime;
 }
 
-float msTimeout::getElapsedTime_pct()
+float msTimeout::getElapsedTime_pct() const
 {
 	float elapsed = (msTime::getTime_s() - m_startTime) / (m_endTime - m_startTime);
 	return (elapsed < 1.0f) ? elapsed : 1.0f;
