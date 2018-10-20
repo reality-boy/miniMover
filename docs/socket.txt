@@ -13,17 +13,17 @@ data sendData(const char *mode, const char *subMode)
 	gClient.BeginConnect(pIP, pPort, null, null).AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(5))
 
 	//if(nano, mini w, or miniMaker)
-	// if not listening for return, timeout is 50
-	// if XYZv3/action=xxx, then timeout is 500
-	// if XYZv3/action=calibratejr:getdata, timeout is 3000
-	// if XYZv3/config=xxx, then timeout is 2000
-	// if XYZv3/query=xxx, then timeout is 2000
-	// if XYZv3/query=a, then timeout is 5000
-	// if XYZv3/query=W, then timeout is 5000
+	// if not listening for return,			then timeout is 50
+	// if XYZv3/action=xxx,					then timeout is 500
+	// if XYZv3/action=calibratejr:getdata, then timeout is 3000
+	// if XYZv3/config=xxx,					then timeout is 2000
+	// if XYZv3/query=xxx,					then timeout is 2000
+	// if XYZv3/query=a,					then timeout is 5000
+	// if XYZv3/query=W,					then timeout is 5000
 	//else
-	// if XYZv3/action=xxx, then timeout is 500
-	// if XYZv3/config=xxx, then timeout is 5000
-	// if XYZv3/query=xxx, then timeout is 5000
+	// if XYZv3/action=xxx,					then timeout is 500
+	// if XYZv3/config=xxx,					then timeout is 5000
+	// if XYZv3/query=xxx,					then timeout is 5000
 
 	gClient.SendTimeout = 500; // in milliseconds?
 	gClient.ReceiveTimeout = 500;
