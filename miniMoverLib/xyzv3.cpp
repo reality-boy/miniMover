@@ -63,20 +63,22 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini wA"},
 	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"}, // possibly 3FM3WP
 	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
-	{"??dv1NX0A000", "dv1NW0A000", "??3FN1XP","??dv1NX0A000_V2",false, false,  true,   false, false, false,  true, false, false,   120, 120, 120,   "da Vinci nano w"},
+	{"dv1NW0A000",   "dv1NW0A000", "3FNAWP", "dv1NW0A000_V2",   false, false,  true,   false, false, false,  true, false, false,   120, 120, 120,   "da Vinci nano w"},
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},
-	{"??dv1JP0A000", "dv1JPWA000", "??3F1JPP", "??dv1JP0A000_V2",true, false,  true,    true, false, false,  true, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
+	{"dv1JPWA000",   "dv1JPWA000", "3F1JPW", "dv1JPWA000_V2",    true, false,  true,    true, false, false,  true, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
 	{"dvF1W0A000",  "daVinciAW10", "3F1AWP", "dvF1W0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0 Pro"},
-	{"??dvF1W0A000", "dv1JA0A000", "??3F1AWP", "??dvF1W0A000_V2",true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0A Pro"},
+//	{"dv1JA0A000",   "dv1JA0A000", "3F1JAA", "dv1JA0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0A Pro"},
 	{"dvF1WSA000",  "daVinciAS10", "3F1ASP", "dvF1WSA000_V2",    true, false,  true,    true,  true, false,  true,  true,  true,   200, 200, 190,   "da Vinci 1.0 Pro 3in1"},
 	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   300, 300, 300,   "da Vinci Super"}, //0.4mm/0.6mm/0.8mm nozzles
 
 	//****Note, a fileNum of FXX may be a universal demo file marker that any printer can load
 	// does not support 3w file format
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",    true,  false, true,    true, false, false,  true, false, false,   200, 200, 150,   "da Vinci Color"}, // no heated bed, but full color!
-//  da Vinci Super
 //  da Vinci PartPro200 xTCS
+//  3F3PMP XYZprinting da Vinci PartPro 300xT
+//  3FC1SP XYZprinting da Vinci Color AiO
+//  XYZprinting WiFi Box
 };
 
 	//  unknown
@@ -86,10 +88,140 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	//{"dvF210B000"}, F21
 	//{"dvF210A000"}, F21A
 	//{"dvF210P000"}, F21P
-	//XYZprinting WiFi Box
-	//3FNAWP XYZprinting da Vinci nano w
-	//3F3PMP XYZprinting da Vinci PartPro 300xT
-	//3FC1SP XYZprinting da Vinci Color AiO
+
+	/*
+	daVinciF10 davincif10_V2
+	daVinciF20 davincif20_V2
+	daVinciF11 davincif11_V2
+	daVinciF21
+	daVinciF10a
+	daVinciF20a
+	daVinciF10sa
+	daVinciJR10
+	daVinciJR10W
+	daVinciJR11
+	daVinciJR20
+	daVinciAW10
+	daVinciJR10S
+	daVinciAS10
+	daVinciJR20W
+	dvF100B000
+	dvF200B000
+	dvF200A000 dvF200A000_V2
+	dvF100A000 dvF100A000_V2
+	dvF10SA000 dvF10SA000_V2
+	dvF110B000 dvF110B000_V2
+	dvF110A000 
+	dvF110P000
+	dvF11SA000
+	dvF210B000
+	dvF210A000
+	dvF210P000
+	dv1J00A000 dv1J00A000_V2
+	dv1JW0A000 dv1JW0A000_V2
+	dv1JS0A000 dv1JS0A000_V2
+	dv2JW0A000 dv2JW0A000_V2
+	dv1JA0A000 dv1JA0A000_V2
+	dvF1W0A000 dvF1W0A000_V2
+	dvF1WSA000 dvF1WSA000_V2
+	dv1MW0A000 dv1MW0A000_V2
+	dv1MX0A000 dv1MX0A000_V2
+	dv1NX0A000 dv1NX0A000_V2
+	dv1NW0A000 dv1NW0A000_V2
+	dv1MW0C000 dv1MW0C000_V2
+	dv1SW0A000 dv1SW0A000_V2
+	dv1JP0A000 dv1JP0A000_V2
+	dv1JSOA000 dv1JS0A000_V2
+	dv1CP0A000 dv1CP0A000_V2
+	dv1CPSA000 dv1CPSA000_V2
+	dv1PW3A000 dv1PW3A000_V2
+	dv1JPWA000 dv1JPWA000_V2
+	dv1MWCA000 dv1MWCA000_V2
+	dv1JZ0A000 dv1JZ0A000_V2
+	dv1JPXA000 dv1JPXA000_V2
+	           dv1WB0A000_V2
+	           dv1MW0B000_V2
+	*/
+
+// internal action state
+enum ActState
+{
+	ACT_FAILURE,			// something went wrong
+	ACT_SUCCESS,			// something went right
+
+	// Calibrate Bed
+	ACT_CB_START,			// start
+	ACT_CB_START_SUCCESS,	// wait on success
+	ACT_CB_HOME,			// wait for signal to lower detector
+	ACT_CB_ASK_LOWER,		// ask user to lower detector
+	ACT_CB_LOWERED,			// notify printer detecotr was lowered
+	ACT_CB_CALIB_START,		// wait for calibration to start
+	ACT_CB_CALIB_RUN,		// wait for calibration to finish
+	ACT_CB_ASK_RAISE,		// ask user to raise detector
+	ACT_CB_RAISED,			// notify printer detector was raised
+	ACT_CB_COMPLETE,		// wait for end of calibration
+
+	// Clean Nozzle
+	ACT_CL_START,
+	ACT_CL_START_SUCCESS,
+	ACT_CL_WARMUP_COMPLETE,
+	ACT_CL_CLEAN_NOZLE,
+	ACT_CL_FINISH,
+	ACT_CL_COMPLETE,
+
+	// Home printer
+	ACT_HP_START,
+	ACT_HP_START_SUCCESS,
+	ACT_HP_HOME_COMPLETE,
+
+	// Jog Printer
+	ACT_JP_START,
+	ACT_JP_START_SUCCESS,
+	ACT_JP_JOG_COMPLETE,
+
+	// Load Fillament
+	ACT_LF_START,
+	ACT_LF_START_SUCCESS,
+	ACT_LF_HEATING,
+	ACT_LF_LOADING,
+	ACT_LF_WAIT_LOAD,
+	ACT_LF_LOAD_FINISHED,
+	ACT_LF_LOAD_COMPLETE,
+
+	// Unload Fillament
+	ACT_UF_START,
+	ACT_UF_START_SUCCESS,
+	ACT_UF_HEATING,
+	ACT_UF_UNLOADING,
+	ACT_UF_CANCEL, // only get here if cancel button pressed
+	ACT_UF_CANCEL_COMPLETE, // only get here if cancel button pressed
+	ACT_UF_UNLOAD_COMPLETE,
+
+	// convert file
+	ACT_CF_START,
+	ACT_CF_COMPLETE,
+
+	// print file
+	ACT_PF_START,
+	ACT_PF_SEND,
+	ACT_PF_SEND_PROCESS,
+	ACT_PF_COMPLETE,
+
+	// upload firmware
+	ACT_FW_START,
+	ACT_FW_SEND_PROCESS,
+	ACT_FW_COMPLETE,
+
+	// query status
+	ACT_QS_START,
+	ACT_QS_CHECK_FOR_LINE,
+
+	// simple command
+	ACT_SC_START,
+	ACT_SC_GET_ZOFFSET,
+	ACT_SC_GET_ENDCOM,
+	ACT_SC_COMPLETE,
+};
 
 XYZV3::XYZV3() 
 {
@@ -99,7 +231,9 @@ XYZV3::XYZV3()
 	memset(&pDat, 0, sizeof(pDat));
 	m_stream = NULL;
 	m_info = NULL;
-	//m_actState = ACT_FAILURE;
+	m_actState = ACT_FAILURE;
+	m_actSubState = ACT_FAILURE;
+	m_needsMachineState = false;
 	m_progress = 0;
 
 	m_jogAxis = ' ';
@@ -129,6 +263,12 @@ void XYZV3::setStream(Stream *s)
 
 	if(m_stream)
 		m_stream->clear();
+}
+
+const Stream* XYZV3::getStream()
+{
+	debugPrint(DBG_LOG, "XYZV3::getStream()");
+	return m_stream;
 }
 
 bool XYZV3::serialSendMessage(const char *format, ...)
@@ -220,11 +360,11 @@ int XYZV3::translateErrorCode(int code)
 	}
 }
 
-bool XYZV3::parseStatusSubstring(const char *str)
+void XYZV3::parseStatusSubstring(const char *str)
 {
 	debugPrint(DBG_VERBOSE, "XYZV3::parseStatusSubstring(%s)", str);
 
-	if(str && str[0] != '\0' && str[1] == ':')
+	if(str && str[0] != '\0' && (str[0] == '$' || str[0] == 'E' || str[1] == ':'))
 	{
 		const char *strPtr = NULL;
 		char s1[256] = "";
@@ -584,170 +724,148 @@ bool XYZV3::parseStatusSubstring(const char *str)
 
 		// case '5' to '9' unused
 
+		// end of list
+		case '$':
+		// error as in E1$
+		case 'E':
+			break;
+
 		default:
 			debugPrint(DBG_WARN, "XYZV3::parseStatusSubstring unknown string: %s", str);
 			break;
 		}
-
-		return true;
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::parseStatusSubstring invalid input");
-
-	return false;
 }
 
 // query status, then look for 
 // x:yyy ...
 // $
-// Optionally look for
-// str
-// $
-// they will not come interleaved
-// want to return true if we happen to find both status and optional string
-// also need to return optional string if found
 // 
 // We can query using 'a' to fill in all values
 // in that case we zero out the data and look for a '$' to indicate that everything was returned
 //
 // Otherwise we can query for up to 4 sub values
-// in that case only the sub values are returned, no terminating '$' is sent
-bool XYZV3::queryStatus(bool doPrint, float timeout_s, char q1, char q2, char q3, char q4)
+// in that case only the sub values are returned, on wifi no terminating '$' is sent
+void XYZV3::queryStatusStart(bool doPrint, char *s)
 {
-	debugPrint(DBG_LOG, "XYZV3::queryStatus(%d, %0.2f, %c...)", doPrint, timeout_s, q1);
+	debugPrint(DBG_LOG, "XYZV3::queryStatusStart(%d, %s...)", doPrint, s);
+	queryStatusSubStateStart(doPrint, s);
+	setState(ACT_QS_START);
+}
 
-	bool success = false;
+void XYZV3::queryStatusRun()
+{
+	if(!queryStatusSubStateRun())
+		setState(m_actSubState);
+}
 
-	if(m_stream && m_stream->isOpen())
+void XYZV3::queryStatusSubStateStart(bool doPrint, char *s)
+{
+	debugPrint(DBG_LOG, "XYZV3::queryStatusSubStateStart(%d, %s...)", doPrint, s);
+
+	if(s && *s !='\0')
 	{
-		int count = 0;
-		char q[4] = { q1, q2, q3, q4 };
-		bool b[4] = { 0, 0, 0, 0 };
-		char qStr[5] = { 0, 0, 0, 0, 0 };
-
-		if(!q[0])
-			q[0] = 'a';
-
-		// setup our query
-		for(count=0; count < 4; count++)
-		{
-			qStr[count] = q[count];
-
-			// break if entry is null
-			if(q[count] == 0)
-				break;
-
-			// if any entry is 'a' then no need to send anything else
-			if(q[count] == 'a')
-			{
-				count = 1;
-				q[0] = 'a';
-				qStr[0] = 'a';
-				qStr[1] = '\0';
-				break;
-			}
-		}
-		qStr[4] = '\0';
-
-		if(serialSendMessage("XYZv3/query=%s", qStr))
-		{
-			// zero out results, only if updating everything
-			if(q[0] == 'a')
-				memset(&m_status, 0, sizeof(m_status));
-
-			bool foundState = false;
-			bool isDone = false; // only try so many times for the answer
-			const char *buf = waitForLine(timeout_s);
-			while(*buf && !isDone)
-			{
-				if(buf[0] == '$') // end of message
-				{
-					isDone = true;
-					if(q[0] != 'a' || foundState)
-						success = true;
-				}
-				else if(buf[0] == 'E') // error string like E4$\n
-				{
-					//****FixMe, returns E4$\n or E7$\n sometimes
-					// in those cases we just ignore the error and keep going
-
-					// if error is E1$ then quite
-					// otherwise expect $ on next line to terminate string
-					if(buf[1] && buf[2] == '$')
-						isDone = true;
-
-					debugPrint(DBG_WARN, "XYZV3::queryStatus recieved error: %s", buf);
-				}
-				else if(parseStatusSubstring(buf))
-				{
-					//****FixMe, should we test 'j' or 'l' for success
-					// j is key to our ability to operate but l shows up much later in the list of returned values
-					if(buf[0] == 'j') 
-						foundState = true;
-
-					if(doPrint)
-						printf("%s\n", buf);
-
-					// if not getting all, then done once
-					// we see all the requested values
-					// but only on wifi!
-					if(q[0] != 'a' && isWIFI())
-					{
-						isDone = true;
-						for(int i=0; i<count; i++)
-						{
-							if(q[i] == buf[0])
-								b[i] = true;
-							if(!b[i])
-								isDone = false;
-						}
-
-						if(isDone)
-							success = true;
-					}
-				}
-				else
-				{
-					// handle other messages
-					//****FixMe, do we want this?
-				}
-
-				if(!isDone)
-					buf = waitForLine(0.5f);
-			}
-
-			if(!isDone)
-				debugPrint(DBG_WARN, "XYZV3::queryStatus queryStatus timed out");
-
-			m_status.isValid = success;
-
-			// manually pull zOffset, if not set above
-			// use zero wait time, in case command is ignored
-			/*
-			if(!m_status.zOffsetSet)
-			{
-				if(serialSendMessage("XYZv3/config=zoffset:get"))
-				{
-					const char *buf = waitForLine(0.5f); 
-					if(*buf)
-					{
-						waitForEndCom();
-						if(doPrint)
-							printf("%s\n", buf);
-						m_status.zOffset = atoi(buf);
-						m_status.zOffsetSet = true;
-					}
-				}
-			}
-			*/
-		}
+		// if asking for all then no need to send anything else
+		if(strchr(s, 'a'))
+			sprintf(m_qStr, "a");
 		else
-			debugPrint(DBG_VERBOSE, "XYZV3::queryStatus failed to query");
+			strcpy(m_qStr, s);
+
+		m_doPrint = doPrint;
+		memset(m_qRes, 0, sizeof(m_qRes));
+
+		m_progress = 0;
+		setSubState(ACT_QS_START);
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::queryStatus invalid input");
+		debugPrint(DBG_WARN, "XYZV3::queryStatusSubStateStart invalid input");
 
-	return success;
+}
+
+bool XYZV3::queryStatusSubStateRun()
+{
+	const char *buf;
+	debugPrint(DBG_LOG, "XYZV3::queryStatusSubStateRun() %d", m_actSubState);
+
+	if(!m_stream || !m_stream->isOpen())
+		setSubState(ACT_FAILURE);
+
+	switch(m_actSubState)
+	{
+	case ACT_QS_START: // start
+		if(serialSendMessage("XYZv3/query=%s", m_qStr))
+		{
+			// zero out results, only if updating everything
+			//****FixMe, rather than clearing out old data, just keep an update count
+			// and provide a 'isNewData() test
+			if(m_qStr[0] == 'a')
+				memset(&m_status, 0, sizeof(m_status));
+
+			setSubState(ACT_QS_CHECK_FOR_LINE);
+		}
+		else setSubState(ACT_FAILURE);
+		break;
+	case ACT_QS_CHECK_FOR_LINE:
+		//****Note, could save a touch of time by polling till buffer is dry
+		buf = checkForLine();
+		if(*buf)
+		{
+			if(m_doPrint)
+				printf("%s\n", buf);
+
+			// process line
+			parseStatusSubstring(buf);
+
+			//****Note, previously we checked for 'j' when requesting all
+			// to verify the data as valid. Is that still needed?
+
+			// check for end of message
+			if(buf[0] == '$') // end of message
+			{
+				m_status.isValid = true;
+				setSubState(ACT_SUCCESS);
+			}
+			else if(buf[0] == 'E') // error string like E4$\n
+			{
+				//****Note, may want to ignore E4$ and E7$
+				m_status.isValid = false;
+				setSubState(ACT_FAILURE);
+				debugPrint(DBG_WARN, "XYZV3::queryStatusSubStateRun recieved error: %s", buf);
+			}
+			else if(m_qStr[0] != 'a' && isWIFI())
+			{
+				// on wifi we don't terminate the message with a '$'
+				// if we are not quearying all parameters (why george, why)
+				bool done = true;
+				for(int i=0; i<(int)strlen(m_qStr); i++)
+				{
+					if(m_qStr[i] == buf[0])
+						m_qRes[i] = true;
+					done &= m_qRes[i];
+				}
+
+				if(done)
+				{
+					m_status.isValid = true;
+					setSubState(ACT_SUCCESS);
+				}
+			}
+		}
+		else if(m_timeout.isTimeout())
+			setSubState(ACT_FAILURE);
+
+		// always update progress
+		m_progress = (int)(5.0f + 90.0f * m_timeout.getElapsedTime_pct());
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
+	// return true if still processing
+	return (m_actSubState != ACT_SUCCESS && m_actSubState != ACT_FAILURE);
 }
 
 float XYZV3::nozzleIDToDiameter(int id)
@@ -1017,24 +1135,21 @@ int XYZV3::rssiToPct(int rssi)
 
 // === action commands ===
 
-void XYZV3::setState(ActState state, float timeout_s)
+/*
+int runGetTimeout()
 {
-	m_actState = state;
-
-	// force progress bar to 100% on exit
-	if(state == ACT_FAILURE || state == ACT_SUCCESS)
-		m_progress = 100;
-
-	// get default if not specified
-	if(timeout_s < 0)
-		timeout_s = (m_stream) ? m_stream->getDefaultTimeout() : 5.0f;
-	m_timeout.setTimeout_s(timeout_s);
+	if(xyz.isWIFI())
+		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 3000 : 
+				(g_run_act == ACT_PRINT_FILE ||
+				 g_run_act == ACT_CONVERT_FILE ||
+				 g_run_act == ACT_UPLOAD_FIRMWARE) ? 500 : 500;
+	else
+		return  (g_run_act == ACT_PRINT_FILE_MONITOR) ? 1000 : 
+				(g_run_act == ACT_PRINT_FILE ||
+				 g_run_act == ACT_CONVERT_FILE ||
+				 g_run_act == ACT_UPLOAD_FIRMWARE) ? 10 : 50;
 }
-
-ActState XYZV3::getState()
-{
-	return m_actState;
-}
+*/
 
 const char* XYZV3::getStateStr()
 {
@@ -1107,17 +1222,116 @@ const char* XYZV3::getStateStr()
 	case ACT_FW_SEND_PROCESS: return "uploading firmware";
 	case ACT_FW_COMPLETE: return "finishing";
 
+	// query status
+	case ACT_QS_START: return "initializing";
+	case ACT_QS_CHECK_FOR_LINE: return "checking for lines";
+
+	// simple command
+	case ACT_SC_START: return "initializing";
+	case ACT_SC_GET_ZOFFSET: return "waiting on z-offset value";
+	case ACT_SC_GET_ENDCOM: return "waiting on ok";
+	case ACT_SC_COMPLETE: return "finishing";
+
 	default: 
 		assert(false);
 		return "unknown";
 	}
 }
 
-int XYZV3::getProgress()
+void XYZV3::setState(int /*ActState*/ state, float timeout_s, bool needsMachineState)
+{
+	m_actState = state;
+
+	// force progress bar to 100% on exit
+	if(state == ACT_FAILURE || state == ACT_SUCCESS)
+		m_progress = 100;
+
+	// get default if not specified
+	if(timeout_s < 0)
+		timeout_s = (m_stream) ? m_stream->getDefaultTimeout() : 5.0f;
+	m_timeout.setTimeout_s(timeout_s);
+
+	// need to update machine state?
+	m_needsMachineState = needsMachineState;
+	if(m_needsMachineState)
+		queryStatusSubStateStart(false, "j");
+}
+
+int /*ActState*/ XYZV3::getState()
+{
+	return m_actState;
+}
+
+void XYZV3::setSubState(int/*ActState*/ subState, float timeout_s)
+{
+	m_actSubState = subState;
+
+	// get default if not specified
+	if(timeout_s < 0)
+		timeout_s = (m_stream) ? m_stream->getDefaultTimeout() : 5.0f;
+	m_timeout.setTimeout_s(timeout_s);
+}
+
+int /*ActState*/ XYZV3::getSubState()
+{
+	return m_actSubState;
+}
+
+bool XYZV3::isInProgress()
+{
+	return	getState() != ACT_SUCCESS && 
+			getState() != ACT_FAILURE;
+}
+
+bool XYZV3::isSuccess()
+{
+	return getState() == ACT_SUCCESS;
+}
+
+int XYZV3::getProgressPct()
 {
 	return m_progress;
 }
 
+void XYZV3::doProcess()
+{
+	debugPrint(DBG_LOG, "XYZV3::doProcess() %d", m_actState);
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
+
+	// if in middle of pumping state then don't process
+	if(m_needsMachineState)
+		if(queryStatusSubStateRun())
+			return;
+
+	if(m_actState >= ACT_CB_START && m_actState <= ACT_CB_COMPLETE)
+		calibrateBedRun();
+	else if(m_actState >= ACT_CL_START && m_actState <= ACT_CL_COMPLETE)
+		cleanNozzleRun();
+	else if(m_actState >= ACT_HP_START && m_actState <= ACT_HP_HOME_COMPLETE)
+		homePrinterRun();
+	else if(m_actState >= ACT_JP_START && m_actState <= ACT_JP_JOG_COMPLETE)
+		jogPrinterRun();
+	else if(m_actState >= ACT_LF_START && m_actState <= ACT_LF_LOAD_COMPLETE)
+		loadFilamentRun();
+	else if(m_actState >= ACT_UF_START && m_actState <= ACT_UF_UNLOAD_COMPLETE)
+		unloadFilamentRun();
+	else if(m_actState >= ACT_CF_START && m_actState <= ACT_CF_COMPLETE)
+		convertFileRun();
+	else if(m_actState >= ACT_PF_START && m_actState <= ACT_PF_COMPLETE)
+		printFileRun();
+	else if(m_actState >= ACT_FW_START && m_actState <= ACT_FW_COMPLETE)
+		uploadFirmwareRun();
+	else if(m_actState >= ACT_QS_START && m_actState <= ACT_QS_CHECK_FOR_LINE)
+		queryStatusRun();
+	else if(m_actState >= ACT_SC_START && m_actState <= ACT_SC_COMPLETE)
+		simpleCommandRun();
+
+	// and launch state again
+	if(m_needsMachineState)
+		queryStatusSubStateStart(false, "j");
+}
 
 //--------------
 
@@ -1130,7 +1344,7 @@ void XYZV3::calibrateBedStart()
 }
 
 // call in loop while true to pump status
-bool XYZV3::calibrateBedRun()
+void XYZV3::calibrateBedRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun() %d", m_actState);
 	const char *val;
@@ -1147,11 +1361,11 @@ bool XYZV3::calibrateBedRun()
 		break;
 	case ACT_CB_START_SUCCESS: // wait on success
 		if(isWIFI())
-			setState(ACT_CB_HOME, 120);
+			setState(ACT_CB_HOME, 120, isWIFI());
 		else if(checkForJsonState(&val))
 		{
 			if(jsonValEquals(val, "start"))
-				setState(ACT_CB_HOME, 120);
+				setState(ACT_CB_HOME, 120, isWIFI());
 			else
 				setState(ACT_FAILURE);
 		}
@@ -1188,11 +1402,11 @@ bool XYZV3::calibrateBedRun()
 		else setState(ACT_FAILURE);
 	case ACT_CB_CALIB_START: // wait for calibration to start
 		if(isWIFI())
-			setState(ACT_CB_CALIB_RUN, 240);
+			setState(ACT_CB_CALIB_RUN, 240, isWIFI());
 		else if(checkForJsonState(&val))
 		{
 			if(jsonValEquals(val, "processing"))
-				setState(ACT_CB_CALIB_RUN, 240);
+				setState(ACT_CB_CALIB_RUN, 240, isWIFI());
 			else
 				setState(ACT_FAILURE);
 		}
@@ -1244,11 +1458,9 @@ bool XYZV3::calibrateBedRun()
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::calibrateBedPromptToLowerDetector()
@@ -1279,8 +1491,6 @@ void XYZV3::calibrateBedDetectorRaised()
 	setState(ACT_CB_RAISED);
 }
 
-//--------------
-
 void XYZV3::cleanNozzleStart()
 {
 	debugPrint(DBG_LOG, "XYZV3::cleanNozzleStart()");
@@ -1289,7 +1499,7 @@ void XYZV3::cleanNozzleStart()
 }
 
 // call in loop while true to pump status
-bool XYZV3::cleanNozzleRun()
+void XYZV3::cleanNozzleRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun() %d", m_actState);
 	const char *val;
@@ -1306,11 +1516,11 @@ bool XYZV3::cleanNozzleRun()
 		break;
 	case ACT_CL_START_SUCCESS:
 		if(isWIFI())
-			setState(ACT_CL_WARMUP_COMPLETE, 120);
+			setState(ACT_CL_WARMUP_COMPLETE, 120, isWIFI());
 		else if(checkForJsonState(&val))
 		{
 			if(jsonValEquals(val, "start"))
-				setState(ACT_CL_WARMUP_COMPLETE, 120);
+				setState(ACT_CL_WARMUP_COMPLETE, 120, isWIFI());
 			else
 				setState(ACT_FAILURE);
 		}
@@ -1362,11 +1572,9 @@ bool XYZV3::cleanNozzleRun()
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 bool XYZV3::cleanNozzlePromtToClean()
@@ -1382,8 +1590,6 @@ void XYZV3::cleanNozzleCancel()
 	setState(ACT_CL_FINISH);
 }
 
-//---------------------------
-
 void XYZV3::homePrinterStart()
 {
 	debugPrint(DBG_LOG, "XYZV3::homePrinterStart()");
@@ -1391,7 +1597,7 @@ void XYZV3::homePrinterStart()
 	setState(ACT_HP_START);
 }
 
-bool XYZV3::homePrinterRun()
+void XYZV3::homePrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::homePrinterRun() %d", m_actState);
 	const char *val;
@@ -1437,14 +1643,10 @@ bool XYZV3::homePrinterRun()
 			m_progress = (int)(10.0f + 90.0f * 4.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
-
-//---------------------------
 
 void XYZV3::jogPrinterStart(char axis, int dist_mm)
 {
@@ -1457,7 +1659,7 @@ void XYZV3::jogPrinterStart(char axis, int dist_mm)
 	setState(ACT_JP_START);
 }
 
-bool XYZV3::jogPrinterRun()
+void XYZV3::jogPrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun() %d", m_actState);
 	const char *val;
@@ -1504,14 +1706,10 @@ bool XYZV3::jogPrinterRun()
 			m_progress = (int)(10.0f + 90.0f * 4.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
-
-//---------------------------
 
 void XYZV3::loadFilamentStart()
 {
@@ -1520,7 +1718,7 @@ void XYZV3::loadFilamentStart()
 	setState(ACT_LF_START);
 }
 
-bool XYZV3::loadFilamentRun()
+void XYZV3::loadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun() %d", m_actState);
 	const char *val;
@@ -1554,12 +1752,12 @@ bool XYZV3::loadFilamentRun()
 		if(!isWIFI() && checkForJsonState(&val))
 		{
 			if(jsonValEquals(val, "heat"))
-				setState(ACT_LF_LOADING, 240);
+				setState(ACT_LF_LOADING, 240, isWIFI());
 			else
 				setState(ACT_FAILURE);
 		}
 		else if(isWIFI())
-			setState(ACT_LF_LOADING, 360);
+			setState(ACT_LF_LOADING, 360, isWIFI());
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
@@ -1610,12 +1808,11 @@ bool XYZV3::loadFilamentRun()
 			setState(ACT_FAILURE);
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
+
 bool XYZV3::loadFilamentPromptToFinish()
 {
 	return m_actState == ACT_LF_WAIT_LOAD;
@@ -1629,8 +1826,6 @@ void XYZV3::loadFilamentCancel()
 	setState(ACT_LF_LOAD_FINISHED);
 }
 
-//---------------------------
-
 void XYZV3::unloadFilamentStart()
 {
 	debugPrint(DBG_LOG, "XYZV3::unloadFilamentStart()");
@@ -1638,7 +1833,7 @@ void XYZV3::unloadFilamentStart()
 	setState(ACT_UF_START);
 }
 
-bool XYZV3::unloadFilamentRun()
+void XYZV3::unloadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun() %d", m_actState);
 	const char *val;
@@ -1672,12 +1867,12 @@ bool XYZV3::unloadFilamentRun()
 		if(!isWIFI() && checkForJsonState(&val))
 		{
 			if(jsonValEquals(val, "heat")) // could query temp and state with  XYZv3/query=jt
-				setState(ACT_UF_UNLOADING, 240);
+				setState(ACT_UF_UNLOADING, 240, isWIFI());
 			else
 				setState(ACT_FAILURE);
 		}
 		else if(isWIFI())
-			setState(ACT_UF_UNLOADING, 360);
+			setState(ACT_UF_UNLOADING, 360, isWIFI());
 		else if(m_timeout.isTimeout())
 			setState(ACT_FAILURE);
 		else // loop
@@ -1739,11 +1934,9 @@ bool XYZV3::unloadFilamentRun()
 			m_progress = (int)(95.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
 void XYZV3::unloadFilamentCancel()
@@ -1754,252 +1947,214 @@ void XYZV3::unloadFilamentCancel()
 	setState(ACT_UF_CANCEL);
 }
 
+void XYZV3::simpleCommandStart(float timeout_s, bool getZOffset, const char *format, ...)
+{
+	debugPrint(DBG_LOG, "XYZV3::simpleCommandStart()");
+
+	if(format)
+	{
+		va_list arglist;
+		va_start(arglist, format);
+		vsnprintf(m_scCommand, sizeof(m_scCommand), format, arglist);
+		m_scCommand[sizeof(m_scCommand)-1] = '\0';
+		va_end(arglist);
+
+		if(m_scCommand[0])
+		{
+			m_progress = 0;
+			m_timeout_s = timeout_s;
+			m_scGetZOffset = getZOffset;
+			setState(ACT_SC_START);
+		}
+		else
+		{
+			setState(ACT_FAILURE);
+			debugPrint(DBG_LOG, "XYZV3::simpleCommandStart bad input");
+		}
+	}
+	else
+	{
+		setState(ACT_FAILURE);
+		debugPrint(DBG_LOG, "XYZV3::simpleCommandStart bad input");
+	}
+}
+
+void XYZV3::simpleCommandRun()
+{
+	const char *buf;
+	debugPrint(DBG_LOG, "XYZV3::simpleCommandRun() %d", m_actState);
+	//const char *val;
+
+	if(!m_stream || !m_stream->isOpen())
+		setState(ACT_FAILURE);
+
+	switch(m_actState)
+	{
+	case ACT_SC_START:
+		if(serialSendMessage(m_scCommand))
+			if(m_scGetZOffset)
+				setState(ACT_SC_GET_ZOFFSET, m_timeout_s);
+			else
+				setState(ACT_SC_GET_ENDCOM, m_timeout_s);
+		else setState(ACT_FAILURE);
+		break;
+	case ACT_SC_GET_ZOFFSET:
+		buf = checkForLine();
+		if(*buf)
+		{
+			m_status.zOffset = atoi(buf);
+			m_status.zOffsetSet = true;
+			setState(ACT_SC_GET_ENDCOM, m_timeout_s);
+		}
+		else if(m_timeout.isTimeout())
+			setState(ACT_FAILURE);
+		else // loop
+			m_progress = (int)(5.0f + 25.0f * m_timeout.getElapsedTime_pct());
+		break;
+	case ACT_SC_GET_ENDCOM:
+		if(isWIFI()) // if WiFi, no return value
+			setState(ACT_SUCCESS);
+		else 
+		{
+			buf = checkForLine();
+			if(*buf)
+			{
+				if(0 == strcmp("ok", buf))
+					setState(ACT_SC_COMPLETE, 0.1f);
+				else if(buf[0] == 'E')
+				{
+					debugPrint(DBG_WARN, "XYZV3::simpleCommandRun got error '%s'", buf);
+					setState(ACT_SC_COMPLETE, 0.1f);
+				}
+				else
+				{
+					debugPrint(DBG_WARN, "XYZV3::simpleCommandRun expected 'ok', got '%s'", buf);
+					setState(ACT_FAILURE);
+				}
+			}
+			else if(m_timeout.isTimeout())
+				setState(ACT_FAILURE);
+			else // loop
+				m_progress = (int)(30.0f + 30.0f * m_timeout.getElapsedTime_pct());
+		}
+		break;
+	case ACT_SC_COMPLETE:
+		if(isWIFI()) // if WiFi, no return value
+			setState(ACT_SUCCESS);
+		else
+		{
+			// check for '$' indicating end of message
+			buf = checkForLine();
+			if(*buf)
+			{
+				if(buf[0] == '$')
+					setState(ACT_SUCCESS);
+				else if(buf[0] == 'E')
+				{
+					debugPrint(DBG_WARN, "XYZV3::simpleCommandRun $ failed, got error '%s'", buf);
+					setState(ACT_FAILURE);
+				}
+				else
+				{
+					debugPrint(DBG_WARN, "XYZV3::simpleCommandRun $ failed, instead got '%s'", buf);
+					setState(ACT_FAILURE);
+				}
+			}
+			else if(m_timeout.isTimeout())
+				setState(ACT_FAILURE);
+			else // loop
+				m_progress = (int)(50.0f + 70.0f * m_timeout.getElapsedTime_pct());
+		}
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
 // === config commands ===
 
-int XYZV3::incrementZOffset(bool up)
+void XYZV3::incrementZOffsetStart(bool up)
 {
-	debugPrint(DBG_LOG, "XYZV3::incrementZOffset(%d)", up);
-
-	int ret = -1;
-	if(serialSendMessage("XYZv3/action=zoffset:%s", (up) ? "up" : "down"))
-	{
-		if(!isWIFI())
-		{
-			const char *buf = waitForLine();
-			if(*buf)
-			{
-				if(!waitForEndCom())
-					debugPrint(DBG_WARN, "XYZV3::incrementZOffset missing end com");
-
-				ret = atoi(buf);
-			}
-			else
-				debugPrint(DBG_WARN, "XYZV3::incrementZOffset failed to recieve response");
-		}
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::incrementZOffset failed to send command");
-
-	return ret;
+	debugPrint(DBG_LOG, "XYZV3::incrementZOffsetStart(%d)", up);
+	simpleCommandStart(-1, true, "XYZv3/action=zoffset:%s", (up) ? "up" : "down");
 }
 
-int XYZV3::getZOffset()
+void XYZV3::getZOffsetStart()
 {
-	debugPrint(DBG_LOG, "XYZV3::getZOffset()");
-
-	int ret = -1;
-
-	// wifi is super slow, so return cached z-offset from status if available
-	if(isWIFI() && m_status.zOffsetSet)
-		ret = m_status.zOffset;
-	else
-	{
-		if(serialSendMessage("XYZv3/config=zoffset:get"))
-		{
-			const char *buf = waitForLine();
-			if(*buf)
-			{
-				if(!waitForEndCom())
-					debugPrint(DBG_WARN, "XYZV3::getZOffset missing end com");
-
-				ret = atoi(buf);
-			}
-		}
-		debugPrint(DBG_WARN, "XYZV3::getZOffset failed to send command");
-	}
-
-	return ret;
+	debugPrint(DBG_LOG, "XYZV3::getZOffsetStart()");
+	if(!isWIFI()) simpleCommandStart(-1, true, "XYZv3/config=zoffset:get");
 }
 
-bool XYZV3::checkForConfigOK(bool endCom)
+void XYZV3::setZOffsetStart(int offset)
 {
-	debugPrint(DBG_LOG, "XYZV3::checkForConfigOK()");
-
-	if(isWIFI())
-		return true;
-
-	// else check for ok
-
-	const char *buf = checkForLine();
-	if(*buf)
-	{
-		if(0 == strcmp("ok", buf))
-		{
-			if(endCom && !waitForEndCom())
-				debugPrint(DBG_WARN, "XYZV3::checkForConfigOK missing end com");
-
-			return true;
-		}
-		else
-			debugPrint(DBG_WARN, "XYZV3::checkForConfigOK expected 'ok', got '%s'", buf);
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::checkForConfigOK expected 'ok', got nothing");
-
-	return false;
+	debugPrint(DBG_LOG, "XYZV3::setZOffsetStart(%d)", offset);
+	simpleCommandStart(-1, false, "XYZv3/config=zoffset:set[%d]", offset);
 }
 
-bool XYZV3::waitForConfigOK(bool endCom, float timeout_s)
+void XYZV3::restoreDefaultsStart()
 {
-	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK(%0.2f)", timeout_s);
-
-	if(isWIFI())
-		return true;
-
-	// else check for ok
-
-	const char *buf = waitForLine(timeout_s);
-	if(*buf)
-	{
-		if(0 == strcmp("ok", buf))
-		{
-			if(endCom && !waitForEndCom())
-				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK missing end com");
-
-			return true;
-		}
-		else if(buf[0] == 'E')
-		{
-			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
-			if(endCom && !waitForEndCom())
-				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK missing end com");
-		}
-		else
-			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got nothing");
-
-	return false;
+	debugPrint(DBG_LOG, "XYZV3::restoreDefaultsStart()");
+	simpleCommandStart(-1, false, "XYZv3/config=restoredefault:on");
+	//****Note, XYZWare sets energy to 3 at this point
 }
 
-bool XYZV3::setZOffset(int offset)
+void XYZV3::setBuzzerStart(bool enable)
 {
-	debugPrint(DBG_LOG, "XYZV3::setZOffset(%d)", offset);
-
-	bool success = 
-		serialSendMessage("XYZv3/config=zoffset:set[%d]", offset) &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::setBuzzerStart(%d)", enable);
+	simpleCommandStart(-1, false, "XYZv3/config=buzzer:%s", (enable) ? "on" : "off");
 }
 
-bool XYZV3::restoreDefaults()
+void XYZV3::setAutoLevelStart(bool enable)
 {
-	debugPrint(DBG_LOG, "XYZV3::restoreDefaults()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=restoredefault:on") &&
-		waitForConfigOK(); // not returned on wifi
-		//****Note, XYZWare sets energy to 3 at this point
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::setAutoLevelStart(%d)", enable);
+	simpleCommandStart(-1, false, "XYZv3/config=autolevel:%s", (enable) ? "on" : "off");
 }
 
-bool XYZV3::setBuzzer(bool enable)
+void XYZV3::setLanguageStart(const char *lang)
 {
-	debugPrint(DBG_LOG, "XYZV3::setBuzzer(%d)", enable);
-
-	bool success = 
-		serialSendMessage("XYZv3/config=buzzer:%s", (enable) ? "on" : "off") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
-}
-
-bool XYZV3::setAutoLevel(bool enable)
-{
-	debugPrint(DBG_LOG, "XYZV3::setAutoLevel(%d)", enable);
-
-	bool success = 
-		serialSendMessage("XYZv3/config=autolevel:%s", (enable) ? "on" : "off") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
-}
-
-bool XYZV3::setLanguage(const char *lang)
-{
-	debugPrint(DBG_LOG, "XYZV3::setLanguage(%s)", lang);
-
-	bool success = 
-		lang && 
-		serialSendMessage("XYZv3/config=lang:[%s]", lang) &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	assert(lang);
+	debugPrint(DBG_LOG, "XYZV3::setLanguageStart(%s)", lang);
+	if(lang) simpleCommandStart(-1, false, "XYZv3/config=lang:[%s]", lang);
 }
 
 // level is 0-9 minutes till lights turn off
 // XYZWare sets this to 0,3,6
-bool XYZV3::setEnergySaving(int level)
+void XYZV3::setEnergySavingStart(int level)
 {
-	debugPrint(DBG_LOG, "XYZV3::setEnergySaving(%d)", level);
-
-	bool success = 
-		serialSendMessage("XYZv3/config=energy:[%d]", level) &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::setEnergySavingStart(%d)", level);
+	simpleCommandStart(-1, false, "XYZv3/config=energy:[%d]", level);
 }
 
-bool XYZV3::sendDisconnectWifi()
+void XYZV3::sendDisconnectWifiStart()
 {
-	debugPrint(DBG_LOG, "XYZV3::sendDisconnectWifi()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=disconnectap") &&
-		waitForConfigOK(); // not returned on wifi??
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::sendDisconnectWifiStart()");
+	simpleCommandStart(-1, false, "XYZv3/config=disconnectap");
 }
 
-bool XYZV3::sendEngraverPlaceObject()
+void XYZV3::sendEngraverPlaceObjectStart()
 {
-	debugPrint(DBG_LOG, "XYZV3::sendEngraverPlaceObject()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=engrave:placeobject") &&
-		waitForConfigOK(); // not returned on wifi???
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::sendEngraverPlaceObjectStart()");
+	simpleCommandStart(-1, false, "XYZv3/config=engrave:placeobject");
 }
 
-bool XYZV3::setMachineLife(int time_s)
+void XYZV3::setMachineLifeStart(int time_s)
 {
-	debugPrint(DBG_LOG, "XYZV3::setMachineLife(%d)", time_s);
-
-	bool success = 
-		serialSendMessage("XYZv3/config=life:[%d]", time_s) &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::setMachineLifeStart(%d)", time_s);
+	simpleCommandStart(-1, false, "XYZv3/config=life:[%d]", time_s);
 }
 
-bool XYZV3::setMachineName(const char *name)
+void XYZV3::setMachineNameStart(const char *name)
 {
-	debugPrint(DBG_LOG, "XYZV3::setMachineName(%s)", name);
-
-	bool success = 
-		name && 
-		serialSendMessage("XYZv3/config=name:[%s]", name) &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	assert(name);
+	debugPrint(DBG_LOG, "XYZV3::setMachineNameStart(%s)", name);
+	if(name) simpleCommandStart(-1, false, "XYZv3/config=name:[%s]", name);
 }
 
-bool XYZV3::setWifi(const char *ssid, const char *password, int channel)
+void XYZV3::setWifiStart(const char *ssid, const char *password, int channel)
 {
-	debugPrint(DBG_LOG, "XYZV3::setWifi(%s, %s, %d)", ssid, password, channel);
-
-	//****FixMe, move to state machine
-	bool success = 
-		ssid && 
-		password && 
-		serialSendMessage("XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel) &&
-		waitForConfigOK(true, 25.0f); // not returned on wifi
-
-	return success;
+	debugPrint(DBG_LOG, "XYZV3::setWifiStart(%s, %s, %d)", ssid, password, channel);
+	if(ssid && password) simpleCommandStart(25.0f, false, "XYZv3/config=ssid:[%s,%s,%d]", ssid, password, channel);
 }
 
 // === upload commands ===
@@ -2021,7 +2176,7 @@ void XYZV3::printFileStart(const char *path)
 		debugPrint(DBG_WARN, "XYZV3::printFileStart invalid input");
 }
 
-bool XYZV3::printFileRun()
+void XYZV3::printFileRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::printFileRun() %d", m_actState);
 
@@ -2081,58 +2236,36 @@ bool XYZV3::printFileRun()
 			setState(ACT_FAILURE);
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
 
-bool XYZV3::cancelPrint()
+void XYZV3::cancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::cancelPrint()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=print[cancel]") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	simpleCommandStart(-1, false, "XYZv3/config=print[cancel]");
 }
 
-bool XYZV3::pausePrint()
+void XYZV3::pausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::pausePrint()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=print[pause]") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	simpleCommandStart(-1, false, "XYZv3/config=print[pause]");
 }
 
-bool XYZV3::resumePrint()
+void XYZV3::resumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::resumePrint()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=print[resume]") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	simpleCommandStart(-1, false, "XYZv3/config=print[resume]");
 }
 
 // call when print finished to prep for a new job
 // switches from print done to print ready
 // be sure old job is off print bed!!!
-bool XYZV3::readyPrint()
+void XYZV3::readyPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::readyPrint()");
-
-	bool success = 
-		serialSendMessage("XYZv3/config=print[complete]") &&
-		waitForConfigOK(); // not returned on wifi
-
-	return success;
+	simpleCommandStart(-1, false, "XYZv3/config=print[complete]");
 }
 
 //****FixMe, implement these
@@ -2159,7 +2292,7 @@ void XYZV3::uploadFirmwareStart(const char *path)
 		debugPrint(DBG_WARN, "XYZV3::uploadFirmwareStart invalid input");
 }
 
-bool XYZV3::uploadFirmwareRun()
+void XYZV3::uploadFirmwareRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun() %d", m_actState);
 
@@ -2186,12 +2319,36 @@ bool XYZV3::uploadFirmwareRun()
 			setState(ACT_FAILURE);
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
 }
+
+bool XYZV3::waitForConfigOK(float timeout_s)
+{
+	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK(%0.2f)", timeout_s);
+
+	if(isWIFI())
+		return true;
+
+	// else check for ok
+
+	const char *buf = waitForLine(timeout_s);
+	if(*buf)
+	{
+		if(0 == strcmp("ok", buf))
+			return true;
+		else if(buf[0] == 'E')
+			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
+		else
+			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got nothing");
+
+	return false;
+}
+
 
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
@@ -2249,7 +2406,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 							else
 								serialSendMessage("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
 
-							if(waitForConfigOK(false))
+							if(waitForConfigOK())
 							{
 								pDat.isPrintActive = true;
 								success = true;
@@ -2344,7 +2501,7 @@ bool XYZV3::sendFileProcess()
 
 			// write out in one shot
 			m_stream->write(pDat.blockBuf, blockLen + 12);
-			success = waitForConfigOK(false);
+			success = waitForConfigOK();
 			if(!success) // bail on error
 			{
 				debugPrint(DBG_WARN, "XYZV3::sendFileProcess failed on write");
@@ -2379,7 +2536,7 @@ bool XYZV3::sendFileFinalize()
 	// close out printing
 	bool success = 
 		serialSendMessage("XYZv3/uploadDidFinish") &&
-		waitForConfigOK(false);
+		waitForConfigOK();
 
 	return success;
 }
@@ -2413,7 +2570,7 @@ void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoId
 		debugPrint(DBG_WARN, "XYZV3::convertFileStart invalid input");
 }
 
-bool XYZV3::convertFileRun()
+void XYZV3::convertFileRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::convertFileRun() %d", m_actState);
 
@@ -2445,12 +2602,9 @@ bool XYZV3::convertFileRun()
 		setState(ACT_SUCCESS);
 		break;
 	default:
+		assert(false);
 		break;
 	}
-
-	// return true if not error or done
-	return m_actState != ACT_FAILURE && m_actState != ACT_SUCCESS;
-	// convert file can run without a connection to printer 
 }
 
 bool XYZV3::isGcodeFile(const char *path)
@@ -2945,12 +3099,6 @@ const char* XYZV3::checkForLine()
 	{
 		if(m_stream->readLine(buf, len))
 		{
-			if(buf[0] == '$' || buf[0] == 'E')
-			{
-				debugPrint(DBG_WARN, "XYZV3::checkForLine failed, got early '%s'", buf);
-				return "";
-			}
-
 			return buf;
 		}
 		else
@@ -3099,32 +3247,34 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val)
 	return false;
 }
 
-bool XYZV3::checkForState(int state, int substate, bool isSet)
+bool XYZV3::checkForState(int state, int substate)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::checkForState(%d, %d, %d)", state, substate, isSet);
+	debugPrint(DBG_VERBOSE, "XYZV3::checkForState(%d, %d)", state, substate);
 
-	bool success = false;
-
-	// only need to update state
-	if(queryStatus(false, -1, 'j'))
+	if(m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate))
 	{
-		if(isSet && (m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate)))
-		{
-			success = true;
-			debugPrint(DBG_LOG, "XYZV3::checkForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
-		}
-		else if(!isSet && !(m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate)))
-		{
-			success = true;
-			debugPrint(DBG_LOG, "XYZV3::checkForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
-		}
-		else
-			debugPrint(DBG_WARN, "XYZV3::checkForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+		debugPrint(DBG_LOG, "XYZV3::checkForState %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+		return true;
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::checkForState queryStatus() failed");
+		debugPrint(DBG_WARN, "XYZV3::checkForState %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
 
-	return success;
+	return false;
+}
+
+bool XYZV3::checkForNotState(int state, int substate)
+{
+	debugPrint(DBG_VERBOSE, "XYZV3::checkForNotState(%d, %d)", state, substate);
+
+	if(!(m_status.jPrinterState == state && (substate < 0 || m_status.jPrinterSubState == substate)))
+	{
+		debugPrint(DBG_LOG, "XYZV3::checkForState not %d:%d success found stat %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+		return true;
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::checkForState not %d:%d but stat is %d:%d", state, substate, m_status.jPrinterState, m_status.jPrinterSubState);
+
+	return false;
 }
 
 unsigned int XYZV3::swap16bit(unsigned int in)

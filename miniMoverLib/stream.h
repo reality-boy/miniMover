@@ -5,6 +5,8 @@
 Base class for serial based communicaiton protocols.
 */
 
+#include "timer.h"
+
 class Stream
 {
 public:
@@ -49,12 +51,15 @@ public:
 	// write a string formatted by printf
 	int writePrintf(const char *fmt, ...);
 
+
 	static bool isNetworkAddress(const char *addr);
 
+	msTimer m_msgTimer;
 private:
 
 	// helper function to read a line from m_lineBuf
 	int readLineFromBuffer(char *buf, int bufLen);
+	bool isLineInBuffer();
 
 	// readLine data
 	const static int m_lineBufLen = 4096;

@@ -24,7 +24,7 @@ public:
 
 	virtual bool isWIFI() { return true; }
 
-	virtual float getDefaultTimeout() { return 20.0f; }
+	virtual float getDefaultTimeout() { return 5.0f; }
 
 	// from base class
 	//int readLine(char *buf, int len);

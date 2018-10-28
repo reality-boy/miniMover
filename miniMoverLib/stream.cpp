@@ -30,6 +30,19 @@ void Stream::clear()
 	// assume child class will take care of the device speciffic data
 }
 
+bool Stream::isLineInBuffer()
+{
+	debugPrint(DBG_VERBOSE, "stream::doesBufferHaveLine()");
+
+	for(int i=0; i<m_lineBufCount; i++)
+	{
+		if(m_lineBuf[i] == '\n')
+			return true;
+	}
+
+	return false;
+}
+
 int Stream::readLineFromBuffer(char *buf, int bufLen)
 {
 	debugPrint(DBG_VERBOSE, "stream::readlinefrombuffer()");
@@ -111,6 +124,7 @@ int Stream::readLine(char *buf, int bufLen)
 				len = read(m_lineBuf + m_lineBufCount, len);
 				if(len > 0)
 				{
+					m_msgTimer.stopTimer();
 					m_lineBufCount += len;
 
 					len = readLineFromBuffer(buf, bufLen);
@@ -140,6 +154,7 @@ int Stream::writeStr(const char *buf)
 	if(buf)
 	{
 		debugPrint(DBG_LOG,"Stream::writeStr sent %s", buf);
+		m_msgTimer.startTimer();
 		return write(buf, strlen(buf));
 	}
 	else

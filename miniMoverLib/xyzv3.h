@@ -155,7 +155,7 @@ struct XYZPrinterStatus
 	char wFilament2SerialNumber[64]; //16
 	char wFilament2Color[32];
 
-	int zOffset; // from getZOffset()
+	int zOffset; // from getZOffsetStart()
 	bool zOffsetSet; // is zOffset vaild
 
 	char GLastUsed[64];
@@ -292,77 +292,6 @@ const XYZPrinterLangSt XYZPrintingLang[XYZPrintingLangCount] =
 	// Chinese traditional (zh-Hant)
 };
 
-// internal action state
-enum ActState
-{
-	ACT_FAILURE,			// something went wrong
-	ACT_SUCCESS,			// something went right
-
-	// Calibrate Bed
-	ACT_CB_START,			// start
-	ACT_CB_START_SUCCESS,	// wait on success
-	ACT_CB_HOME,			// wait for signal to lower detector
-	ACT_CB_ASK_LOWER,		// ask user to lower detector
-	ACT_CB_LOWERED,			// notify printer detecotr was lowered
-	ACT_CB_CALIB_START,		// wait for calibration to start
-	ACT_CB_CALIB_RUN,		// wait for calibration to finish
-	ACT_CB_ASK_RAISE,		// ask user to raise detector
-	ACT_CB_RAISED,			// notify printer detector was raised
-	ACT_CB_COMPLETE,		// wait for end of calibration
-
-	// Clean Nozzle
-	ACT_CL_START,
-	ACT_CL_START_SUCCESS,
-	ACT_CL_WARMUP_COMPLETE,
-	ACT_CL_CLEAN_NOZLE,
-	ACT_CL_FINISH,
-	ACT_CL_COMPLETE,
-
-	// Home printer
-	ACT_HP_START,
-	ACT_HP_START_SUCCESS,
-	ACT_HP_HOME_COMPLETE,
-
-	// Jog Printer
-	ACT_JP_START,
-	ACT_JP_START_SUCCESS,
-	ACT_JP_JOG_COMPLETE,
-
-	// Load Fillament
-	ACT_LF_START,
-	ACT_LF_START_SUCCESS,
-	ACT_LF_HEATING,
-	ACT_LF_LOADING,
-	ACT_LF_WAIT_LOAD,
-	ACT_LF_LOAD_FINISHED,
-	ACT_LF_LOAD_COMPLETE,
-
-	// Unload Fillament
-	ACT_UF_START,
-	ACT_UF_START_SUCCESS,
-	ACT_UF_HEATING,
-	ACT_UF_UNLOADING,
-	ACT_UF_UNLOAD_COMPLETE,
-	// only get here if cancel button pressed
-	ACT_UF_CANCEL,
-	ACT_UF_CANCEL_COMPLETE,
-
-	// convert file
-	ACT_CF_START,
-	ACT_CF_COMPLETE,
-
-	// print file
-	ACT_PF_START,
-	ACT_PF_SEND,
-	ACT_PF_SEND_PROCESS,
-	ACT_PF_COMPLETE,
-
-	// upload firmware
-	ACT_FW_START,
-	ACT_FW_SEND_PROCESS,
-	ACT_FW_COMPLETE,
-};
-
 // master class
 class XYZV3
 {
@@ -376,28 +305,29 @@ public:
 	// pass in NULL to disconnect from stream
 	// old stream is returned so you can deal with closing it
 	void setStream(Stream *s);
+	const Stream* getStream();
 	bool isStreamSet() { return m_stream != NULL && m_stream->isOpen(); }
 	bool isWIFI();
+
+	void doProcess();
+	bool isInProgress(); //****FixMe, add this into ui code
+	bool isSuccess();
+
+	const char* getStateStr();
+	int getProgressPct();
 
 	// === query commands ===
 
 	// update status struct
 	// a updates all status, b-z updates individual status entries
-	bool queryStatus(bool doPrint = false, float timeout_s = -1, char q1 = 'a', char q2 = 0, char q3 = 0, char q4 = 0);
+	void queryStatusStart(bool doPrint = false, char *s = "a");
 	const XYZPrinterStatus* getPrinterStatus() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
 	// === action commands ===
 
-	ActState getState(); //****FixMe, add this into ui code
-	const char* getStateStr();
-
-	int getProgress();
-
 	// run auto bed leveling routine
 	void calibrateBedStart(); 
-	bool calibrateBedRun();
-
 	bool calibrateBedPromptToLowerDetector();
 	void calibrateBedDetectorLowered();
 
@@ -406,74 +336,62 @@ public:
 
 	// heats up nozzle so you can clean it out with a wire
 	void cleanNozzleStart();
-	bool cleanNozzleRun();
-
 	bool cleanNozzlePromtToClean();
 	void cleanNozzleCancel(); 
 
 	// home printer so you can safely move head
 	void homePrinterStart();
-	bool homePrinterRun();
 
 	// move head in given direction, axis is one of x,y,z
 	void jogPrinterStart(char axis, int dist_mm);
-	bool jogPrinterRun();
 
 	// loads filament
 	void loadFilamentStart();
-	bool loadFilamentRun();
-
 	bool loadFilamentPromptToFinish();
 	void loadFilamentCancel();
 
 	// unloads filament without any user interaction
 	void unloadFilamentStart();
-	bool unloadFilamentRun();
-
 	void unloadFilamentCancel();
 
 	// === config commands ===
 
 	// increment/decrement z offset by one step (1/100th of  a mm?)
-	int incrementZOffset(bool up);
-	int getZOffset(); // in hundredths of a mm
-	bool setZOffset(int offset);
-
-	bool restoreDefaults();
-	bool setBuzzer(bool enable);
-	bool setAutoLevel(bool enable);
-	bool setLanguage(const char *lang); //lang is one of en, fr, it, de, es, jp
-	bool setEnergySaving(int level); // level is 0-9 minutes till lights turn off?
-	bool sendDisconnectWifi(); // send before setWifi
-	bool sendEngraverPlaceObject(); //****FixMe, what does this do?
-	bool setMachineLife(int time_s); //****FixMe, what does this do?
-	bool setMachineName(const char *name);
-	//****Note, call sendDisconnectWifi() before calling this
-	bool setWifi(const char *ssid, const char *password, int channel);
+	void incrementZOffsetStart(bool up); // z-offset stored in XYZPrinterStatus
+	void getZOffsetStart(); // z-offset stored in XYZPrinterStatus
+	void setZOffsetStart(int offset);
+	void restoreDefaultsStart();
+	void setBuzzerStart(bool enable);
+	void setAutoLevelStart(bool enable);
+	void setLanguageStart(const char *lang); //lang is one of en, fr, it, de, es, jp
+	void setEnergySavingStart(int level); // level is 0-9 minutes till lights turn off?
+	void sendDisconnectWifiStart(); // send before setWifiStart
+	void sendEngraverPlaceObjectStart(); //****FixMe, what does this do?
+	void setMachineLifeStart(int time_s); //****FixMe, what does this do?
+	void setMachineNameStart(const char *name);
+	//****Note, call sendDisconnectWifiStart() before calling this
+	void setWifiStart(const char *ssid, const char *password, int channel);
 
 	// === upload commands ===
 
 	// print a gcode or 3w file, convert as needed
 	void printFileStart(const char *path);
-	bool printFileRun();
 
 	// only work when print is in progress, after uploading
-	bool cancelPrint();
-	bool pausePrint();
-	bool resumePrint();
-	bool readyPrint(); // call to notify printer bed is clear
+	void cancelPrint();
+	void pausePrint();
+	void resumePrint();
+	void readyPrint(); // call to notify printer bed is clear
 
 	// upload a new firmware to printer
 	// probably not a good idea to mess with this!
 	void uploadFirmwareStart(const char *path);
-	bool uploadFirmwareRun();
 
 	// === file i/o ===
 
 	// convert from gcode to 3w or back depending on file type
 	// infoIdx is the index into the m_infoArray or -1 for auto
 	void convertFileStart(const char *inPath, const char *outPath = NULL, int infoIdx = -1);
-	bool convertFileRun();
 
 	bool isGcodeFile(const char *path);
 	bool is3wFile(const char *path);
@@ -488,7 +406,28 @@ public:
 
 protected:
 
-	void setState(ActState state, float timeout_s = -1);
+	void setState(int/*ActState*/ state, float timeout_s = -1, bool needsMachineState = false);
+	int /*ActState*/ getState();
+
+	void setSubState(int/*ActState*/ subState, float timeout_s = -1);
+	int /*ActState*/ getSubState();
+
+	void calibrateBedRun();
+	void cleanNozzleRun();
+	void homePrinterRun();
+	void jogPrinterRun();
+	void loadFilamentRun();
+	void unloadFilamentRun();
+	void convertFileRun();
+	void printFileRun();
+	void uploadFirmwareRun();
+	void queryStatusRun();
+	void simpleCommandStart(float timeout_s, bool getZOffset, const char *format, ...);
+	void simpleCommandRun();
+
+	// substate, so it can run inside of other states
+	void queryStatusSubStateStart(bool doPrint = false, char *s = "a");
+	bool queryStatusSubStateRun();
 
 	// convert a gcode file to 3w format
 	// infoIdx is the index into the m_infoArray or -1 for auto
@@ -531,21 +470,20 @@ protected:
 	int rssiToPct(int rssi);
 	bool findJsonVal(const char *str, const char *key, char *val);
 
-	bool parseStatusSubstring(const char *str);
+	void parseStatusSubstring(const char *str);
 
 	// serial functions
 
 	//****FixMe, try to eliminate these wait functions
 	const char* waitForLine(float timeout_s = -1);
 	bool waitForEndCom();
-	bool waitForConfigOK(bool endCom = true, float timeout_s = -1);
+	bool waitForConfigOK(float timeout_s = -1);
 
 	const char* checkForLine();
-	bool checkForConfigOK(bool endCom = true);
 	bool checkForJsonState(const char **val);
 	bool jsonValEquals(const char *tVal, const char *val);
-	bool checkForState(int state, int substate = -1, bool isSet = true);
-	bool checkForNotState(int state, int substate = -1) { return checkForState(state, substate, false); }
+	bool checkForState(int state, int substate = -1);
+	bool checkForNotState(int state, int substate = -1);
 
 	// file functions
 	unsigned int swap16bit(unsigned int in);
@@ -581,9 +519,17 @@ protected:
 	static const int m_infoArrayLen = 24;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
 
-	ActState m_actState;
+	int /*ActState*/ m_actState;
+	int /*ActState*/ m_actSubState;
+	bool m_needsMachineState;
 	int m_progress;
 	msTimeout m_timeout;
+	float m_timeout_s;
+	char m_scCommand[512];
+	bool m_scGetZOffset;
+	bool m_doPrint;
+	char m_qStr[5];
+	bool m_qRes[5];
 
 	char m_jogAxis;
 	int m_jogDist_mm;

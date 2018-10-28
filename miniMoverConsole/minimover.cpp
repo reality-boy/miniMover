@@ -141,6 +141,12 @@ void postHelp()
 	printf("  -z num - jog z axis by num, or 10 if num not provided\n");
 }
 
+void doProcessWithSleep(int ms = 10)
+{
+	Sleep(ms);
+	xyz.doProcess();
+}
+
 bool checkCon()
 {
 	if(!xyz.isStreamSet())
@@ -156,7 +162,11 @@ bool checkCon()
 
 				// force a status update if new connection
 				if(xyz.isStreamSet())
-					xyz.queryStatus();
+				{
+					xyz.queryStatusStart();
+					while(xyz.isInProgress())
+						doProcessWithSleep();
+				}
 
 				return true;
 			}
@@ -177,7 +187,11 @@ bool checkCon()
 
 				// force a status update if new connection
 				if(xyz.isStreamSet())
-					xyz.queryStatus();
+				{
+					xyz.queryStatusStart();
+					while(xyz.isInProgress())
+						doProcessWithSleep();
+				}
 
 				return true;
 			}
@@ -205,7 +219,11 @@ bool isKey(const char *str)
 
 bool printStatus()
 {
-	if(xyz.queryStatus())
+	xyz.queryStatusStart();
+	while(xyz.isInProgress())
+		doProcessWithSleep();
+
+	if(xyz.isSuccess())
 	{
 		printf("\nPrinter Status\n\n");
 		const XYZPrinterStatus *st = xyz.getPrinterStatus();
@@ -356,7 +374,13 @@ bool printStatus()
 
 bool monitorPrintJob()
 {
-	if(xyz.queryStatus())
+	Sleep(5000);
+
+	xyz.queryStatusStart();
+	while(xyz.isInProgress())
+		doProcessWithSleep();
+
+	if(xyz.isSuccess())
 	{
 		const XYZPrinterStatus *st = xyz.getPrinterStatus();
 		if(st->isValid)
@@ -399,17 +423,18 @@ bool handlePrintFile(const char *path)
 
 		xyz.printFileStart(path);
 		int printCount = 0;
-		while(xyz.printFileRun())
+		while(xyz.isInProgress())
 		{
-			printCount++;
-			Sleep(10);
+			doProcessWithSleep();
+
 			// notify the user that we are still uploading
+			printCount++;
 			if(printCount % 4 == 0)
 				printf(".");
 		}
 		printf("\n");
 
-		if(xyz.getState() == ACT_SUCCESS)
+		if(xyz.isSuccess())
 		{
 			printf("monitoring print\n");
 
@@ -464,7 +489,6 @@ bool handlePrintFile(const char *path)
 					}
 				}
 
-				Sleep(10); // don't spin too fast
 				count++;
 			}
 
@@ -477,6 +501,103 @@ bool handlePrintFile(const char *path)
 
 //#define DUMP_STATUS
 
+void runTimedTest(float delay_s)
+{
+	if(checkCon())
+	{
+		msTimer ts, tf;
+		int f = 0; // failure count
+		int t = 0; // total count
+		int c = 0; // dot count
+		int ct = 5; // dot count
+
+		printf("looping test with %0.2f second delay\n\n", delay_s);
+
+		while(true)
+		{
+			t++; // total count
+
+			// time our command
+			ts.startTimer();
+			tf.startTimer();
+
+			//xyz.queryStatusStart();
+			xyz.homePrinterStart();
+			while(xyz.isInProgress())
+				doProcessWithSleep();
+
+			// connection lost
+			if(!xyz.isStreamSet())
+			{
+				tf.stopTimer();
+				// insert newline if any . printed
+				if(c>=ct) printf("\n");
+				c = 0; // reset count if errors printed
+
+				f++; // failure count
+				printf("connection lost!\n");
+				break;
+			}
+			// query failed
+			else if(!xyz.isSuccess())
+			{
+				tf.stopTimer();
+				// insert newline if any . printed
+				if(c>=ct) printf("\n");
+				c = 0; // reset count if errors printed
+
+				f++; // failure count
+				printf("failed to recieve! %d:%d %0.1f %%\n", f, t, 100.0f*(float)f/(float)t);
+			}
+			// success
+			else
+			{
+				ts.stopTimer();
+				// print . only if ct successes in a row
+				c++;
+				if(c % ct == 0)
+					printf(".");
+			}
+
+			// and delay
+			if(delay_s > 0)
+				Sleep((DWORD)(delay_s * 1000.0f));
+
+			// bail on keyboard hit
+			if(kbhit())
+			{
+				while(kbhit())
+					getch();
+				break;
+			}
+		}
+
+		printf("\n");
+		printf("failed %d out of %d times %0.1f %%\n", f, t, 100.0f*(float)f/(float)t);
+
+		printf("\nrun time\n");
+		printf("minTime: %0.2f\n", ts.getMinTime_s());
+		printf("avgTime: %0.2f\n", ts.getAvgTime_s());
+		printf("maxTime: %0.2f\n", ts.getMaxTime_s());
+
+		if(f > 0)
+		{
+			printf("\nfail time\n");
+			printf("minTime: %0.2f\n", tf.getMinTime_s());
+			printf("avgTime: %0.2f\n", tf.getAvgTime_s());
+			printf("maxTime: %0.2f\n", tf.getMaxTime_s());
+		}
+
+		if(xyz.getStream())
+		{
+			printf("\nmessage time\n");
+			printf("minTime: %0.2f\n", xyz.getStream()->m_msgTimer.getMinTime_s());
+			printf("avgTime: %0.2f\n", xyz.getStream()->m_msgTimer.getAvgTime_s());
+			printf("maxTime: %0.2f\n", xyz.getStream()->m_msgTimer.getMaxTime_s());
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	debugInit();
@@ -486,7 +607,11 @@ int main(int argc, char **argv)
 	{
 #ifdef DUMP_STATUS
 		if(checkCon())
-			xyz.queryStatus(true);
+		{
+			xyz.queryStatusStart(true);
+			while(xyz.isInProgress())
+				doProcessWithSleep();
+		}
 #else
 		postHelp();
 #endif
@@ -511,13 +636,10 @@ int main(int argc, char **argv)
 					printf("starting convert file\n");
 					checkCon(); 
 					xyz.convertFileStart(argv[i]);
-					while(xyz.convertFileRun())
-					{
-						Sleep(10);
-						//****FixMe, print progress
-					}
+					while(xyz.isInProgress())
+						doProcessWithSleep(); //****FixMe, print progress
 
-					if(xyz.getState() == ACT_SUCCESS)
+					if(xyz.isSuccess())
 						printf("convert file succeeded\n");
 					else
 						printf("convert file failed\n");
@@ -536,11 +658,19 @@ int main(int argc, char **argv)
 					break;
 				case 'a':
 					if(checkCon())
-						xyz.setAutoLevel(argv[i][2] != '-');
+					{
+						xyz.setAutoLevelStart(argv[i][2] != '-');
+						while(xyz.isInProgress())
+							doProcessWithSleep();
+					}
 					break;
 				case 'b':
 					if(checkCon())
-						xyz.setBuzzer(argv[i][2] != '-');
+					{
+						xyz.setBuzzerStart(argv[i][2] != '-');
+						while(xyz.isInProgress())
+							doProcessWithSleep();
+					}
 					break;
 				case 'c':
 					if(argv[i][2] == 'l') // clean
@@ -549,9 +679,9 @@ int main(int argc, char **argv)
 						{
 							printf("starting clean nozzle\n");
 							xyz.cleanNozzleStart();
-							while(xyz.cleanNozzleRun())
+							while(xyz.isInProgress())
 							{
-								Sleep(300);
+								doProcessWithSleep();
 								if(xyz.cleanNozzlePromtToClean())
 								{
 									printf("clean nozzle with a wire and press enter when finished\n");
@@ -569,10 +699,9 @@ int main(int argc, char **argv)
 						{
 							printf("starting calibration\n");
 							xyz.calibrateBedStart();
-							while(xyz.calibrateBedRun())
+							while(xyz.isInProgress())
 							{
-								Sleep(300);
-
+								doProcessWithSleep();
 								if(xyz.calibrateBedPromptToLowerDetector())
 								{
 									printf("lower detector and hit enter to continue...\n");
@@ -596,12 +725,10 @@ int main(int argc, char **argv)
 							printf("starting convert file\n");
 							checkCon(); 
 							xyz.convertFileStart(argv[i+1]);
-							while(xyz.convertFileRun())
-							{
-								Sleep(10);
-								//****FixMe, print progress
-							}
-							if(xyz.getState() == ACT_SUCCESS)
+							while(xyz.isInProgress())
+								doProcessWithSleep(); //****FixMe, print progress
+
+							if(xyz.isSuccess())
 								printf("convert file succeeded\n");
 							else
 								printf("convert file failed\n");
@@ -632,15 +759,15 @@ int main(int argc, char **argv)
 							printf("starting update firmware\n");
 							xyz.uploadFirmwareStart(argv[i+1]);
 							int printCount = 0;
-							while(xyz.uploadFirmwareRun())
+							while(xyz.isInProgress())
 							{
-								Sleep(10);
+								doProcessWithSleep();
 								// notify the user that we are still uploading
 								if(printCount % 4 == 0)
 									printf(".");
 								printCount++;
 							}
-							if(xyz.getState() == ACT_SUCCESS)
+							if(xyz.isSuccess())
 								printf("update firmware succeeded\n");
 							else
 								printf("update firmware failed\n");
@@ -655,11 +782,9 @@ int main(int argc, char **argv)
 					{
 						printf("start home printer\n");
 						xyz.homePrinterStart();
-						while(xyz.homePrinterRun())
-						{
-							Sleep(300);
-							// spin
-						}
+						while(xyz.isInProgress())
+							doProcessWithSleep(); // spin
+
 						printf("home printer succeeded\n");
 					}
 					break;
@@ -668,9 +793,9 @@ int main(int argc, char **argv)
 					{
 						printf("starting load filament\n");
 						xyz.loadFilamentStart();
-						while(xyz.loadFilamentRun())
+						while(xyz.isInProgress())
 						{
-							Sleep(300);
+							doProcessWithSleep();
 							if(xyz.loadFilamentPromptToFinish())
 							{
 								printf("wait for filament to come out of nozzle then hit enter\n");
@@ -687,9 +812,20 @@ int main(int argc, char **argv)
 						t = atoi(argv[i+1]);
 						if(checkCon())
 						{
-							int offset = xyz.getZOffset();
-							if(offset > 0)
-								xyz.setZOffset(offset + t);
+							xyz.queryStatusStart();
+							while(xyz.isInProgress())
+								doProcessWithSleep();
+
+							if(xyz.isSuccess() && xyz.getPrinterStatus())
+							{
+								int offset = xyz.getPrinterStatus()->zOffset;
+								if(offset > 0)
+								{
+									xyz.setZOffsetStart(offset + t);
+									while(xyz.isInProgress())
+										doProcessWithSleep();
+								}
+							}
 						}
 						i++;
 					}
@@ -732,7 +868,11 @@ int main(int argc, char **argv)
 					break;
 				case 'r': // raw status
 					if(checkCon())
-						xyz.queryStatus(true);
+					{
+						xyz.queryStatusStart(true);
+						while(xyz.isInProgress())
+							doProcessWithSleep();
+					}
 					break;
 				case 's': // status
 					if(checkCon())
@@ -742,27 +882,18 @@ int main(int argc, char **argv)
 					debugPrint(DBG_REPORT, "test!");
 					if(checkCon())
 					{
-						xyz.getZOffset();
-
-						xyz.homePrinterStart();
-						while(xyz.homePrinterRun())
-						{
-							Sleep(300);
-							// spin
-						}
-						debugPrint(DBG_REPORT, "test success");
+						runTimedTest(0.0f);
 					}
+					debugPrint(DBG_REPORT, "test finished");
 					break;
 				case 'u':
 					if(checkCon())
 					{
 						printf("start unload filament\n");
 						xyz.unloadFilamentStart();
-						while(xyz.unloadFilamentRun())
-						{
-							Sleep(300);
-							// spin
-						}
+						while(xyz.isInProgress())
+							doProcessWithSleep(); // spin
+
 						printf("unload filament succeeded\n");
 					}
 					break;
@@ -773,11 +904,8 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('x', t);
-						while(xyz.jogPrinterRun())
-						{
-							Sleep(300);
-							// spin
-						}
+						while(xyz.isInProgress())
+							doProcessWithSleep(); // spin
 					}
 					i++;
 					break;
@@ -788,11 +916,8 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('y', t);
-						while(xyz.jogPrinterRun())
-						{
-							Sleep(300);
-							// spin
-						}
+						while(xyz.isInProgress())
+							doProcessWithSleep(); // spin
 					}
 					i++;
 					break;
@@ -803,11 +928,8 @@ int main(int argc, char **argv)
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('z', t);
-						while(xyz.jogPrinterRun())
-						{
-							Sleep(300);
-							// spin
-						}
+						while(xyz.isInProgress())
+							doProcessWithSleep(); // spin
 					}
 					i++;
 					break;
@@ -816,13 +938,13 @@ int main(int argc, char **argv)
 					break;
 
 				//****FixMe, hook these up!
-				// setMachineName("name")
-				// sendDisconnectWifi()
-				// setWifi(const char *ssid, const char *password, int channel)
-				// restoreDefaults()
-				// setLanguage("en")
-				// setEnergySaving(0-9)
-				// setMachineLife(int time_s)
+				// setMachineNameStart("name")
+				// sendDisconnectWifiStart()
+				// setWifiStart(const char *ssid, const char *password, int channel)
+				// restoreDefaultsStart()
+				// setLanguageStart("en")
+				// setEnergySavingStart(0-9)
+				// setMachineLifeStart(int time_s)
 				}
 			}
 		}
