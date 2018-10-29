@@ -2324,27 +2324,41 @@ void XYZV3::uploadFirmwareRun()
 	}
 }
 
-bool XYZV3::waitForConfigOK(float timeout_s)
+bool XYZV3::waitForConfigOK()
 {
-	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK(%0.2f)", timeout_s);
+	debugPrint(DBG_LOG, "XYZV3::waitForConfigOK()");
 
 	if(isWIFI())
 		return true;
 
 	// else check for ok
+	const int len = 1024;
+	char buf[len] = "";
 
-	const char *buf = waitForLine(timeout_s);
-	if(*buf)
+	if(m_stream && m_stream->isOpen())
 	{
-		if(0 == strcmp("ok", buf))
-			return true;
-		else if(buf[0] == 'E')
-			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
+		msTimeout timeout(m_stream->getDefaultTimeout());
+		do
+		{
+			if(m_stream->readLine(buf, len))
+				break;
+		} 
+		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
+
+		if(*buf)
+		{
+			if(0 == strcmp("ok", buf))
+				return true;
+			else if(buf[0] == 'E')
+				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
+			else
+				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
+		}
 		else
-			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got '%s'", buf);
+			debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got nothing");
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK expected 'ok', got nothing");
+		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK failed, connection closed");
 
 	return false;
 }
@@ -3060,29 +3074,42 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 //------------------------------------------
 
-//****Note, errors can be E0\n$\n or E4$\n, success is often just $\n or ok\n$\n
-// need to deal with all variants
-//****FixMe, does any wifi function return $, maybe we should chop it off here
+//****Note, this does block but only for 1/10th of a second
 bool XYZV3::waitForEndCom()
 {
 	debugPrint(DBG_VERBOSE, "XYZV3::waitForEndCom()");
 
 	// check for '$' indicating end of message
-	const char *buf = waitForLine(0.1f);
-	if(buf)
+	const int len = 1024;
+	char buf[len] = "";
+
+	if(m_stream && m_stream->isOpen())
 	{
-		if(buf[0] == '$')
+		msTimeout timeout(0.1f);
+		do
 		{
-			return true;
-			// success
+			if(m_stream->readLine(buf, len))
+				break;
+		} 
+		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
+
+		if(*buf)
+		{
+			if(buf[0] == '$')
+			{
+				return true;
+				// success
+			}
+			else if(buf[0] == 'E')
+				debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, got error '%s'", buf);
+			else
+				debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, instead got '%s'", buf);
 		}
-		else if(buf[0] == 'E')
-			debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, got error '%s'", buf);
 		else
-			debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, instead got '%s'", buf);
+			debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, got nothing");
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::waitForEndCom $ failed, got nothing");
+		debugPrint(DBG_WARN, "XYZV3::waitForEndCom failed, connection closed");
 
 	return false;
 }
@@ -3106,40 +3133,6 @@ const char* XYZV3::checkForLine()
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::checkForLine failed, connection closed");
-
-	return "";
-}
-
-const char* XYZV3::waitForLine(float timeout_s)
-{
-	debugPrint(DBG_VERBOSE, "XYZV3::waitForLine(%0.2f)", timeout_s);
-
-	static const int len = 1024;
-	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
-	*buf = '\0';
-
-	if(m_stream && m_stream->isOpen())
-	{
-		if(timeout_s < 0)
-			timeout_s = m_stream->getDefaultTimeout();
-
-		bool done = false;
-		msTimeout timeout(timeout_s);
-		do
-		{
-			// blocking call, no need to sleep
-			if(m_stream->readLine(buf, len))
-				done = true;
-		} 
-		while(!done && !timeout.isTimeout() && m_stream && m_stream->isOpen());
-
-		if(done)
-			return buf;
-		else
-			debugPrint(DBG_WARN, "XYZV3::waitForLine failed, timed out 0.2f", timeout_s);
-	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
 
 	return "";
 }

@@ -475,9 +475,8 @@ protected:
 	// serial functions
 
 	//****FixMe, try to eliminate these wait functions
-	const char* waitForLine(float timeout_s = -1);
-	bool waitForEndCom();
-	bool waitForConfigOK(float timeout_s = -1);
+	bool waitForEndCom(); // only blocks for 1/10th of a second
+	bool waitForConfigOK(); // blocks for up to 5 seconds!
 
 	const char* checkForLine();
 	bool checkForJsonState(const char **val);
