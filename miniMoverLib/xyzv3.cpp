@@ -61,8 +61,8 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1MX0A000",   "dv1MX0A000", "3FM1XP", "dv1MX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   150, 150, 150,   "da Vinci miniMaker"},
 	{"dv1MW0A000",   "dv1MW0A000", "3FM1WP", "dv1MW0A000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w"},
 	{"dv1MW0B000",   "dv1MW0B000", "3FM1JP", "dv1MW0B000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini wA"},
-	{"dv1MW0C000",   "dv1MW0C000", "3FM1JP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"}, // possibly 3FM3WP
-	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
+	{"dv1MW0C000",   "dv1MW0C000", "3FM3WP", "dv1MW0C000_V2",   false, false,  true,   false, false, false,  true, false, false,   150, 150, 150,   "da Vinci mini w+"},
+	{"dv1NX0A000",   "dv1NX0A000", "3FN1XP", "dv1NX0A000_V2",   false, false,  true,   false, false, false, false, false, false,   120, 120, 120,   "da Vinci nano"}, // 3FNAXP, there are two nanos, an orange with 0.3 mm nozzl3 and white with 0.4 mm nozzle
 	{"dv1NW0A000",   "dv1NW0A000", "3FNAWP", "dv1NW0A000_V2",   false, false,  true,   false, false, false,  true, false, false,   120, 120, 120,   "da Vinci nano w"},
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},
@@ -78,7 +78,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 //  da Vinci PartPro200 xTCS
 //  3F3PMP XYZprinting da Vinci PartPro 300xT
 //  3FC1SP XYZprinting da Vinci Color AiO
-//  XYZprinting WiFi Box
+//  XYZprinting WiFi Box 3FWB1P
 };
 
 	//  unknown
