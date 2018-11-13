@@ -22,7 +22,7 @@ void Stream::clear()
 
 	// drain residual data in readline buffer
 	if(m_lineBufCount > 0)
-		debugPrint(DBG_REPORT, "Stream::clear leftover data: %s", m_lineBuf);
+		debugPrint(DBG_REPORT, "Stream::clear leftover data: '%s'", m_lineBuf);
 
 	m_lineBuf[0] = '\0';
 	m_lineBufCount = 0;

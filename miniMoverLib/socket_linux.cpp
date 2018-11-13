@@ -349,7 +349,7 @@ void Socket::clear() // is this ever needed?
 			const int len = 4096;
 			char buf[len];
 			if(read(buf, len))
-				debugPrint(DBG_REPORT, "Socket::clear leftover data: %s", buf);
+				debugPrint(DBG_REPORT, "Socket::clear leftover data: '%s'", buf);
 		}
 	}
 	else

@@ -785,7 +785,10 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 
 void MainDlgSetStatus(HWND hDlg, const char *msg)
 {
-	debugPrint(DBG_LOG, "MainDlgSetStatus(%s)", msg);
+	static char oldMsg[512] = "";
+	if(0 != strcmp(oldMsg, msg))
+		debugPrint(DBG_LOG, "MainDlgSetStatus(%s)", msg);
+	strcpy(oldMsg, msg);
 	SendDlgItemMessage(hDlg, IDC_STATIC_STATUS, WM_SETTEXT, 0, (LPARAM)msg);
 }
 
@@ -856,7 +859,7 @@ void MainDlgUpdate(HWND hDlg)
 	if(g_block_update)
 		return;
 
-	debugPrint(DBG_LOG, "MainDlgUpdate()");
+	debugPrint(DBG_VERBOSE, "MainDlgUpdate()");
 
 	// don't set wait cursor since this triggers 2x a second
 	if(xyz.isStreamSet())

@@ -443,6 +443,8 @@ protected:
 	// how far allong the upload is
 	float getFileUploadPct();
 
+	// on wifi we need a delay between sending messages or we overwhelm the connection.
+	bool serialCanSendMessage();
 	bool serialSendMessage(const char *format, ...);
 
 	struct sendFileData
@@ -523,6 +525,7 @@ protected:
 	bool m_needsMachineState;
 	int m_progress;
 	msTimeout m_timeout;
+	msTimeout m_sDelay;
 	float m_timeout_s;
 	char m_scCommand[512];
 	bool m_scGetZOffset;
