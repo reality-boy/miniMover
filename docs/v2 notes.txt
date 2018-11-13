@@ -305,37 +305,39 @@ public override void AnalyzeResponse(string res)
 	// everything below returns a float/int or string after value
 
 	FIRMWARE_NAME: // older firmware may contain repetier, marlin, sprinter
-	FW_V:		// firmware version
-	OS_V:		// os firmware version
-	APP_V:		// app firmware version
-	MCH_ID:		// machine serial number, convert ? to -
-	MDU:		// model number
+	FW_V:STR	// firmware version
+	OS_V:STR	// os firmware version
+	APP_V:STR	// app firmware version
+	MCH_ID:STR	// machine serial number, convert ? to -
+	MDU:STR		// model number
 	Tmp:		// line tmp?
 	Length:		// line length?
 	Color:		// line color?
 	Matrl:		// line material?
 	TalLength:	// line total length?
 	FSS:		// filament load?
-	MCH_STATE:	// check status
-	PRN_STATE:	// printer status
+	MCH_STATE:XX	// check status
+	PRN_STATE:XX	// printer status
 	CART_STATE:	// cartridge status
-	MCHLIFE:	// machine life timer
+	MCHLIFE:XX	// machine life timer
 	JOB_STATE:	// job status
-	EE1:		// fllament 1 eeprom status //merge_filament_data();
 	W1:		// same as EE1?
-	W1:		// filament info
-		?:--------------
-		?:++++++++++++++,?:FilTotalLen ?:HeadTemp ?:?
-		?:FilSerNum,?:FilRemLen ?:HeadTemp ?:?
-	EE2:		// fllament 2 eeprom status //merge_filament_data();
+		W1:--------------
+		W1:++++++++++++++,?:FilTotalLen ?:HeadTemp ?:?
+		W1:FilSerNum,?:FilRemLen ?:HeadTemp ?:?
+	EE1:		// fllament 1 eeprom status 
+		EE1:5a,41,570000,343144,120000,725448,210,90,5448,5553,30313132,52
+		merge_filament_data()
 	W2:		// same as EE2?
-	BT:		// bed temp
-	ET0:		// extruder 0 temp
-	ET1:		// extruder 1 temp
-	MCHEXDUR_LIFE:	// extruder life
-	EST_TIME:	// print estimated time
-	WORK_TIME:	// print elapsed time?
-	WORK_PARSENT:	// print percent complete
+	EE2:		// fllament 2 eeprom status 
+		merge_filament_data()
+	BT:XX		// bed temp or --
+	ET0:XX		// extruder 0 temp or --
+	ET1:XX		// extruder 1 temp or --
+	MCHEXDUR_LIFE:XX	// extruder life
+	EST_TIME:XX	// print estimated time
+	WORK_TIME:XX	// print elapsed time?
+	WORK_PARSENT:XX	// print percent complete
 	X:		// L or ?, x offset?
 	Y:		// y offset?
 	Z:		// z offset?
@@ -431,15 +433,6 @@ private void F10FWUpdateByFile(path)
 }
 public void Fwupgrade(string file, string filename, string aes128_string)
 {
-	XYZ.view.HelpInfo.conn = new XYZ.model.PrinterConnection();
-	XYZ.view.HelpInfo.FWupdata fWupdatum = new XYZ.view.HelpInfo.FWupdata();
-	this.serialConnect = new SerialConnector();
-	string str = "XYZ_@3D:3";
-	if (!File.Exists(file))
-	{
-		return;
-	}
-	FileInfo fileInfo = new FileInfo(file);
 	this.FWHeaddata = new string[] { "", "", "" };
 	this.AESFWHeaddata = new string[] { "", "", "" };
 	this.FirmwareUpgrade = new XYZ.view.FirmwareUpgrade();
@@ -450,10 +443,9 @@ public void Fwupgrade(string file, string filename, string aes128_string)
 	}
 	XYZ.view.HelpInfo.sizenumber = 0;
 	int num = 0;
-	int num1 = 10236;
+	int blockLen = 10236;
 	int num2 = 4;
 	file.ToLower();
-	byte[] bytes = Encoding.Default.GetBytes(str);
 	byte[] numArray = File.ReadAllBytes(file);
 	byte[] numArray1 = new byte[(int)numArray.Length - 16];
 	this.FWcheckHead = File.ReadAllText(file);
@@ -509,17 +501,17 @@ public void Fwupgrade(string file, string filename, string aes128_string)
 		System.Windows.Forms.MessageBox.Show("M_FW_VERSION_ERROR");
 		return;
 	}
-	byte[] numArray2 = new byte[num1 + num2];
+	byte[] numArray2 = new byte[blockLen + num2];
 	byte[] bytes1 = new byte[1];
 	bool flag = true;
 	XYZ.view.HelpInfo.datalength = (int)numArray.Length;
-	int length = (int)numArray.Length / num1;
-	int length1 = (int)numArray.Length % num1;
+	int length = (int)numArray.Length / blockLen;
+	int length1 = (int)numArray.Length % blockLen;
 	string[] strArrays = filename.Split(new char[] { '.' });
 	int num5 = 0;
 	object[] objArray = new object[] { "M1:", strArrays[0], ',', XYZ.view.HelpInfo.datalength };
 	string str1 = string.Concat(objArray);
-	this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+	this.serialConnect.serialwrite("XYZ_@3D:3", 0, strlen("XYZ_@3D:3"));
 	byte[] bytes2 = Encoding.Default.GetBytes(str1);
 	DateTime now = DateTime.Now;
 	Main.main.Fw_updata = DateTime.Now;
@@ -565,14 +557,14 @@ public void Fwupgrade(string file, string filename, string aes128_string)
 			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
 			if (num != length)
 			{
-				this.mem_copy(numArray2, 0, numArray, XYZ.view.HelpInfo.sizenumber, num1);
-				num5 = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, num1);
+				this.mem_copy(numArray2, 0, numArray, XYZ.view.HelpInfo.sizenumber, blockLen);
+				num5 = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, blockLen);
 				bytes1 = BitConverter.GetBytes(num5);
-				numArray2[num1] = bytes1[3];
-				numArray2[num1 + 1] = bytes1[2];
-				numArray2[num1 + 2] = bytes1[1];
-				numArray2[num1 + 3] = bytes1[0];
-				flag = this.serialConnect.serialwrite(numArray2, 0, num1 + num2);
+				numArray2[blockLen] = bytes1[3];
+				numArray2[blockLen + 1] = bytes1[2];
+				numArray2[blockLen + 2] = bytes1[1];
+				numArray2[blockLen + 3] = bytes1[0];
+				flag = this.serialConnect.serialwrite(numArray2, 0, blockLen + num2);
 			}
 			else
 			{
@@ -589,7 +581,7 @@ public void Fwupgrade(string file, string filename, string aes128_string)
 			Thread.Sleep(80);
 			while (this.serialConnect.CheckSumFlag() == 1)
 			{
-				flag = (num != length ? this.serialConnect.serialwrite(numArray2, 0, num1 + num2) : this.serialConnect.serialwrite(numArray2, 0, length1 + num2));
+				flag = (num != length ? this.serialConnect.serialwrite(numArray2, 0, blockLen + num2) : this.serialConnect.serialwrite(numArray2, 0, length1 + num2));
 				Thread.Sleep(5);
 			}
 			if (!flag)
@@ -606,7 +598,7 @@ public void Fwupgrade(string file, string filename, string aes128_string)
 				return;
 			}
 			this.serialConnect.SetCheckSum();
-			XYZ.view.HelpInfo.sizenumber += num1;
+			XYZ.view.HelpInfo.sizenumber += blockLen;
 			num++;
 			try
 			{
