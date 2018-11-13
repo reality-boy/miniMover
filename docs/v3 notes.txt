@@ -91,6 +91,9 @@ XYZv3/uploadDidFinish
 // on wifi any query other than a does not terminate with a $ sign
 // XYZv3/query=
 
+//-------------
+
+
 // Action Order or query all
 XYZv3/query=a
 	b:20
@@ -195,6 +198,26 @@ XYZv3/query=a
 	V:5.1.5
 	4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
 	$
+
+// da Vinci 1.1 Plus
+XYZv3/query=a
+	4:192.168.1.126
+	b:--
+	e:2
+	f:1,0
+	i:3F11XPGBXTH5320151
+	j:10
+	L:1,69342,21785
+	n:da Vinci 1.1 Plus
+	o:p8,t1,c0
+	p:dvF110B000
+	t:1,--,--
+	v:1.1.0.19,1.1.7.3,N/A
+	w:1,--------------
+	$
+
+//-----------------
+
 
 // heat bed temperature
 // b:xx
@@ -1272,231 +1295,25 @@ Filament used:  // m
 ; threads = 1
 */
 
-//*********************
-// G-Code commands
-// Do they work with v3 protocol?
-
-XYZ_@3D:2 // test head, send this first
-M84 P // pause print
-M84 R // resume print
-
-M500 Z XX // set z offset
-G91 // relative mode?
-G90 // absolute mode?
-G1 E-xx Fyy // xx extruder amount yy extruder speed
-// or
-G1 aaxx Fyy // move head aa axis[X Y Z] xx amount yy feedrate
-G28 // home all?
-G28 X0 // home x
-G28 Y0 // home y
-G28 Z0 // home z
-M241 // dis test mode?
-M240 // e test mode
-M140 Sxx // heat bed temp xx temp, 0 is off
-M104 Sxx // extruder temp xx temp, 0 is off
-M107 // fan off
-M106 Sxx // fan on xx speed
-M81 // switch power connector?
-M84   // test end or M84 T send this last
-
 //********************
 
 
-
-//------------------------------------
-// version 1 communication protocol
-// used with 1.0, 1.1 and 2.0 printers
-
-XYZ_@3D:<nl>
- XYZ_@3D:start<nl>
- MDU:daVinciF10<nl>
- FW_V:1.1.G<nl>
- MCH_ID:3DP01PUS5TH41D0145<nl>
-
-XYZ_@3D:-1<nl>		// disconnect
-
-XYZ_@3D:0<nl>		// connect
- PRN:???			// s, machine capabilities?
- MCHH_ID:3DP01PUS5TH41D0145<nl>	// i, machine serial number
- MDU:daVinciF10<nl>		// p, printer model number
- FW_V:1.1.G<nl>			// v, firmware version
-
-XYZ_@3D:1<nl>		//  startOnlinePrint
-
-XYZ_@3D:2<nl>		// test print or inject manual command, end on M84
-
-XYZ_@3D:3<nl>		// uploadFirmwareBinary
-
-XYZ_@3D:4<nl>		// uploadGCodeText
-XYZ_@3D:4OFFLINE_OK<nl>M1:MyTest,52274<gcode file in plain text><nl>CheckSumOK
-
-XYZ_@3D:5<nl>		// machineLife
- MCHLIFE:18582<nl>
- MCHEXDUR_LIFE:18606<nl>
-
-XYZ_@3D:6<nl>		// read eeprom A
- EE1:5a,41,570000,343144,120000,725448,210,90,5448,5553,30313132,52<nl>
-
-XYZ_@3D:7<nl>		// read eeprom B
-
-XYZ_@3D:8<nl>		// machine status or printer status
- WORK_PARSENT:0<nl>
- WORK_TIME:0<nl>
- EST_TIME:0<nl>
- ET0:22<nl>
- BT:28<nl>
- MCH_STATE:26<nl>	// e, error status
-
-XYZ_@3D:9<nl>		// send build sample?
-
-XYZ_@3D:20<nl>
-
-XYZ_@3D:21<nl>		// set language?
-
-XYZ_@3D:90<nl>		// latestBlockSent
-
-XYZ_@3D:91<nl>		// uploadBinaryDidFinish
-
-XYZ_@3D:92<nl>		// uploadGCodeDidFinish
-
-XYZ_@3D:101<nl>		// extruder on
-
-XYZ_@3D:102<nl>		// extruder off
-
-XYZ_@3D:103<nl>		// extruder Temperature
-
-XYZ_@3D:201<nl>		// get standard info
-
-XYZ_@3D:202<nl>		// get advanced info
-
-// unlock filament F10, F11
-XYZ_@3D:9376<nl>
-XYZ_@3D:1423<nl>
-XYZ_@3D:5192<nl>
-XYZ_@3D:6810<nl>
-
-// unlock filament F20
-DAVCFW_82895_203811@
-
-DAVUSB_1@		// model set?
-
 /*
-BT
-WORK_TIME
-MCHLIFE
-WORK_PARSENT
-MCH_STATE
-EST_TIME
-MCHEXDUR_LIFE
-MDU:%s
-FW_V:%s
-MCH_ID:%s%s
-
-PRN_STATE
 JOB_TEST_OK
 LANG
-ET
-_EER
-_ACK
-_END
-BS:
-CHK:
-PKT:
+_END // possibly DAVAPP_END@
 M1:OK,BS:%d,CHK:%d,PKT:%d
 EE1_
 EE1_NG
-ERR
 LAST JOB ERROR
 LAST JOB OK
 JOB NUMBER
 ERROR TOTAL
 IDLE
 AV
-XYZ_@3D:%s
 PROTOCOL:2
-start
-XYZ_@3D:
-XYZv3/
-firmware=
-upload=
-config=
-query=
-uploadDidFinish
 EE%d:
-en
-jp
-fr
-it
-es
-OFFLINE_
-FW
-pause
 NG
 L
 NO
-cancel
-*/
-
-/*
-// from https://github.com/jasongao/DaVinci1.0/blob/master/print-to-davinci.py
-
-
-import time, serial, sys
-
-ser = serial.Serial(
-  port=sys.argv[1],
-  baudrate=115200,
-  parity=serial.PARITY_NONE,
-  stopbits=serial.STOPBITS_ONE,
-  bytesize=serial.EIGHTBITS
-)
-ser.isOpen()
-
-def toHexString(text):
-  return ' '.join(x.encode('hex') for x in str(text))
-
-def printOutputIfAvailable():
-  time.sleep (1) # wait one second before attempting to read response
-  out = ""
-  while ser.inWaiting() > 0:
-    out += ser.read(ser.inWaiting())
-  if out != '':
-    print ">> " + toHexString(out)
-    print ">> " + out
-
-### STATUS INFORMATION THAT XYZware polls periodically
-ser.write("XYZ_@3D:" + '\n')
-printOutputIfAvailable()
-ser.write("XYZ_@3D:6" + '\n')
-printOutputIfAvailable()
-ser.write("XYZ_@3D:5" + '\n')
-printOutputIfAvailable()
-ser.write("XYZ_@3D:8" + '\n')
-printOutputIfAvailable()
-
-### Check printer is ready to offline print from SD card?
-ser.write("XYZ_@3D:4" + '\n')
-printOutputIfAvailable()
-
-
-### Send gcode to printer
-with open(sys.argv[2], 'rb') as fin:
-    gcode = fin.read()
-    gcode = str.replace(gcode, '\n', '\r\n') # XYZware includes carriage feed
-    gcode = bytearray(gcode)
-    gcode.append(0x00);
-    gcode.append(0x00);
-    gcode.append(0xB9); # some sort of checksum? how to calculate this?
-    gcode.append('.');
-    m1_gcode = "M1:MyTest,711,0.3.16,EE1_OK,EE2_OK" + gcode
-    print ' '.join(x.encode('hex') for x in str(m1_gcode))
-    
-    ser.write("M1:MyTest,711,0.3.16,EE1_OK,EE2_OK")
-    ser.flush()
-    ser.write(gcode)
-    ser.flush()
-    printOutputIfAvailable()
-
-# while(True):
-#   printOutputIfAvailable()
 */

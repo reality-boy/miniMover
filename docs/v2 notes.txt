@@ -1,0 +1,1103 @@
+// version 2 usb protocol, used by the 1.0 and 1.1 printers (and possibly the 2.0?)
+// not used over wifi?
+
+//---------
+
+XYZ_@3D:	// connect, only supported on older firmwares? see XYZ_@3D:0
+	DAVAPP_ACK@
+	DAVAPP_ERR@
+
+XYZ_@3D:-1	// disconnect, only on older firmwares?
+	DAVAPP_ACK@
+	DAVAPP_ERR@
+
+XYZ_@3D:0	// connect
+	Welcome:daVinciF11		// 3W file model number
+	XYZ_@3D:start
+	MDU:dvF110B000			// p, printer model number
+	OS_V:1.1.0.19			// v, firmware versions
+	APP_V:1.1.7.3			// v
+	FW_V:N/A			// v, firmware version
+	MCH_ID:3F11XPGBXTH5320151	// i, machine serial number
+	PRT_NAME:da Vinci 1.1 Plus	// n, printer name
+	PRT_IP:192.168.1.126		// 4, printer ip
+
+	// or
+
+	XYZ_@3D:start
+	MDU:daVinciF10
+	FW_V:1.1.G
+	MCH_ID:3DP01PUS5TH41D0145
+
+XYZ_@3D:1	// startOnlinePrint
+	DAVAPP_ACK@
+	DAVAPP_ERR@
+
+XYZ_@3D:2	// test print or inject manual command, end on M84
+	DAVAPP_ACK@
+	DAVAPP_ERR@
+
+XYZ_@3D:3	// uploadFirmwareBinary
+	FWOK
+	send> M1:firmware,# of bytes ,  ie M1:firmware,249344 ,
+	send> bin file
+	// send M1:firmware,# of bytes , eg M1:firmware,249344 , then send bin file
+
+XYZ_@3D:4	// uploadGCodeText
+	// old send mode?
+	recive< OFFLINE_FAIL or OFFLINE_OK
+	send> M1:MyTest,52274<gcode file in plain text>
+	recieve< CheckSumOK
+
+	// new send mode
+	recive< OFFLINE_FAIL or OFFLINE_OK
+	send> M1:Name,# of bytes, est time minutes, est time seconds, ee1 check, ee2 check,
+	send> gcode
+
+	ie
+
+	M1:MyTest,524719,0.37.34,EE1_OK,EE2_OK ,
+	// send M1:Name,# of bytes, est time minutes, est time seconds, ee1 check, ee2 check, eg M1:MyTest,524719,0.37.34,EE1_OK,EE2_OK , then send gcode. 
+
+XYZ_@3D:5	// machineLife
+	MCHLIFE:70145			// L, lifetime timers
+	MCHEXDUR_LIFE:21785		// L
+
+XYZ_@3D:6	// read eeprom A
+	W1:--------------		// w & f, fillament info for first
+spool
+
+	// or
+
+	EE1:5a,41,570000,343144,120000,725448,210,90,5448,5553,30313132,52
+	EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52
+		xyzCode(Z),material(ABS A),color(white W),Mdate(41A), total_length (mm), remain_length (mm), temperatureHead ©, temperatureBed ©, Mloc (TH), Dloc(GB),SN(SERIAL),security_code
+	// bad eeproms
+	EE1:01,01,010101,010101,16843009,16843009,257,257,0101,0101,010101010101010101010101,257
+	EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52,0
+	EE1:5a,41,570000,343236,120000,120000,210,90,5448,4555,30323732,52,0
+		Cartridge info on printer display says REMAIN 120m , CAPACITY 120m, WHITE.
+		xyzCode,material,color,Mdate, total_length (mm), remain_length (mm), temperatureHead ©, temperatureBed ©, Mloc , Dloc,SN(SERIAL),security_code,check_illegal
+
+XYZ_@3D:7	// read eeprom B
+	W2:--------------		// w & f, fillament info for second
+spool
+
+XYZ_@3D:8	// machine status or printer status
+	WORK_PARSENT:			// d, print status	
+	WORK_TIME:0			// d
+	EST_TIME:0			// d
+	ET0:--				// t, extruder temp
+	ET1:--				// t, second extruder temp
+	BT:--				// b, bed temp
+	MCH_STATE:2			// e, error status
+	PRN_STATE:10			// j, printer status
+
+	// or
+
+	WORK_PARSENT:0
+	WORK_TIME:0
+	EST_TIME:0
+	ET0:22
+	BT:28
+	MCH_STATE:26	// e, error status
+
+XYZ_@3D:9	// send build sample?
+	DAVAPP_ACK@
+	DAVAPP_ERR@
+
+XYZ_@3D:20
+
+XYZ_@3D:21	// set language?
+
+
+XYZ_@3D:90	// latestBlockSent
+XYZ_@3D:91	// uploadBinaryDidFinish
+XYZ_@3D:92	// uploadGCodeDidFinish
+
+XYZ_@3D:101	// extruder on
+XYZ_@3D:102	// extruder off
+XYZ_@3D:103	// extruder Temperature
+
+XYZ_@3D:201	// get standard info
+XYZ_@3D:202	// get advanced info
+
+XYZ_@3D:9376	// unlock eeprom (filament) for 1.0 and 1.1 machines
+XYZ_@3D:1423
+XYZ_@3D:5192
+XYZ_@3D:6810
+
+DAVCFW_82895_203811@ // unlock eeprom (filament) for 2.0 machines
+
+XYZ_@3D_S10_X	// disconnect
+XYZ_@3D_S10_0	// connect
+XYZ_@3D_S10_1	// start print
+XYZ_@3D_S10_2	// test case
+XYZ_@3D_S10_3	// uploadFirmwareBinary
+XYZ_@3D_S10_4	// uploadGCodeText
+
+XYZ_@3D_S10_101	// extruder Temperature
+XYZ_@3D_S10_102	// get standard info
+XYZ_@3D_S10_103	// get advanced info
+
+//---------
+
+// Older printers use eeproms in the fillament cartridge
+// these commands unlock the fillament for printing?
+
+if (this.F20reusltstring) // 2.0 Duo
+{
+	this.serialwriteline("DAVCFW_82895_203811@");
+}
+// I don't know how these are suppose to work, but
+// on a 1.1 Plus they don't seem to work
+else if (this.F10reusltstring || // 1.0 1.0A 1.0 AiO
+	this.F11reusltstring)    // 1.1 Plus
+{
+	this.serialwriteline("XYZ_@3D:9376");
+	this.serialwriteline("XYZ_@3D:1423");
+	this.serialwriteline("XYZ_@3D:5192");
+	this.serialwriteline("XYZ_@3D:6810");
+}
+// these don't seem to be used in real life
+else if (this.FJR10reusltstring ||  // Jr. 1.0
+	this.FJR10Wreusltstring ||  // Jr. 1.0W
+	this.F1JSreusltstring ||    // Jr. 1.0 3in1
+	this.F1AWreusltstring ||    // 1.0 Pro
+	this.F1ASreusltstring ||    // 1.0 Pro 3in1
+	this.FM1Wreusltstring ||    // mini w
+	this.FM1Xreusltstring ||    // miniMaker
+	this.FJR20Mreusltstring ||  // Jr. 2.0 Mix ???
+	this.F1SWreusltstring ||    // Super
+	this.FJR10Proresultstring ||// Jr. 1.0 Pro
+	this.F1JOresultstring ||    // Jr. 1.0 3in1 open filament
+	this.FJR10Aresultstring ||  // Jr. 1.0A
+	this.FN1Xresultstring)      // nano
+{
+	this.serialwriteline("XYZv3/config=pda:[1591]");
+	this.serialwriteline("XYZv3/config=pdb:[4387]");
+	this.serialwriteline("XYZv3/config=pdc:[7264]");
+	this.serialwriteline("XYZv3/config=pde:[8046]");
+}
+
+//------------------------
+// from https://github.com/jasongao/DaVinci1.0/blob/master/print-to-davinci.py
+
+
+import time, serial, sys
+
+ser = serial.Serial(
+  port=sys.argv[1],
+  baudrate=115200,
+  parity=serial.PARITY_NONE,
+  stopbits=serial.STOPBITS_ONE,
+  bytesize=serial.EIGHTBITS
+)
+ser.isOpen()
+
+def toHexString(text):
+  return ' '.join(x.encode('hex') for x in str(text))
+
+def printOutputIfAvailable():
+  time.sleep (1) # wait one second before attempting to read response
+  out = ""
+  while ser.inWaiting() > 0:
+    out += ser.read(ser.inWaiting())
+  if out != '':
+    print ">> " + toHexString(out)
+    print ">> " + out
+
+### STATUS INFORMATION THAT XYZware polls periodically
+ser.write("XYZ_@3D:" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:6" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:5" + '\n')
+printOutputIfAvailable()
+ser.write("XYZ_@3D:8" + '\n')
+printOutputIfAvailable()
+
+### Check printer is ready to offline print from SD card?
+ser.write("XYZ_@3D:4" + '\n')
+printOutputIfAvailable()
+
+
+### Send gcode to printer
+with open(sys.argv[2], 'rb') as fin:
+    gcode = fin.read()
+    gcode = str.replace(gcode, '\n', '\r\n') # XYZware includes carriage feed
+    gcode = bytearray(gcode)
+    gcode.append(0x00);
+    gcode.append(0x00);
+    gcode.append(0xB9); # some sort of checksum? how to calculate this?
+    gcode.append('.');
+    m1_gcode = "M1:MyTest,711,0.3.16,EE1_OK,EE2_OK" + gcode
+    print ' '.join(x.encode('hex') for x in str(m1_gcode))
+    
+    ser.write("M1:MyTest,711,0.3.16,EE1_OK,EE2_OK")
+    ser.flush()
+    ser.write(gcode)
+    ser.flush()
+    printOutputIfAvailable()
+
+# while(True):
+#   printOutputIfAvailable()
+
+//*********************
+// G-Code commands
+// Do they work with v3 protocol?
+
+XYZ_@3D:2 // test head, send this first
+M84 P // pause print
+M84 R // resume print
+
+M500 Z XX // set z offset
+G91 // relative mode?
+G90 // absolute mode?
+G1 E-xx Fyy // xx extruder amount yy extruder speed
+// or
+G1 aaxx Fyy // move head aa axis[X Y Z] xx amount yy feedrate
+G28 // home all?
+G28 X0 // home x
+G28 Y0 // home y
+G28 Z0 // home z
+M241 // dis test mode?
+M240 // e test mode
+M140 Sxx // heat bed temp xx temp, 0 is off
+M104 Sxx // extruder temp xx temp, 0 is off
+M107 // fan off
+M106 Sxx // fan on xx speed
+M81 // switch power connector?
+M84   // test end or M84 T send this last
+
+//---------------
+
+
+public override void AnalyzeResponse(string res)
+{
+	JOB_SUSPEND
+	JOB_RESUME
+	JOB_CANCEL
+	FWOK		// v2 fw update ok to procede
+	ok		// v3 fw update ok to procede
+	E0		// SerialConnector.V3Fwupdata = 10;
+	E35		// SerialConnector.V3Fwupdata = 15;
+	FWNO		// v2 fw not able to upgrade
+	M1_OK		// print header ok
+	M1_FAIL		// print header not ok
+	M2_OK		// fw header ok
+	M2_FAIL		// fw header not ok
+	OFFLINE_OK
+	OFFLINE_FAIL
+	OFFLINE_NO
+	OFFLINE_NG
+	CheckSumOK
+	CheckSumFail
+	HEADER_OK
+	HEADER_FAIL
+	M888_WAIT
+	JOB_FINISH
+	start
+	Resend:		// resend line of data
+	ok
+	wait
+
+	// everything below returns a float/int or string after value
+
+	FIRMWARE_NAME: // older firmware may contain repetier, marlin, sprinter
+	FW_V:		// firmware version
+	OS_V:		// os firmware version
+	APP_V:		// app firmware version
+	MCH_ID:		// machine serial number, convert ? to -
+	MDU:		// model number
+	Tmp:		// line tmp?
+	Length:		// line length?
+	Color:		// line color?
+	Matrl:		// line material?
+	TalLength:	// line total length?
+	FSS:		// filament load?
+	MCH_STATE:	// check status
+	PRN_STATE:	// printer status
+	CART_STATE:	// cartridge status
+	MCHLIFE:	// machine life timer
+	JOB_STATE:	// job status
+	EE1:		// fllament 1 eeprom status //merge_filament_data();
+	W1:		// same as EE1?
+	W1:		// filament info
+		?:--------------
+		?:++++++++++++++,?:FilTotalLen ?:HeadTemp ?:?
+		?:FilSerNum,?:FilRemLen ?:HeadTemp ?:?
+	EE2:		// fllament 2 eeprom status //merge_filament_data();
+	W2:		// same as EE2?
+	BT:		// bed temp
+	ET0:		// extruder 0 temp
+	ET1:		// extruder 1 temp
+	MCHEXDUR_LIFE:	// extruder life
+	EST_TIME:	// print estimated time
+	WORK_TIME:	// print elapsed time?
+	WORK_PARSENT:	// print percent complete
+	X:		// L or ?, x offset?
+	Y:		// y offset?
+	Z:		// z offset?
+	E:		// extruder offset?
+	SpeedMultiply:	// speed multiply? int value between 25 and 300
+	FlowMultiply:	// flow multiply? int value between 50 and 150
+
+	TargetExtr0:	// target temp exdruder 0 
+	TargetExtr1:	// target temp extruder 1
+	TargetBed:	// target temp bed
+	Fanspeed:	// fan voltage
+	RequestPause:
+	T:		// temp
+	T0:		// dual extruder temp?
+	B:		// bed temp
+	EPR:		// eprom ???
+	MTEMP:		// ?? ?? ?? ??
+	Error:		// error
+}
+
+public void merge_filament_data(string h)
+{
+	this.EE1data = h.Split(',');
+
+	this.FILAMANEE.xyzCode = this.EE1data[0];
+	this.FILAMANEE.material = this.EE1data[1];
+	this.FILAMANEE.color[0] = this.EE1data[2].Substring(0, 2);
+	this.FILAMANEE.color[1] = this.EE1data[2].Substring(2, 2);
+	this.FILAMANEE.color[2] = this.EE1data[2].Substring(4, 2);
+	this.FILAMANEE.Mdate[0] = this.EE1data[3].Substring(0, 2);
+	this.FILAMANEE.Mdate[1] = this.EE1data[3].Substring(2, 2);
+	this.FILAMANEE.Mdate[2] = this.EE1data[3].Substring(4, 2);
+	this.FILAMANEE.total_length = this.EE1data[4];
+	this.FILAMANEE.remain_length = this.EE1data[5];
+	this.FILAMANEE.temperatureHead = this.EE1data[6];
+	this.FILAMANEE.temperatureBed = this.EE1data[7];
+	if (this.EE1data[8] != "00")
+	{
+		this.FILAMANEE.Mloc[0] = this.EE1data[8].Substring(0, 2);
+		this.FILAMANEE.Mloc[1] = this.EE1data[8].Substring(2, 2);
+	}
+	else
+	{
+		this.FILAMANEE.Mloc[0] = this.EE1data[8].Substring(0, 1);
+		this.FILAMANEE.Mloc[1] = this.EE1data[8].Substring(1, 1);
+	}
+	if (this.EE1data[9] != "00")
+	{
+		this.FILAMANEE.Dloc[0] = this.EE1data[9].Substring(0, 2);
+		this.FILAMANEE.Dloc[1] = this.EE1data[9].Substring(2, 2);
+	}
+	else
+	{
+		this.FILAMANEE.Dloc[0] = this.EE1data[9].Substring(0, 1);
+		this.FILAMANEE.Dloc[1] = this.EE1data[9].Substring(1, 1);
+	}
+	if (this.EE1data[10].Trim() != "")
+	{
+		this.FILAMANEE.SN[0] = this.EE1data[10].Substring(0, 2);
+		this.FILAMANEE.SN[1] = this.EE1data[10].Substring(2, 2);
+		this.FILAMANEE.SN[2] = this.EE1data[10].Substring(4, 2);
+		this.FILAMANEE.SN[3] = this.EE1data[10].Substring(6, 2);
+	}
+	this.FILAMANEE.security_code = this.EE1data[11];
+	this.FILAMANEE.check_illegal = this.EE1data[12];
+}
+
+
+
+
+private void F10FWUpdateByFile(path)
+{
+	if (File.Exists(path))
+	{
+		SHA256 sHA256CryptoServiceProvider = new SHA256CryptoServiceProvider();
+		byte[] numArray = sHA256CryptoServiceProvider.ComputeHash(File.ReadAllBytes(path));
+
+		// convert from binary to hex
+		string str1 = "";
+		for (int i = 0; i < (int)numArray.Length; i++)
+		{
+			string str2 = Convert.ToString(numArray[i], 16);
+			if (str2.Length < 2)
+			{
+				str2 = string.Concat("0", str2);
+			}
+			str1 = string.Concat(str1, str2);
+		}
+
+		// and send
+		this.Fwupgrade(path, "firmwarelast.bin", str1);
+	}
+}
+public void Fwupgrade(string file, string filename, string aes128_string)
+{
+	XYZ.view.HelpInfo.conn = new XYZ.model.PrinterConnection();
+	XYZ.view.HelpInfo.FWupdata fWupdatum = new XYZ.view.HelpInfo.FWupdata();
+	this.serialConnect = new SerialConnector();
+	string str = "XYZ_@3D:3";
+	if (!File.Exists(file))
+	{
+		return;
+	}
+	FileInfo fileInfo = new FileInfo(file);
+	this.FWHeaddata = new string[] { "", "", "" };
+	this.AESFWHeaddata = new string[] { "", "", "" };
+	this.FirmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+	if (Main.main.MettaWorldPeace != 1 && !this.Check_FW(file, aes128_string))
+	{
+		System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+		return;
+	}
+	XYZ.view.HelpInfo.sizenumber = 0;
+	int num = 0;
+	int num1 = 10236;
+	int num2 = 4;
+	file.ToLower();
+	byte[] bytes = Encoding.Default.GetBytes(str);
+	byte[] numArray = File.ReadAllBytes(file);
+	byte[] numArray1 = new byte[(int)numArray.Length - 16];
+	this.FWcheckHead = File.ReadAllText(file);
+	int num3 = this.FWcheckHead.IndexOf("dvF", 0, 16);
+	if (num3 == -1 && this.FWcheckHead.IndexOf("dv1J", 0, 16) != -1)
+	{
+		num3 = this.FWcheckHead.IndexOf("dv1J", 0, 16);
+	}
+	if (num3 != -1)
+	{
+		try
+		{
+			this.FWVersion_Aes_Head = this.FWcheckHead.Substring(num3, 16);
+			string fWVersionAesHead = this.FWVersion_Aes_Head;
+			char[] chrArray = new char[] { '+' };
+			this.AESFWHeaddata = fWVersionAesHead.Split(chrArray);
+			this.FWcheckHead = this.FWcheckHead.Remove(num3, 16);
+			Array.Copy(numArray, 16, numArray1, 0, (int)numArray.Length - 16);
+			numArray = new byte[(int)numArray1.Length];
+			Array.Copy(numArray1, 0, numArray, 0, (int)numArray.Length);
+			this.newfwVersion = this.GetVersionInt(this.AESFWHeaddata[1], 3);
+			this.nowfwversion = this.GetVersionInt(Main.conn.firmware_url, 3);
+		}
+		catch
+		{
+		}
+	}
+	int num4 = this.FWcheckHead.IndexOf("fingerprint");
+	if (num4 != -1)
+	{
+		try
+		{
+			this.FWVersionHead = this.FWcheckHead.Substring(num4, 28);
+			string fWVersionHead = this.FWVersionHead;
+			char[] chrArray1 = new char[] { '+' };
+			this.FWHeaddata = fWVersionHead.Split(chrArray1);
+			this.newfwVersion = this.GetVersionInt(this.FWHeaddata[2], 3);
+			this.nowfwversion = this.GetVersionInt(Main.conn.firmware_url, 3);
+		}
+		catch
+		{
+		}
+	}
+	try
+	{
+		this.MachineModelString = (Main.conn.machineModel.Contains(this.FWHeaddata[1]) || Main.conn.machineModel.Contains(this.AESFWHeaddata[0]) ? true : Main.conn.new_machine_model.Contains<char>(this.FWcheckHead[1]));
+	}
+	catch
+	{
+	}
+	if (Main.main.MettaWorldPeace != 1 && (!this.MachineModelString || this.newfwVersion <= this.nowfwversion))
+	{
+		System.Windows.Forms.MessageBox.Show("M_FW_VERSION_ERROR");
+		return;
+	}
+	byte[] numArray2 = new byte[num1 + num2];
+	byte[] bytes1 = new byte[1];
+	bool flag = true;
+	XYZ.view.HelpInfo.datalength = (int)numArray.Length;
+	int length = (int)numArray.Length / num1;
+	int length1 = (int)numArray.Length % num1;
+	string[] strArrays = filename.Split(new char[] { '.' });
+	int num5 = 0;
+	object[] objArray = new object[] { "M1:", strArrays[0], ',', XYZ.view.HelpInfo.datalength };
+	string str1 = string.Concat(objArray);
+	this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+	byte[] bytes2 = Encoding.Default.GetBytes(str1);
+	DateTime now = DateTime.Now;
+	Main.main.Fw_updata = DateTime.Now;
+	Main.main.fw_upgrade = 1;
+	while (this.serialConnect.FwupdataFlag() == fWupdatum.FWFAIL)
+	{
+		if ((DateTime.Now - now).Seconds <= 10)
+		{
+			continue;
+		}
+		try
+		{
+			this.serialConnect.ClosePort();
+		}
+		catch
+		{
+		}
+		System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+		return;
+	}
+	if (this.serialConnect.FwupdataFlag() == fWupdatum.FWOK)
+	{
+		if (Main.main.firmwareUpgrade == null)
+		{
+			Main.main.firmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+		}
+		Main.main.firmwareUpgrade.StartFirmwareUpgrade();
+		Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+		flag = this.serialConnect.serialwrite(bytes2, 0, (int)bytes2.Length);
+		while (XYZ.view.HelpInfo.sizenumber < XYZ.view.HelpInfo.datalength)
+		{
+			if (Main.main.firmwareUpgrade.cancelupdate == 1)
+			{
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				return;
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+			if (num != length)
+			{
+				this.mem_copy(numArray2, 0, numArray, XYZ.view.HelpInfo.sizenumber, num1);
+				num5 = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, num1);
+				bytes1 = BitConverter.GetBytes(num5);
+				numArray2[num1] = bytes1[3];
+				numArray2[num1 + 1] = bytes1[2];
+				numArray2[num1 + 2] = bytes1[1];
+				numArray2[num1 + 3] = bytes1[0];
+				flag = this.serialConnect.serialwrite(numArray2, 0, num1 + num2);
+			}
+			else
+			{
+				Thread.Sleep(500);
+				this.mem_copy(numArray2, 0, numArray, XYZ.view.HelpInfo.sizenumber, length1);
+				num5 = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, length1);
+				bytes1 = BitConverter.GetBytes(num5);
+				numArray2[length1] = bytes1[3];
+				numArray2[length1 + 1] = bytes1[2];
+				numArray2[length1 + 2] = bytes1[1];
+				numArray2[length1 + 3] = bytes1[0];
+				flag = this.serialConnect.serialwrite(numArray2, 0, length1 + num2);
+			}
+			Thread.Sleep(80);
+			while (this.serialConnect.CheckSumFlag() == 1)
+			{
+				flag = (num != length ? this.serialConnect.serialwrite(numArray2, 0, num1 + num2) : this.serialConnect.serialwrite(numArray2, 0, length1 + num2));
+				Thread.Sleep(5);
+			}
+			if (!flag)
+			{
+				Main.main.threedview.ui.BusyWindow.Visibility = Visibility.Hidden;
+				Main.main.threedview.ui.BusyWindow.buttonCancel.Visibility = Visibility.Visible;
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				return;
+			}
+			this.serialConnect.SetCheckSum();
+			XYZ.view.HelpInfo.sizenumber += num1;
+			num++;
+			try
+			{
+				for (int i = 0; i < (int)numArray2.Length; i++)
+				{
+					numArray2[i] = 0;
+				}
+			}
+			catch
+			{
+			}
+		}
+		Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+	}
+	try
+	{
+		this.serialConnect.ClosePort();
+	}
+	catch
+	{
+	}
+	if (this.Check_connect == null)
+	{
+		this.Check_connect = new Thread(new ThreadStart(this.Check_FwConnect));
+		this.Check_connect.Start();
+	}
+}
+
+public void F11_Fwupgrade(bool app_version, bool os_version, bool engine_version)
+{
+	object[] length;
+	string str = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Temp");
+	string str1 = string.Concat(str, "\\engine_data.bin");
+	string str2 = string.Concat(str, "\\XYZ_Update.zip");
+	string str3 = string.Concat(str, "\\app_data.zip");
+	byte[] numArray = null;
+	byte[] numArray1 = null;
+	byte[] numArray2 = null;
+	XYZ.view.HelpInfo.FWupdata fWupdatum = new XYZ.view.HelpInfo.FWupdata();
+	string str4 = "";
+	string str5 = "";
+	string str6 = "";
+	if (engine_version)
+	{
+		numArray = File.ReadAllBytes(str1);
+		length = new object[] { "M2:engine", ',', "engine_data.bin", ',', (int)numArray.Length };
+		str4 = string.Concat(length);
+	}
+	if (os_version)
+	{
+		numArray1 = File.ReadAllBytes(str2);
+		length = new object[] { "M2:os", ',', "XYZ_Update.zip", ',', (int)numArray1.Length };
+		str5 = string.Concat(length);
+	}
+	if (app_version)
+	{
+		numArray2 = File.ReadAllBytes(str3);
+		length = new object[] { "M2:app", ',', "app_data.zip", ',', (int)numArray2.Length };
+		str6 = string.Concat(length);
+	}
+	byte[] bytes = Encoding.Default.GetBytes("XYZ_@3D:3");
+	this.FirmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+	if (Main.main.firmwareUpgrade == null)
+	{
+		Main.main.firmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+	}
+	Main.main.firmwareUpgrade.StartFirmwareUpgrade();
+	Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+	if (engine_version)
+	{
+		this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+		Thread.Sleep(50);
+		bool flag = true;
+		int num = 0;
+		int num1 = 4;
+		XYZ.view.HelpInfo.sizenumber = 0;
+		int num2 = 10236;
+		int num3 = 0;
+		int length1 = (int)numArray.Length / num2;
+		int length2 = (int)numArray.Length % num2;
+		byte[] numArray3 = new byte[num2 + num1];
+		byte[] bytes1 = new byte[1];
+		DateTime now = DateTime.Now;
+		Main.main.Fw_updata = DateTime.Now;
+		byte[] bytes2 = Encoding.Default.GetBytes(str4);
+		while (this.serialConnect.FwupdataFlag() == fWupdatum.FWFAIL)
+		{
+			if ((DateTime.Now - now).Seconds <= 5)
+			{
+				continue;
+			}
+			try
+			{
+				this.serialConnect.ClosePort();
+			}
+			catch
+			{
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+			System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+			return;
+		}
+		if (this.serialConnect.FwupdataFlag() == fWupdatum.FWOK)
+		{
+			if (Main.main.firmwareUpgrade == null)
+			{
+				Main.main.firmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+			flag = this.serialConnect.serialwrite(bytes2, 0, (int)bytes2.Length);
+			Thread.Sleep(50);
+			while (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWFAIL)
+			{
+				if ((DateTime.Now - now).Seconds <= 5)
+				{
+					continue;
+				}
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+				System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+				return;
+			}
+			if (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWOK)
+			{
+				while (XYZ.view.HelpInfo.sizenumber < (int)numArray.Length)
+				{
+					if (Main.main.firmwareUpgrade.cancelupdate == 1)
+					{
+						try
+						{
+							this.serialConnect.ClosePort();
+						}
+						catch
+						{
+						}
+						return;
+					}
+					Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+					if (num3 != length1)
+					{
+						this.mem_copy(numArray3, 0, numArray, XYZ.view.HelpInfo.sizenumber, num2);
+						num = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, num2);
+						bytes1 = BitConverter.GetBytes(num);
+						numArray3[num2] = bytes1[3];
+						numArray3[num2 + 1] = bytes1[2];
+						numArray3[num2 + 2] = bytes1[1];
+						numArray3[num2 + 3] = bytes1[0];
+						flag = this.serialConnect.serialwrite(numArray3, 0, num2 + num1);
+					}
+					else
+					{
+						this.mem_copy(numArray3, 0, numArray, XYZ.view.HelpInfo.sizenumber, length2);
+						num = this.checksum(numArray, XYZ.view.HelpInfo.sizenumber, length2);
+						bytes1 = BitConverter.GetBytes(num);
+						numArray3[length2] = bytes1[3];
+						numArray3[length2 + 1] = bytes1[2];
+						numArray3[length2 + 2] = bytes1[1];
+						numArray3[length2 + 3] = bytes1[0];
+						flag = this.serialConnect.serialwrite(numArray3, 0, length2 + num1);
+					}
+					Thread.Sleep(80);
+					while (this.serialConnect.CheckSumFlag() == 1)
+					{
+						flag = (num3 != length1 ? this.serialConnect.serialwrite(numArray3, 0, num2 + num1) : this.serialConnect.serialwrite(numArray3, 0, length2 + num1));
+						Thread.Sleep(5);
+					}
+					if (!flag)
+					{
+						Main.main.threedview.ui.BusyWindow.Visibility = Visibility.Hidden;
+						Main.main.threedview.ui.BusyWindow.buttonCancel.Visibility = Visibility.Visible;
+						try
+						{
+							this.serialConnect.ClosePort();
+						}
+						catch
+						{
+						}
+						return;
+					}
+					this.serialConnect.SetCheckSum();
+					XYZ.view.HelpInfo.sizenumber += num2;
+					num3++;
+					try
+					{
+						for (int i = 0; i < (int)numArray3.Length; i++)
+						{
+							numArray3[i] = 0;
+						}
+					}
+					catch
+					{
+					}
+				}
+			}
+		}
+		Main.main.serialConnect.Set_fwupdataflag();
+		Thread.Sleep(2000);
+	}
+	if (app_version)
+	{
+		this.serialConnect.Set_fwupdataflag();
+		this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+		Thread.Sleep(50);
+		bool flag1 = true;
+		int num4 = 0;
+		int num5 = 4;
+		XYZ.view.HelpInfo.sizenumber = 0;
+		int num6 = 10236;
+		int num7 = 0;
+		int length3 = (int)numArray2.Length / num6;
+		int length4 = (int)numArray2.Length % num6;
+		byte[] numArray4 = new byte[num6 + num5];
+		byte[] bytes3 = new byte[1];
+		DateTime dateTime = DateTime.Now;
+		Main.main.Fw_updata = DateTime.Now;
+		byte[] bytes4 = Encoding.Default.GetBytes(str6);
+		while (this.serialConnect.FwupdataFlag() == fWupdatum.FWFAIL)
+		{
+			if ((DateTime.Now - dateTime).Seconds <= 5)
+			{
+				continue;
+			}
+			try
+			{
+				this.serialConnect.ClosePort();
+			}
+			catch
+			{
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+			System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+			return;
+		}
+		if (this.serialConnect.FwupdataFlag() == fWupdatum.FWOK)
+		{
+			if (Main.main.firmwareUpgrade == null)
+			{
+				Main.main.firmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+			flag1 = this.serialConnect.serialwrite(bytes4, 0, (int)bytes4.Length);
+			Thread.Sleep(50);
+			while (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWFAIL)
+			{
+				if ((DateTime.Now - dateTime).Seconds <= 5)
+				{
+					continue;
+				}
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+				System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+				return;
+			}
+			if (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWOK)
+			{
+				while (XYZ.view.HelpInfo.sizenumber < (int)numArray2.Length)
+				{
+					if (Main.main.firmwareUpgrade.cancelupdate == 1)
+					{
+						try
+						{
+							this.serialConnect.ClosePort();
+						}
+						catch
+						{
+						}
+						return;
+					}
+					Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+					while (this.serialConnect.CheckSumFlag() == 2)
+					{
+						if (num7 != length3)
+						{
+							this.mem_copy(numArray4, 0, numArray2, XYZ.view.HelpInfo.sizenumber, num6);
+							num4 = this.checksum(numArray2, XYZ.view.HelpInfo.sizenumber, num6);
+							bytes3 = BitConverter.GetBytes(num4);
+							numArray4[num6] = bytes3[3];
+							numArray4[num6 + 1] = bytes3[2];
+							numArray4[num6 + 2] = bytes3[1];
+							numArray4[num6 + 3] = bytes3[0];
+							flag1 = this.serialConnect.serialwrite(numArray4, 0, num6 + num5);
+						}
+						else
+						{
+							this.mem_copy(numArray4, 0, numArray2, XYZ.view.HelpInfo.sizenumber, length4);
+							num4 = this.checksum(numArray2, XYZ.view.HelpInfo.sizenumber, length4);
+							bytes3 = BitConverter.GetBytes(num4);
+							numArray4[length4] = bytes3[3];
+							numArray4[length4 + 1] = bytes3[2];
+							numArray4[length4 + 2] = bytes3[1];
+							numArray4[length4 + 3] = bytes3[0];
+							flag1 = this.serialConnect.serialwrite(numArray4, 0, length4 + num5);
+							this.serialConnect.Set_SumFlag();
+						}
+						Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+						XYZ.view.HelpInfo.sizenumber += num6;
+						num7++;
+					}
+					while (this.serialConnect.CheckSumFlag() == 1)
+					{
+						flag1 = (num7 != length3 ? this.serialConnect.serialwrite(numArray4, 0, num6 + num5) : this.serialConnect.serialwrite(numArray4, 0, length4 + num5));
+						Thread.Sleep(5);
+					}
+					if (flag1)
+					{
+						continue;
+					}
+					Main.main.threedview.ui.BusyWindow.Visibility = Visibility.Hidden;
+					Main.main.threedview.ui.BusyWindow.buttonCancel.Visibility = Visibility.Visible;
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					return;
+				}
+			}
+		}
+		Main.main.serialConnect.Set_fwupdataflag();
+		Thread.Sleep(2000);
+	}
+	if (os_version)
+	{
+		this.serialConnect.Set_fwupdataflag();
+		this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+		Thread.Sleep(50);
+		bool flag2 = true;
+		int num8 = 0;
+		int num9 = 4;
+		XYZ.view.HelpInfo.sizenumber = 0;
+		int num10 = 10236;
+		int num11 = 0;
+		int length5 = (int)numArray1.Length / num10;
+		int length6 = (int)numArray1.Length % num10;
+		byte[] numArray5 = new byte[num10 + num9];
+		byte[] bytes5 = new byte[1];
+		DateTime now1 = DateTime.Now;
+		Main.main.Fw_updata = DateTime.Now;
+		byte[] bytes6 = Encoding.Default.GetBytes(str5);
+		while (this.serialConnect.FwupdataFlag() == fWupdatum.FWFAIL)
+		{
+			if ((DateTime.Now - now1).Seconds <= 5)
+			{
+				continue;
+			}
+			try
+			{
+				this.serialConnect.ClosePort();
+			}
+			catch
+			{
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+			System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+			return;
+		}
+		if (this.serialConnect.FwupdataFlag() == fWupdatum.FWOK)
+		{
+			if (Main.main.firmwareUpgrade == null)
+			{
+				Main.main.firmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+			}
+			Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+			flag2 = this.serialConnect.serialwrite(bytes6, 0, (int)bytes6.Length);
+			Thread.Sleep(50);
+			while (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWFAIL)
+			{
+				if ((DateTime.Now - now1).Seconds <= 5)
+				{
+					continue;
+				}
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+				System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_FAILED"));
+				return;
+			}
+			if (this.serialConnect.Offine_upgrade_fw_head_flag() == fWupdatum.FWOK)
+			{
+				while (XYZ.view.HelpInfo.sizenumber < (int)numArray1.Length)
+				{
+					if (Main.main.firmwareUpgrade.cancelupdate == 1)
+					{
+						try
+						{
+							this.serialConnect.ClosePort();
+						}
+						catch
+						{
+						}
+						return;
+					}
+					Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+					while (this.serialConnect.CheckSumFlag() == 2)
+					{
+						if (num11 != length5)
+						{
+							this.mem_copy(numArray5, 0, numArray1, XYZ.view.HelpInfo.sizenumber, num10);
+							num8 = this.checksum(numArray1, XYZ.view.HelpInfo.sizenumber, num10);
+							bytes5 = BitConverter.GetBytes(num8);
+							numArray5[num10] = bytes5[3];
+							numArray5[num10 + 1] = bytes5[2];
+							numArray5[num10 + 2] = bytes5[1];
+							numArray5[num10 + 3] = bytes5[0];
+							flag2 = this.serialConnect.serialwrite(numArray5, 0, num10 + num9);
+						}
+						else
+						{
+							this.mem_copy(numArray5, 0, numArray1, XYZ.view.HelpInfo.sizenumber, length6);
+							num8 = this.checksum(numArray1, XYZ.view.HelpInfo.sizenumber, length6);
+							bytes5 = BitConverter.GetBytes(num8);
+							numArray5[length6] = bytes5[3];
+							numArray5[length6 + 1] = bytes5[2];
+							numArray5[length6 + 2] = bytes5[1];
+							numArray5[length6 + 3] = bytes5[0];
+							flag2 = this.serialConnect.serialwrite(numArray5, 0, length6 + num9);
+							this.serialConnect.Set_SumFlag();
+						}
+						Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Open);
+						XYZ.view.HelpInfo.sizenumber += num10;
+						num11++;
+					}
+					while (this.serialConnect.CheckSumFlag() == 1)
+					{
+						flag2 = (num11 != length5 ? this.serialConnect.serialwrite(numArray5, 0, num10 + num9) : this.serialConnect.serialwrite(numArray5, 0, length6 + num9));
+						Thread.Sleep(5);
+					}
+					if (flag2)
+					{
+						continue;
+					}
+					Main.main.threedview.ui.BusyWindow.Visibility = Visibility.Hidden;
+					Main.main.threedview.ui.BusyWindow.buttonCancel.Visibility = Visibility.Visible;
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					return;
+				}
+			}
+		}
+		Main.main.serialConnect.Set_fwupdataflag();
+		Thread.Sleep(2000);
+	}
+	int num12 = 0;
+	if (engine_version)
+	{
+		num12++;
+	}
+	if (app_version)
+	{
+		num12 += 2;
+	}
+	if (os_version)
+	{
+		num12 += 4;
+	}
+	byte[] numArray6 = Encoding.Default.GetBytes(string.Concat("UPDATE_START:", Convert.ToString(num12)));
+	this.serialConnect.serialwrite(numArray6, 0, (int)numArray6.Length);
+	try
+	{
+		this.serialConnect.ClosePort();
+	}
+	catch
+	{
+	}
+	Main.main.Invoke(this.FirmwareUpgrade.Updateschedule_Close);
+	System.Windows.Forms.MessageBox.Show(Trans.T("L_FW_UPGRAD_SUCCESS"), Trans.T("L_FW_UPGRAD_HEAD"));
+}
+
+
+

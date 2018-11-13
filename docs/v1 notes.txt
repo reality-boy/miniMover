@@ -1,0 +1,115 @@
+// initial v1 protocol, does not seem to be supported at all with later firmwares
+// later protocols may still return DAVAPP_ACK@ and DAVAPP_ERR@
+// may still be used a bit by the 2.0 Duo
+
+DAVAUD - Check/Do Calibration
+DAVBEH - ACK, ERR
+DAVBUT - ACK, ERR
+DAVBUZ - Buzzer, _1 to beep, bigger decimal for longer beeps
+DAVCFW - Controller Firmware - DAVCFW_ACK@DAVCFW_1.1.J@DAVCFW_END@
+	DAVCFW_82895_203811@
+DAVCM2 - Maybe CME2 for head 2?
+DAVCMD - Controller Model Number - DAVCMD_ACK@DAVCMD_3DP01@DAVCMD_END@
+DAVCME - DAVCME_ACK@DAVCME_1@DAVCME_END@
+DAVCMF - ACK, then motors made noise
+DAVCOM - ACK, END
+DAVCPY - ACK, END
+DAVCSN - Controller Serial Number - DAVCSN_ACK@DAVCSN_3DP01...@DAVCSN_END@
+DAVCTF - DAVCTF_ACK@DAVCTF_-1@DAVCTF_END@
+DAVDMO - ACK, END
+DAVEEP (avoiding, don't want to ruin EEProm?)
+DAVEEW (avoiding, don't want to ruin EEProm?)
+DAVERD - Read printer serial number
+DAVEX2 - Maybe EXH on head 2?
+DAVEXH - ACK, ERR
+DAVFA2 - ACK, END
+DAVFAN - Maybe Fan??? _number gives delay of number seconds between DAVFAN_ACK@ and DAVFAN_END@
+DAVHEB - Starts preheat of bed/extruder, reports bed temp, DAVHEB_38@ = 38 Deg C
+DAVHOM - Park the motors
+DAVLAN - ACK, END
+DAVLCB - LCD Backlight, Alone == off, _0 = off, _1 == ON
+DAVLCM - Clears Display
+DAVLED - Inside white LEDs On/Off, _1 on, _0 off, DAVLED_ACK@DAVLED_END@
+DAVLF2 - Probably Load Filament head 2
+DAVLFT - Load Filament
+DAVMS2 - Extruder 2 Motor?? ACK, END
+DAVMSE - Extruder Motor?? ACK, ERR, motor noise
+DAVMST (avoiding, don't want to ruin motors)
+DAVMSX (avoiding, don't want to ruin motors)
+DAVMSY (avoiding, don't want to ruin motors)
+DAVMSZ (avoiding, don't want to ruin motors)
+DAVPRH - Preheat
+DAVPRT - ACK, ERR
+DAVSAC - ACK, END
+DAVSDC (avoiding, don't want to ruin SD card?)
+DAVSDF (avoiding, don't want to ruin SD card?) - Maybe format the SD card !!!
+	DAVSDF_END@
+DAVSDS (avoiding, don't want to ruin SD card?)
+DAVSF2 - ACK, END
+DAVSFA - ACK, END
+DAVSFD - ACK, END
+DAVSFR - DAVSFR_ACK@DAVSFR_1@DAVSFR_END@
+DAVSMF - ACK, END
+DAVSR1 - ACK, END Maybe something with head 1
+DAVSR2 - ACK, ERR Maybe SR for head 2
+DAVSSN - Set Serial Number, WARNING: Alone will blank it, _XXXXXXXXX sets
+DAVSTF - ACK, END
+DAVSTO - DAVSTO_ACK@DAVSTO_0@DAVSTO_END@
+DAVTE1 - Temp Extruder 1 - DAVTE1_ACK@DAVTE1_21@DAVTE1_END@ = 21 Deg C
+DAVTE2 - Probably Temp Extruder 2
+DAVTEB - Temp Bed
+DAVUF2 - Probably Unload Filament head 2
+DAVUFT - Unload Filament head 1
+DAVWIP - Wipe head front/back
+DAVXMB - X Motor Backwards, _10 is about 1 second, ~7mm
+DAVXMF - X Motor Forwards, _10 is about 1 second, ~7mm
+DAVYMB - Y Motor Backwards, _10 is about 1 second, ~7mm
+DAVYMF - Y Motor Forwards, _10 is about 1 second, ~7mm
+DAVZMB - Z Motor Backwards, _10 is about 1 second, ~7mm
+DAVZMF - Z Motor Forwards, _10 is about 1 second, ~7mm
+
+DAVxxx_ERR
+DAVUSB_1@ 	// model set?
+
+There are 3 types of arguments:
+1) No argument. Just the command name, argument assumed to be 0, e.g. DAVLED, same as DAVLED_0.
+2) Short (less than 13 bytes) argument coming after an underscore, e.g. DAVLED_1, everything after the underscore is treated as a decimal number.
+3) Long (more than 13 bytes) argument. The sixth symbol has to be 'P' or it will be treated as no argument. e.g. DAVxxx_xxxxxPaaaabbbbcccc
+Only aaaabbbbcccc is really used.
+
+
+Firmware 1.1.J
+
+Erased EEPROM 
+sent DAVEEP
+reads back as
+
+000	07	00	00	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+010	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+020	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+030	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+040	07	00	00	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+050	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+060	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+070	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF	FF
+--------
+Erased EEPROM 
+sent DAVEEP_00000
+reads back as
+
+000	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01
+010	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01
+020	01	01	01	01	01	01	01	01	FF	FF	FF	FF	AA	55	AA	55
+030	88	33	55	AA	01	01	01	01	AA	55	AA	55	47	B3	0A	00
+040	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01
+050	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01	01
+060	01	01	01	01	01	01	01	01	FF	FF	FF	FF	AA	55	AA	55
+070	88	33	55	AA	01	01	01	01	AA	55	AA	55	47	B3	0A	00
+---------
+Erased EEPROM 
+sent DAVEEW
+Still Blank
+
+So DAVEEP must be erasing and DAVEEW will write if the data is correctly formatted?
+--------
+

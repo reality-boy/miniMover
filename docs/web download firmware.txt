@@ -1,0 +1,200 @@
+// complete list of every firmware
+
+https://xyzprod.blob.core.windows.net/firmware/?comp=list
+
+// complete list of xyzware
+
+https://xyzprod.blob.core.windows.net/xyzware/?comp=list
+
+
+//check xyz for latest firmware
+
+http://www.xyzprinting.com/api2/CheckForUpdates?
+
+?app=
+com.xyzprinting.daVinci
+com.xyzprinting.daVinciPro
+
+&os=w,10.0
+// presumably there is a mac version of this url
+
+0&region=us
+// iso regions, probably fr, gr, jp, etc
+
+// same as file3w_model but with _V2 appended
+&model=
+davincif10_V2 // 1.0, dvF100B000
+dvF100A000_V2 // 1.0a
+dvF10SA000_V2
+dvF110B000_V2 // davincif11_V2, firmware does not match rest of them
+davincif20_V2 // 2.0, dvF200B000
+dvF200A000_V2 // 2.0A
+dv1J00A000_V2
+dv1JA0A000_V2
+dv1JW0A000_V2
+dv1JS0A000_V2
+//dv1JSOA000_V2 or daVinciJR10S_V2
+dv2JW0A000_V2
+dv1MX0A000_V2
+dv1MW0A000_V2
+dv1MW0B000_V2
+//dv1MW0C000_V2
+dv1NX0A000_V2
+dv1JP0A000_V2
+dvF1W0A000_V2
+dvF1WSA000_V2
+dv1SW0A000_V2
+dv1CP0A000_V2
+
+
+// optional, does not seem to make a difference
+&sn=
+3FM1XPUS5CA68P0591
+
+//example
+
+http://www.xyzprinting.com/api2/CheckForUpdates?app=com.xyzprinting.daVinci&os=w,10.0&region=us&model=dv1MX0A000_V2&sn=3FM1XPUS5CA68P0591
+
+//returns
+
+{"dv1MX0A000":{"latest_version":"1.1.1","download_url":"http://www.xyzprinting.com/api/Download?url\u003dhttps%3A%2F%2Fxyzprod.blob.core.windows.net%2Ffirmware%2F8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin\u0026filename\u003d8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin\u0026product\u003ddv1MX0A000_V2\u0026version\u003d1.1.1","fingerprint":"ae92a0b275ce5bae0b2281a585e140d3ae9f324f8143db67899764666824a402"},"com.xyzprinting.daVinci":{"latest_version":"2.1.28.1","download_url":"http://www.xyzprinting.com/api/Download?url\u003dhttps%3A%2F%2Fxyzprod.blob.core.windows.net%2Fxyzware%2FXYZware-2.1.28.1.exe\u0026filename\u003dXYZware-2.1.28.1.exe\u0026product\u003dcom.xyzprinting.daVinci\u0026version\u003d2.1.28.1","fingerprint":"ef6280e8996fedf87b2973f58506aff3d964f8364898947943ad495ec02efb3d","description":"Version:2.1.28.1\r\nNew features and improvements:\r\n   1.Change new .stl/.3w/.nkg icon.\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg??\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg ??\r\n§§\r\n?????:2.1.28.1\r\n??????:\r\n   1. .stl / .3w/ .nkg ???????????\r\n§§"}}
+
+//or
+
+http://www.xyzprinting.com/api/CheckForUpdates
+?app=com.xyzprinting.daVinci
+&os=w,10.0
+&model=dv1MX0A000_V2
+
+//example
+
+http://www.xyzprinting.com/api/CheckForUpdates?app=com.xyzprinting.daVinci&os=w,10.0&model=dv1MX0A000_V2
+
+//returns, where ??? is in chineese
+
+{"dv1MX0A000":{"latest_version":"1.1.1","download_url":"https://xyzprod.blob.core.windows.net/firmware/8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin","fingerprint":"ae92a0b275ce5bae0b2281a585e140d3ae9f324f8143db67899764666824a402"},"com.xyzprinting.daVinci":{"latest_version":"2.1.28.1","download_url":"https://xyzprod.blob.core.windows.net/xyzware/XYZware-2.1.28.1.exe","fingerprint":"ef6280e8996fedf87b2973f58506aff3d964f8364898947943ad495ec02efb3d","description":"Version:2.1.28.1\r\nNew features and improvements:\r\n   1.Change new .stl/.3w/.nkg icon.\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg??\r\n§§\r\n??:2.1.28.1\r\n??????:\r\n   1.???? .stl / .3w/ .nkg ??\r\n§§\r\n?????:2.1.28.1\r\n??????:\r\n   1. .stl / .3w/ .nkg ???????????\r\n§§"}}
+
+
+Firmware as of 2018/03/30
+
+http://www.xyzprinting.com/api/CheckForUpdates?app=com.xyzprinting.daVinci&os=w,10.0&region=us&model=davincif10_V2
+
+davincif10_V2
+daVinciF10, 1.3.4,
+https://xyzprod.blob.core.windows.net/firmware/7a9a3c93-59e8-4625-a103-94bbd29fb7d4_3DP01_FW_V1.3.4.bin
+
+
+dvF100A000_V2
+dvF100A000
+2.1.4
+https://xyzprod.blob.core.windows.net/firmware/6256c944-06bc-4e86-95ea-e807422085c8_3F10A_FW_V2.1.4.bin
+
+dvF10SA000_V2
+dvF10SA00
+1.2.4
+https://xyzprod.blob.core.windows.net/firmware/88b4fa2f-92a2-4383-a0bf-25b14d6c98f5_3S10A_FW_V1.2.4.bin
+
+dvF110B000_V2
+dvF110B000.os
+2.1.0.32
+https://xyzprod.blob.core.windows.net/firmware/fc50b342-5955-42e0-b334-a1a8b2934cf1_XYZ_Update_2.1.0.32.zip
+dvF110B000.engine
+1.1.25
+https://xyzprod.blob.core.windows.net/firmware/F11_engine_FW_20180103_1.1.P_RELEASE.bin
+dvF110B000.app
+1.1.9.14
+https://xyzprod.blob.core.windows.net/firmware/138a3476-a9bd-451f-8ef9-1ab26495af5e_app_data_1.1.9.14.zip
+
+davincif20_V2
+daVinciF20
+2.1.8
+https://xyzprod.blob.core.windows.net/firmware/fe633ca9-4bfd-415a-8c2b-214ecb15e474_3F20X_FW_V2.1.8.bin
+
+dvF200A000_V2
+dvF200A000
+2.1.2
+https://xyzprod.blob.core.windows.net/firmware/d4812a78-22bf-4224-85a1-aa6c6ff47aa5_3F20A_FW_V2.1.2.bin
+
+dv1J00A000_V2
+dv1J00A000
+2.3.5
+https://xyzprod.blob.core.windows.net/firmware/a4daf77e-40b5-4cb4-910b-354ca92d45ea_3F1J0_FW_V2.3.5.bin
+
+dv1JA0A000_V2
+dv1JA0A000
+1.0.9
+https://xyzprod.blob.core.windows.net/firmware/a90c0dc4-a04f-408a-9349-09f13d777881_3F1JA_FW_V1.0.9.bin
+
+//----------------
+
+dv1JW0A000_V2
+dv1JW0A000
+2.3.6
+https://xyzprod.blob.core.windows.net/firmware/d5eb554d-4cb7-4fa7-8c38-a8064db28d7b_3F1JW_FW_V2.3.6.bin
+
+dv1JS0A000_V2
+dv1JS0A000
+1.0.8
+https://xyzprod.blob.core.windows.net/firmware/2bc5542c-3c94-4fc6-b7cb-07a18e46388c_3F1JS_FW_V1.0.8.bin
+
+dv2JW0A000_V2
+dv2JW0A000
+1.0.6
+https://xyzprod.blob.core.windows.net/firmware/8cef7cfd-5eef-4845-9ac2-83adb6aa40ce_3F2JW_FW_V1.0.6.bin
+
+dv1MX0A000_V2
+dv1MX0A000
+1.1.1
+https://xyzprod.blob.core.windows.net/firmware/8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin
+
+dv1MW0A000_V2
+dv1MW0A000
+1.2.3
+https://xyzprod.blob.core.windows.net/firmware/76e42f48-9c30-4413-831d-9deeeebc651f_3FM1W_FW_V1.2.3.bin
+
+dv1MW0B000_V2
+dv1MW0B000
+1.2.3
+https://xyzprod.blob.core.windows.net/firmware/19b65f2f-c6be-4f1a-8917-6e6242ec6ccc_3FM1J_FW_V1.2.3.bin
+
+dv1MW0C000_V2 // nothing
+
+dv1NX0A000_V2
+dv1NX0A000
+1.0.4
+https://xyzprod.blob.core.windows.net/firmware/59c8e982-e035-49f7-83d7-6cbb3278bad6_3FNAX_FW_V1.0.4.bin
+
+dv1JP0A000_V2
+dv1JP0A000
+1.0.8
+https://xyzprod.blob.core.windows.net/firmware/36c2ea2e-b8a4-4660-800f-b10cb390787d_3F1JP_FW_V1.0.8.bin
+
+dvF1W0A000_V2
+dvF1W0A000
+1.3.8
+https://xyzprod.blob.core.windows.net/firmware/f4a69c93-e8f7-47d0-8938-6a23c6add929_3F1AW_FW_V1.3.8.bin
+
+dvF1WSA000_V2
+dvF1WSA000
+1.1.9
+https://xyzprod.blob.core.windows.net/firmware/10d1fc7e-58ea-4649-8696-21ae6677d8f2_3F1SW_FW_V1.1.9.bin
+
+dv1SW0A000_V2
+dv1SW0A000
+1.0.5
+https://xyzprod.blob.core.windows.net/firmware/270b1692-4cb4-419b-a5d6-0a6115c73681_3F1SW_FW_V1.0.5.bin
+
+dv1CP0A000_V2
+dv1CP0A000
+1.1.5
+https://xyzprod.blob.core.windows.net/firmware/88eb0910-2651-416a-8e39-592dab3f8984_3FC1X_FW_V1.1.5.bin
+
+
+
+
+
+
+
+
+
+

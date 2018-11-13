@@ -1,0 +1,193 @@
+=> 23.97.68.32
+
+POST /api/getFilamentUsage?cartridge_sn=B28AC6B135EA5030F4CE1F29AA77DD87&printer_sn=F4FB351AD789262E6482C4BE659705A838632E40FA1442DA93D127A20FC174B3 HTTP/1.1
+Host: xyzlog.xyzprinting.com
+Content-Length: 0
+Connection: Close
+
+<=
+
+HTTP/1.1 200 OK
+Date: Sat, 03 Nov 2018 04:38:42 GMT
+Server: Play! Framework;1.2.5;prod
+Content-Type: application/json; charset=utf-8
+Cache-Control: no-cache
+Content-Length: 2
+Set-Cookie: PLAY_FLASH=;Expires=Sat, 3-Nov-2018 04:38:42 GMT;Path=/
+Set-Cookie: PLAY_ERRORS=;Expires=Sat, 3-Nov-2018 04:38:42 GMT;Path=/
+Set-Cookie: PLAY_SESSION=;Expires=Sat, 3-Nov-2018 04:38:42 GMT;Path=/
+Connection: close
+
+{}
+
+=> 13.66.190.8
+
+GET /api/CheckSerialNumber?sn=F4FB351AD789262E6482C4BE659705A838632E40FA1442DA93D127A20FC174B3 HTTP/1.1
+Host: www.xyzprinting.com
+Connection: Close
+
+<=
+
+HTTP/1.1 200 OK
+Date: Sat, 03 Nov 2018 04:38:11 GMT
+Server: Play! Framework;1.2.5;prod
+Content-Type: application/json; charset=utf-8
+Cache-Control: no-cache
+Content-Length: 10
+Set-Cookie: PLAY_FLASH=;Expires=Sat, 3-Nov-2018 04:38:11 GMT;Path=/;Domain=.xyzprinting.com
+Set-Cookie: PLAY_ERRORS=;Expires=Sat, 3-Nov-2018 04:38:11 GMT;Path=/;Domain=.xyzprinting.com
+Set-Cookie: PLAY_SESSION=;Expires=Sat, 3-Nov-2018 04:38:11 GMT;Path=/;Domain=.xyzprinting.com
+X-XSS-Protection: 0
+Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS
+Connection: close
+
+{"used":0}
+
+=> printer
+
+XYZv3/query=n
+
+<=
+
+ok
+n:da Vinci 1.1 Plus
+$
+
+=> printer
+
+XYZv3/query=a
+
+<=
+
+ok
+4:192.168.1.126
+b:--
+e:2
+f:1,0
+i:3F11XPGBXTH5320151
+j:10
+L:1,69342,21785
+n:da Vinci 1.1 Plus
+o:p8,t1,c0
+p:dvF110B000
+t:1,--,--
+v:1.1.0.19,1.1.7.3,N/A
+w:1,--------------
+$
+
+command
+  0
+  1 // send file, head command
+    fileName
+    fileLen
+    ee1 // EE1_OK, EE1_NG, 
+    ee2 // EE2_OK, EE2_NG
+  2 // get machine state, see 'data' below, 
+    query // all
+    // result
+  3 // capture image, or get filament? (ack:START_RECEIVE)
+  4 // get print state
+    //query?
+    // result
+  5 // take photo?
+  6 // modify print, 
+    state // pause(1)/resume(2)/stop(3), 
+    token // something after / char
+  7 // get print error
+    //query?
+  8 // get eeprom
+    //query?
+  9 // get printer information
+    //query?
+
+result
+  0 // success?
+  1 // No printing job! (command 4)
+  2 // Not Support file Format!
+  3
+  4 // File checksum error!
+  5 // Command is incorrect!
+  6 // The printer is currently busy, please try again later!
+
+message
+  START_SEND
+  SEND_FINISH
+  No printing job!
+  Not Support file Format!
+  File checksum error!
+  Command is incorrect!
+  The printer is currently busy, please try again later!
+
+length
+token
+
+// returned by command 2
+data
+  b // bed temperature
+  d // print status? <optional>
+    message // message, or the following
+    print_percentage
+    elapsed_time
+    estimated_time
+  e // error
+  f[2] // fillament left
+  i // machine serial number
+  j // machine state
+  n // printer name
+  o // printer options
+    p
+    t
+    f
+  p // module name or printer type
+  s
+    e
+    c
+    j
+    0
+  t[2] // extruder temperature(s)
+  v
+    app // app version
+    engine // engine version
+    os // os version
+  w[2] // eeprom
+  L
+    e // extruder life
+    m // machine life
+
+
+//-----------
+// query status
+
+{"command":2,"query":"all"}
+
+{"result":0,"command":2,"data":{"p":"dvF110B000","i":"3F11XPGBXTH5320151","v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"},"w":["W1:--------------","W2:--------------"],"f":[0,0],"t":["--","--"],"j":10,"L":{"m":"4183146537","e":"21785"},"s":{"e":0,"c":0,"j":0,"o":0},"e":2,"b":"--","d":{"message":"No printing job!"},"o":{"p":0,"t":0,"f":0}}}
+
+
+//-----------
+// Image capture
+
+{"command":3}
+
+{"result":0,"command":3,"message":"START_SEND","length":136811}
+
+{"ack":"START_RECEIVE"}
+
+[JFIF blob]{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
+
+
+//-----------
+// get printer error
+
+{"command":7}
+
+{"result":2,"command":7,"message":"GET_LOG_ERROR"}
+
+
+
+{"command":3}
+
+{"result":0,"command":3,"message":"START_SEND","length":136811}
+
+{"ack":"START_RECEIVE"}
+
+{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
