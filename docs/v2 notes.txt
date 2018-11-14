@@ -29,13 +29,26 @@ XYZ_@3D:0	// connect
 	FW_V:1.1.G
 	MCH_ID:3DP01PUS5TH41D0145
 
+	// or
+
+	XYZ_@3D:start
+	MDU:dvF100A000
+	FW_V:1.0.1
+	MCH_ID:3F10APEU4TH4AN0085
+	PROTOCOL:2
+
 XYZ_@3D:1	// startOnlinePrint
 	DAVAPP_ACK@
 	DAVAPP_ERR@
 
-XYZ_@3D:2	// test print or inject manual command, end on M84
+XYZ_@3D:2	// test print or inject manual command, end on M84, probably does not work on newer firmware
 	DAVAPP_ACK@
 	DAVAPP_ERR@
+
+	// update z offset
+	>XYZ_@3D:2<nl>	// start injecting gcode
+	>M500 ZXXX<nl>	// set z offset
+	>M84 T<nl>	// end command
 
 XYZ_@3D:3	// uploadFirmwareBinary
 	FWOK
@@ -70,9 +83,17 @@ spool
 	// or
 
 	EE1:5a,41,570000,343144,120000,725448,210,90,5448,5553,30313132,52
+
+	// or
+
+	EE1:5a,41,5a0000,344241,120000,115003,210,90,5448,4742,30323237,52
+
+	// or
+
 	EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52
 		xyzCode(Z),material(ABS A),color(white W),Mdate(41A), total_length (mm), remain_length (mm), temperatureHead ©, temperatureBed ©, Mloc (TH), Dloc(GB),SN(SERIAL),security_code
-	// bad eeproms
+
+	// or, bad eeproms
 	EE1:01,01,010101,010101,16843009,16843009,257,257,0101,0101,010101010101010101010101,257
 	EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52,0
 	EE1:5a,41,570000,343236,120000,120000,210,90,5448,4555,30323732,52,0
@@ -100,7 +121,18 @@ XYZ_@3D:8	// machine status or printer status
 	EST_TIME:0
 	ET0:22
 	BT:28
-	MCH_STATE:26	// e, error status
+	MCH_STATE:26
+
+	// or
+
+	WORK_PARSENT:0
+	WORK_TIME:0
+	EST_TIME:0
+	ET0:31
+	BT:27
+	MCH_STATE:26
+	LANG:0
+
 
 XYZ_@3D:9	// send build sample?
 	DAVAPP_ACK@
@@ -245,7 +277,6 @@ with open(sys.argv[2], 'rb') as fin:
 
 //*********************
 // G-Code commands
-// Do they work with v3 protocol?
 
 XYZ_@3D:2 // test head, send this first
 M84 P // pause print
@@ -1092,4 +1123,492 @@ public void F11_Fwupgrade(bool app_version, bool os_version, bool engine_version
 }
 
 
+public void OfflineSendata(string offlinebuffer)
+{
+	DateTime now;
+	Material_Error materialError;
+	char[] chrArray;
+	Export.FWState fWState = new Export.FWState();
+	this.serialConnect = new SerialConnector();
+	this.FirmwareUpgrade = new XYZ.view.FirmwareUpgrade();
+	Main.main.offlinePrint = new OfflinePrint();
+	string str = "XYZ_@3D:4";
+	string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+	string str1 = string.Concat(folderPath, "\\MyTest.txt");
+	int num = 0;
+	int num1 = 10236;
+	int num2 = 4;
+	this.checknumber = 0;
+	byte[] bytes = Encoding.Default.GetBytes(str);
+	byte[] numArray = Encoding.Default.GetBytes(offlinebuffer);
+	byte[] numArray1 = new byte[num1 + num2];
+	byte[] bytes1 = new byte[1];
+	bool flag = true;
+	string str2 = "EE1_OK";
+	string str3 = "EE2_OK";
+	this.datalength = (int)numArray.Length;
+	int length = (int)numArray.Length / num1;
+	int length1 = (int)numArray.Length % num1;
+	string str4 = string.Concat(folderPath, "\\temp.ree");
+	string str5 = "1234567890123456";
+	if (Main.main.threedview.ui.filament1.ramin_length == null)
+	{
+		if (File.Exists(str4))
+		{
+			try
+			{
+				string str6 = this.Decrypt(File.ReadAllText(str4), str5);
+				chrArray = new char[] { ';' };
+				this.dict = str6.Split(chrArray).ToDictionary<string, string, string>((string x) => x.Split(new char[] { '=' })[0], (string x) => x.Split(new char[] { '=' })[1]);
+			}
+			catch
+			{
+				try
+				{
+					if (File.Exists(str4))
+					{
+						File.SetAttributes(str4, FileAttributes.Normal);
+						File.Delete(str4);
+					}
+				}
+				catch
+				{
+				}
+			}
+		}
+		string str7 = this.GeteepormSn(1);
+		if (Main.main.threedview.ui.FindInDictionary(str7, this.dict) == "Not Found")
+		{
+			str2 = "EE1_OK";
+		}
+		else if (Convert.ToInt32(this.dict[str7]) > 0 && Convert.ToInt32(this.dict[str7]) < Convert.ToInt32(Main.conn.FILAMANEE.remain_length))
+		{
+			str2 = "EE1_NG";
+		}
+	}
+	else if (Convert.ToInt32(Main.main.threedview.ui.filament1.ramin_length) < Convert.ToInt32(Main.conn.FILAMANEE.remain_length))
+	{
+		str2 = "EE1_NG";
+	}
+	if (Main.main.threedview.ui.filament2.ramin_length == null)
+	{
+		if (File.Exists(str4))
+		{
+			try
+			{
+				string str8 = this.Decrypt(File.ReadAllText(str4), str5);
+				char[] chrArray1 = new char[] { ';' };
+				this.dict = str8.Split(chrArray1).ToDictionary<string, string, string>((string x) => x.Split(new char[] { '=' })[0], (string x) => x.Split(new char[] { '=' })[1]);
+			}
+			catch
+			{
+			}
+		}
+		string str9 = this.GeteepormSn(2);
+		if (Main.main.threedview.ui.FindInDictionary(str9, this.dict) == "Not Found")
+		{
+			str3 = "EE2_OK";
+		}
+		else if (Convert.ToInt32(this.dict[str9]) > 0 && Convert.ToInt32(this.dict[str9]) < Convert.ToInt32(Main.conn.FILAMANEE1.remain_length))
+		{
+			str3 = "EE2_NG";
+		}
+	}
+	else if (Convert.ToInt32(Main.main.threedview.ui.filament2.ramin_length) < Convert.ToInt32(Main.conn.FILAMANEE1.remain_length))
+	{
+		str3 = "EE2_NG";
+	}
+	if (Main.main.MettaWorldPeace == 1 || Main.main.gIsKinpoUser)
+	{
+		str2 = "EE1_OK";
+		str3 = "EE2_OK";
+	}
+	object[] objArray = new object[] { Convert.ToString(Main.main.ReturnTime_hour()), '.', Convert.ToString(Main.main.ReturnTime_min()), '.', Convert.ToString(Main.main.ReturnTime_sec()), ',' };
+	string str10 = string.Concat(objArray);
+	int num3 = 0;
+	this.sizenumber = 0;
+	object[] objArray1 = new object[] { "M1:MyTest", ',', this.datalength, ',', str10, str2, ',', str3, "\n" };
+	this.senddatainfo = string.Concat(objArray1);
+	if (Main.main.MettaWorldPeace == 1 || Main.main.gIsKinpoUser)
+	{
+		str2 = "EE1_OK";
+		str3 = "EE2_OK";
+		object[] objArray2 = new object[] { "M1:MyTest", ',', this.datalength, ',', str10, str2, ',', str3, "\n" };
+		this.senddatainfo = string.Concat(objArray2);
+		goto Label0;
+	}
+	else
+	{
+		if (str2 == "EE1_NG" || str3 == "EE2_NG" || Main.conn.FILAMANEE.check_illegal == "1" || Main.conn.FILAMANEE1.check_illegal == "1")
+		{
+			try
+			{
+				this.serialConnect.ClosePort();
+				Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+			}
+			catch
+			{
+			}
+			(new IllegalFilamentCheck(0)).ShowDialog();
+			return;
+		}
+		try
+		{
+			if ((Main.conn.machineModel == Main.main.Print_type_define.F10 || Main.conn.machineModel == Main.main.Print_type_define.F20) && (Main.conn.FILAMANEE.material == 50.ToString() || Main.conn.FILAMANEE1.material == 50.ToString() || Main.conn.FILAMANEE.material == 51.ToString() || Main.conn.FILAMANEE1.material == 51.ToString() || Main.conn.FILAMANEE.material == 54.ToString() || Main.conn.FILAMANEE1.material == 54.ToString() || Main.conn.FILAMANEE.material == 56.ToString() || Main.conn.FILAMANEE1.material == 56.ToString()))
+			{
+				try
+				{
+					Thread.Sleep(100);
+					if (!Main.conn.IsEnablePLA)
+					{
+						(new PLA_Error()).ShowDialog();
+						this.serialConnect.ClosePort();
+						Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+						return;
+					}
+				}
+				catch
+				{
+				}
+			}
+		}
+		catch
+		{
+		}
+		try
+		{
+			if (Main.conn.machineModel == Main.main.Print_type_define.F10 && Main.conn.FILAMANEE.material == 46.ToString())
+			{
+				try
+				{
+					(new Material_Error(0, "", "")).ShowDialog();
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+				return;
+			}
+			else if ((Main.conn.machineModel == Main.main.Print_type_define.F20 || Main.conn.new_machine_model == Main.main.Print_type_define.F20 || Main.conn.machineModel == Main.main.Print_type_define.F20A || Main.conn.new_machine_model == Main.main.Print_type_define.F20A) && (Main.conn.FILAMANEE.material == 46.ToString() || Main.conn.FILAMANEE1.material == 46.ToString()))
+			{
+				try
+				{
+					(new Material_Error(0, "", "")).ShowDialog();
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+				return;
+			}
+			else if ((Main.conn.machineModel == Main.main.Print_type_define.F11 || Main.conn.new_machine_model == Main.main.Print_type_define.F11) && Main.conn.FILAMANEE.material == 46.ToString())
+			{
+				try
+				{
+					(new Material_Error(0, "", "")).ShowDialog();
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+				return;
+			}
+		}
+		catch
+		{
+		}
+		try
+		{
+			chrArray = new char[] { '\n' };
+			string[] strArrays = offlinebuffer.Split(chrArray);
+			string str11 = Main.main.offlineanalyzerFilamentID(strArrays);
+			if (str11 != null)
+			{
+				chrArray = new char[] { ',' };
+				string str12 = str11.Split(chrArray)[0];
+				chrArray = new char[] { ',' };
+				string str13 = str11.Split(chrArray)[1];
+				bool flag1 = true;
+				bool flag2 = true;
+				if (Main.conn.FILAMANEE.material != null && Main.conn.FILAMANEE.material != "" && Main.conn.FILAMANEE.material != "00" && Main.conn.FILAMANEE.material != "2B" && Main.conn.FILAMANEE.material != "2D")
+				{
+					flag1 = (Main.conn.FILAMANEE.material == str12 ? true : false);
+					if (Main.conn.FILAMANEE.material == "51" && Main.conn.FILAMANEE.material == (int.Parse(str12) + 1).ToString())
+					{
+						flag1 = true;
+					}
+					if (Main.conn.FILAMANEE.material == "54" && Main.conn.FILAMANEE.material == (int.Parse(str12) + 4).ToString())
+					{
+						flag1 = true;
+					}
+					if (Main.conn.FILAMANEE.material == "51" && Main.conn.FILAMANEE.material == (int.Parse(str12) - 3).ToString())
+					{
+						flag1 = true;
+					}
+					if (Main.conn.FILAMANEE.material == "50" && Main.conn.FILAMANEE.material == (int.Parse(str12) - 4).ToString())
+					{
+						flag1 = true;
+					}
+				}
+				if (Main.conn.FILAMANEE1.material != null && Main.conn.FILAMANEE1.material != "" && Main.conn.FILAMANEE1.material != "00" && Main.conn.FILAMANEE1.material != "2B" && Main.conn.FILAMANEE1.material != "2D")
+				{
+					flag2 = (Main.conn.FILAMANEE1.material == str13 ? true : false);
+					if (Main.conn.FILAMANEE1.material == "51" && Main.conn.FILAMANEE1.material == (int.Parse(str13) + 1).ToString())
+					{
+						flag2 = true;
+					}
+					if (Main.conn.FILAMANEE1.material == "54" && Main.conn.FILAMANEE1.material == (int.Parse(str13) + 4).ToString())
+					{
+						flag2 = true;
+					}
+					if (Main.conn.FILAMANEE1.material == "51" && Main.conn.FILAMANEE.material == (int.Parse(str12) - 3).ToString())
+					{
+						flag1 = true;
+					}
+					if (Main.conn.FILAMANEE1.material == "50" && Main.conn.FILAMANEE.material == (int.Parse(str12) - 4).ToString())
+					{
+						flag1 = true;
+					}
+				}
+				if (!flag1 || !flag2)
+				{
+					materialError = (flag1 ? new Material_Error(1, Main.conn.FILAMANEE1.material, str13) : new Material_Error(1, Main.conn.FILAMANEE.material, str12));
+					try
+					{
+						materialError.ShowDialog();
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+					return;
+				}
+			}
+		}
+		catch
+		{
+		}
+		try
+		{
+			if (!Main.conn.machineModel.Contains(Main.main.Print_type_define.F1AW) && !Main.conn.new_machine_model.Contains(Main.main.Print_type_define.F1AW) && !Main.conn.machineModel.Contains(Main.main.Print_type_define.F1AS) && !Main.conn.new_machine_model.Contains(Main.main.Print_type_define.F1AS) && !Main.conn.Get_new_Modelname().Contains(Main.main.New_print_type_define.F1SW) && !Main.conn.Get_new_Modelname().Contains(Main.main.New_print_type_define.FJR10PRO) && !Main.conn.Get_new_Modelname().Contains(Main.main.New_print_type_define.F1JO) && Main.conn.IsNeedCalibration && !(new Material_Error(2, Main.conn.FILAMANEE.material, "")).ShowDialog().Value)
+			{
+				try
+				{
+					this.serialConnect.ClosePort();
+				}
+				catch
+				{
+				}
+				Main.main.threedview.ui.BusyWindow.buttonCancel_Click(null, null);
+				return;
+			}
+		}
+		catch
+		{
+		}
+		if (Main.conn.FILAMANEE.material == 46.ToString() || Main.conn.FILAMANEE1.material == 46.ToString())
+		{
+			(new FlexibleMaterial()).ShowDialog();
+			goto Label0;
+		}
+		else
+		{
+			goto Label0;
+		}
+	}
+	return;
+Label0:
+	if (this.serialConnect.USBConn())
+	{
+		if (this.serialConnect.USBConn())
+		{
+			flag = this.serialConnect.serialwrite(bytes, 0, (int)bytes.Length);
+			Thread.Sleep(200);
+		}
+		byte[] bytes2 = Encoding.Default.GetBytes(this.senddatainfo);
+		DateTime dateTime = DateTime.Now;
+		while (this.serialConnect.OffLinedataFlag() == fWState.FWFAIL || this.serialConnect.OffLinedataFlag() == fWState.FWNO || this.serialConnect.OffLinedataFlag() == fWState.FWNG)
+		{
+			if ((DateTime.Now - dateTime).Seconds <= 5)
+			{
+				continue;
+			}
+			this.sizenumber = 0;
+			try
+			{
+				this.serialConnect.ClosePort();
+			}
+			catch
+			{
+			}
+			System.Windows.MessageBox.Show(Trans.T("M_MACHINE_ERROR"));
+			return;
+		}
+		if (this.serialConnect.OffLinedataFlag() == fWState.FWOK)
+		{
+			if (Main.main.offlinePrint == null)
+			{
+				Main.main.offlinePrint = new OfflinePrint();
+			}
+			Main.main.offlinePrint.StartOfflinePrint();
+			Main.main.Invoke(Main.main.offlinePrint.Updateschedule);
+			this.serialConnect.serialwrite(bytes2, 0, (int)bytes2.Length);
+			Thread.Sleep(1000);
+			if (Main.conn.Get_new_Modelname() == Main.main.Print_type_define.F11)
+			{
+				while (!this.serialConnect.Offine_Send_file_head_flag())
+				{
+					if ((DateTime.Now - dateTime).Seconds <= 5)
+					{
+						continue;
+					}
+					this.sizenumber = 0;
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					System.Windows.MessageBox.Show(Trans.T("M_MACHINE_ERROR"));
+					return;
+				}
+			}
+			while (this.sizenumber < this.datalength)
+			{
+				if (Main.main.offlinePrint.cancelprint == 1)
+				{
+					this.sizenumber = 0;
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					return;
+				}
+				Main.main.Invoke(Main.main.offlinePrint.Updateschedule);
+				if (num != length)
+				{
+					now = DateTime.Now;
+					this.mem_copy(numArray1, 0, numArray, this.sizenumber, num1);
+					num3 = this.checksum(numArray, this.sizenumber, num1);
+					bytes1 = BitConverter.GetBytes(num3);
+					numArray1[num1] = bytes1[3];
+					numArray1[num1 + 1] = bytes1[2];
+					numArray1[num1 + 2] = bytes1[1];
+					numArray1[num1 + 3] = bytes1[0];
+					flag = this.serialConnect.serialwrite(numArray1, 0, num1 + num2);
+				}
+				else
+				{
+					now = DateTime.Now;
+					this.mem_copy(numArray1, 0, numArray, this.sizenumber, length1);
+					num3 = this.checksum(numArray, this.sizenumber, length1);
+					bytes1 = BitConverter.GetBytes(num3);
+					numArray1[length1] = bytes1[3];
+					numArray1[length1 + 1] = bytes1[2];
+					numArray1[length1 + 2] = bytes1[1];
+					numArray1[length1 + 3] = bytes1[0];
+					flag = this.serialConnect.serialwrite(numArray1, 0, length1 + num2);
+				}
+				System.Windows.Forms.Application.DoEvents();
+				Thread.Sleep(1);
+				if (!flag)
+				{
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					this.sizenumber = 0;
+					Main.main.threedview.ui.BusyWindow.Visibility = System.Windows.Visibility.Hidden;
+					System.Windows.Forms.MessageBox.Show(Trans.T("M_DISCONNECT_DEVICE"));
+					return;
+				}
+				if (this.serialConnect.OffLinedataFlag() == fWState.FWNO)
+				{
+					try
+					{
+						this.serialConnect.ClosePort();
+					}
+					catch
+					{
+					}
+					this.sizenumber = 0;
+					System.Windows.MessageBox.Show(Trans.T("M_MACHINE_ERROR"));
+					return;
+				}
+				while (this.serialConnect.CheckSumFlag() == 1)
+				{
+					this.checknumber++;
+					if (this.checknumber >= 10)
+					{
+						try
+						{
+							this.serialConnect.ClosePort();
+						}
+						catch
+						{
+						}
+						this.sizenumber = 0;
+						this.checknumber = 0;
+						System.Windows.MessageBox.Show(Trans.T("M_MACHINE_ERROR"));
+						return;
+					}
+					flag = (num != length ? this.serialConnect.serialwrite(numArray1, 0, num1 + num2) : this.serialConnect.serialwrite(numArray1, 0, length1 + num2));
+					Thread.Sleep(5);
+				}
+				this.serialConnect.SetCheckSum();
+				this.sizenumber += num1;
+				num++;
+				for (int i = 0; i < (int)numArray1.Length; i++)
+				{
+					numArray1[i] = 0;
+				}
+			}
+		}
+		try
+		{
+			this.serialConnect.ClosePort();
+			Main.main.threedview.ui.BusyWindow.Visibility = System.Windows.Visibility.Hidden;
+			bool? isChecked = Main.main.threedview.ui.EasyMode.easyMode_button.IsChecked;
+			if ((!isChecked.GetValueOrDefault() ? false : isChecked.HasValue))
+			{
+				Main.main.threedview.ui.EasyMode.status_textBlock.Text = Trans.T("L_PRINTING");
+			}
+			File.Delete(str1);
+		}
+		catch
+		{
+		}
+		this.WriteMachineInformat();
+		if (Main.main.SWPublishVersion != 2)
+		{
+			this.WritePrint_parameterInformat();
+		}
+		else
+		{
+			this.WritePrint_parameterInformat_pro();
+		}
+		this.sizenumber = 0;
+		return;
+	}
+	try
+	{
+		this.serialConnect.ClosePort();
+		return;
+	}
+	catch
+	{
+		return;
+	}
+}
 
