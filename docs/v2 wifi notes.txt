@@ -48,6 +48,7 @@ result is one of
 // ???
 
 >  {"command":0}
+<  {"result":5,"command":0,"message":"Command incorrect!"}
 
 //-----------
 // send file, head command
@@ -112,12 +113,14 @@ result is one of
 // get print state
 
 >  {"command":4} // query?
+<  {"result":1,"command":4,"message":"No printing job!"}
     // result
 
 //-----------
 // take photo?
 
 >  {"command":5} // query?
+<  {"result":0,"command":5}
    // "ack":"START_RECEIVE"
 
 //-----------
@@ -126,6 +129,7 @@ result is one of
 >  {"command":6,"state":1,"token":x} // pause
 >  {"command":6,"state":2,"token":x} // resume
 >  {"command":6,"state":3,"token":x} // stop
+<  {"result":5,"command":-1,"message":"Command incorrect!"}
    // token is returned when print starts, possibly the file name?
    // result // 0,1,2,4,5,6
 
