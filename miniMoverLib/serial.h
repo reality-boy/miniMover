@@ -73,7 +73,7 @@ protected:
 	char m_deviceName[SERIAL_MAX_DEV_NAME_LEN];
 	int m_baudRate;
 
-	static const int m_max_serial_recieve_buf = 256;
+	static const int m_max_serial_recieve_buf = 1024;
 };
 
 //-----------------

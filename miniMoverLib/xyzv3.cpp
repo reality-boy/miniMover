@@ -1269,6 +1269,11 @@ const char* XYZV3::getStateStr()
 
 void XYZV3::setState(int /*ActState*/ state, float timeout_s, bool needsMachineState)
 {
+	// drain any leftover data if end of state
+	if(m_actState != state && (state == ACT_SUCCESS || state == ACT_FAILURE))
+		if(m_stream)
+			m_stream->clear();
+
 	m_actState = state;
 
 	// force progress bar to 100% on exit
@@ -2439,7 +2444,14 @@ bool XYZV3::waitForConfigOK()
 		if(*buf)
 		{
 			if(0 == strcmp("ok", buf))
+			{
+				//****FixMe, some printers return '$\n\n' after 'ok\n'
+				// drain any left over messages
+				if(m_stream)
+					m_stream->clear();
+
 				return true;
+			}
 			else if(buf[0] == 'E')
 				debugPrint(DBG_WARN, "XYZV3::waitForConfigOK got error instead '%s'", buf);
 			else
@@ -2450,6 +2462,11 @@ bool XYZV3::waitForConfigOK()
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::waitForConfigOK failed, connection closed");
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 
 	return false;
 }
@@ -3198,6 +3215,11 @@ bool XYZV3::waitForEndCom()
 		{
 			if(buf[0] == '$')
 			{
+				//****FixMe, some printers return '$\n\n' after 'ok\n'
+				// drain any left over messages
+				if(m_stream)
+					m_stream->clear();
+
 				return true;
 				// success
 			}
@@ -3211,6 +3233,11 @@ bool XYZV3::waitForEndCom()
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::waitForEndCom failed, connection closed");
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 
 	return false;
 }
