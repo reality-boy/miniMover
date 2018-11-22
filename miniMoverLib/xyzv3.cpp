@@ -2472,6 +2472,37 @@ bool XYZV3::waitForConfigOK()
 }
 
 
+bool XYZV3::waitForResponse(const char *response)
+{
+	if(m_stream && m_stream->isOpen())
+	{
+		// wait for M1_OK
+		msTimeout timeout(m_stream->getDefaultTimeout());
+		const int len = 1024;
+		char retBuf[len] = "";
+		do
+		{
+			if(m_stream->readLine(retBuf, len))
+				break;
+		} 
+		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
+
+		if(*retBuf)
+		{
+			if(0 == strcmp(retBuf, response))
+			{
+				// success
+				return true;
+			}
+			else
+				debugPrint(DBG_WARN, "error: %s", retBuf);
+		}
+		else
+			debugPrint(DBG_WARN, "timeout waiting for %s", response);
+	}
+	return false;
+}
+
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
 	debugPrint(DBG_LOG, "XYZV3::sendFileInit(%s, %d)", path, isPrint);
@@ -2512,7 +2543,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						// zero terminate header string
 						//****Note, only valid if !isPrint
 						header[16] = '\0';
-
+#if 1 // V3
 						// now we have a buffer, go ahead and start to print it
 						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
 						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
@@ -2543,6 +2574,61 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						}
 						else
 							debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
+#else // V2
+						// start print
+						serialSendMessage("XYZ_@3D:4");
+						// 200 ms delay
+
+						// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
+						waitForResponse("OFFLINE_OK"); // wait 5 seconds
+
+						// send file info
+						if(isPrint)
+							serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
+						// else ???
+						// 1000 ms delay
+
+						// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
+						waitForResponse("M1_OK"); // wait 5 seconds
+
+						// prepare to send data in frames
+						char *dataArray = buf;
+						int frameLen = 10236;
+						int lastFrameLen = len % frameLen;
+						int frameCount = len / frameLen;
+						int frameNum = 0;
+
+						// in loop
+						while (m_stream && m_stream->isOpen() && frameNum <= frameCount)
+						{
+							int tFrameLen = (frameNum < frameCount) ? frameLen : lastFrameLen;
+
+							// calc a checksum
+							int chk = 0;
+							for (int i = 0; i < tFrameLen; i++)
+							{
+								chk = ((unsigned char)dataArray[i]) + chk;
+							}
+
+							// byteswap to network byte order
+							chk = swap32bit(chk);
+
+							// send data
+							m_stream->write(dataArray, tFrameLen);
+							// send checksum
+							m_stream->write((char*)&chk, 4);
+
+							// wait for M2_OK or CheckSumOK
+							// or if CheckSumFail send again
+							// or if OFFLINE_NO then give up
+							waitForResponse("M2_OK"); // wait 50 ms
+
+							dataArray += frameLen;
+							frameNum++;
+						}
+
+						// close stream
+#endif
 					}
 
 					if(!success)

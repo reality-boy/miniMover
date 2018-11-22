@@ -55,10 +55,16 @@ result is one of
 
 >  {"command":1,"fileName":"temp.gcode","fileLen":5,"ee1":"EE1_OK","ee2":"EE2_OK"}
 <  {"result":1,"command":1,"message":"START_RECEIVE"}
->  12345<EOF>
+>  [filebytes]<EOF>
 <  {"result":4,"command":1,"message":"File checksum error!"}
     // EE1_OK, EE1_NG, EE2_OK, EE2_NG
-    result // 0,1,2,4,5,6
+	result == 0 // success
+	result == 1 // success?
+	result == 2 // unsupported file format
+    result == 4 // file checksum error
+    result == 5 // invalid command
+    result == 6 // printer buisy
+
 
 //-----------
 // query status

@@ -436,6 +436,8 @@ protected:
 	// convert a 3w file to gcode
 	bool decryptFile(const char *inPath, const char *outPath = NULL);
 
+	bool waitForResponse(const char *response); //****RemoveMe
+
 	// helper functions that upload a firmware or 3w file
 	bool sendFileInit(const char *path, bool isPrint);
 	bool sendFileProcess();
