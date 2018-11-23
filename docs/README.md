@@ -6,7 +6,7 @@ You can read up on the development progress in this forum.
 
 http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 
-This works with the following printers over a USB connection.  There is no wireless support yet, but I could look into it if there is any interest.
+This works with the following printers over a USB connection.  There is limited wireless support but it is not fully functional yet.
 
    da Vinci Nano  
    da Vinci miniMaker  
@@ -33,32 +33,37 @@ With these printers I can only convert from gcode to 3w files and back.  They us
 
 This comes in two flavors, a win32 GUI and a command line utility.
 
-![My image](http://soliforum.com/i/?PDJlohX.png)
+![My image](http://soliforum.com/i/?lCv3Sh3.png)
 
 Here is a summary of the commands that the command line can take.
 
 ```
-usage: miniMover <args>
+usage: miniMover <args> [file]
+  file - print file if .gcode, otherwise convert to gcode if .3w
+  -d devName - set serial port device name or wifi ip address, -1 auto detects port
+  -po devName - set serial port device name, -1 auto detects port
+  -c file - convert file
+  -p file - print file
+  -f file - upload firmware, experimental!
+  -r - print raw status
+  -s - print status
   -? - print help message
+
+ * The following only work on machines that lack an LCD *
+
   -a+ - enable auto level
   -a- - disable auto level
   -b+ - enable buzzer
   -b- - disable buzzer
   -cl - clean nozzle
   -ca - calibrate bed
-  -c file - convert file
-  -f file - upload firmware, experimental!
   -h - home printer
   -l - load filament
   -o num - increment/decrement z offset by num
-  -po num - set serial port number, -1 auto detects port
-  -p file - print file
-  -s - print status
   -u - unload filament
   -x num - jog x axis by num, or 10 if num not provided
   -y num - jog y axis by num, or 10 if num not provided
   -z num - jog z axis by num, or 10 if num not provided
-  file - print file if .gcode, otherwise convert to gcode if .3w
 ```
 
 This uses a modified version of the tiny-AES project by kkoke.
