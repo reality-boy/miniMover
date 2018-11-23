@@ -548,7 +548,9 @@ protected:
 	// that makes it simpler to reconfigure while we work out the details
 
 	// helper function
+	const char* waitForLine();
 	bool waitForResponse(const char *response);
+	int waitForInt(const char *response);
 
 	//v2 serial protocol
 	void V2S_queryStatusStart(bool doPrint, char *s);

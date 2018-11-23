@@ -4250,16 +4250,14 @@ bool XYZV3::isWIFI()
 
 // experimental v2 protocol
 
-bool XYZV3::waitForResponse(const char *response)
+const char* XYZV3::waitForLine()
 {
-	debugPrint(DBG_LOG, "XYZV3::waitForResponse(%s)", response);
-
 	if(m_stream && m_stream->isOpen())
 	{
 		// wait for M1_OK
 		msTimeout timeout(m_stream->getDefaultTimeout());
 		const int len = 1024;
-		char retBuf[len] = "";
+		static char retBuf[len] = "";
 		do
 		{
 			if(m_stream->readLine(retBuf, len))
@@ -4268,19 +4266,63 @@ bool XYZV3::waitForResponse(const char *response)
 		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
 
 		if(*retBuf)
+			return retBuf;
+	}
+
+	return NULL;
+}
+
+bool XYZV3::waitForResponse(const char *response)
+{
+	debugPrint(DBG_LOG, "XYZV3::waitForResponse(%s)", response);
+
+	if(response)
+	{
+		const char *line = waitForLine();
+		if(line)
 		{
-			if(response && 0 == strcmp(retBuf, response))
+			if(NULL != strstr(line, response))
 			{
 				// success
 				return true;
 			}
 			else
-				debugPrint(DBG_WARN, "error: %s", retBuf);
+				debugPrint(DBG_WARN, "error: %s", line);
 		}
 		else
 			debugPrint(DBG_WARN, "timeout waiting for %s", response);
 	}
+	else
+		debugPrint(DBG_WARN, "bad input");
+
 	return false;
+}
+
+int XYZV3::waitForInt(const char *response)
+{
+	debugPrint(DBG_LOG, "XYZV3::waitForInt(%s)", response);
+
+	if(response)
+	{
+		const char *line = waitForLine();
+		if(line)
+		{
+			const char *ret = strstr(line, response);
+			if(ret)
+			{
+				ret += strlen(response);
+				return atoi(ret);
+			}
+			else
+				debugPrint(DBG_WARN, "error: %s", line);
+		}
+		else
+			debugPrint(DBG_WARN, "timeout waiting for %s", response);
+	}
+	else
+		debugPrint(DBG_WARN, "bad input");
+
+	return -1;
 }
 
 // === v2 serial protocol ===
@@ -4289,19 +4331,24 @@ void XYZV3::V2S_queryStatusStart(bool doPrint, char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_queryStatusStart(%d, %s...)", doPrint, s);
 
-	// send XYZ_@3D:0
+	serialSendMessage("XYZ_@3D:0");
+	//****FixMe, 
 	// in loop read line and call V2S_parseStatusSubstring
 
-	// send XYZ_@3D:5
+	serialSendMessage("XYZ_@3D:5");
+	//****FixMe, 
 	// in loop read line and call V2S_parseStatusSubstring
 
-	// send XYZ_@3D:6
+	serialSendMessage("XYZ_@3D:6");
+	//****FixMe, 
 	// in loop read line and call V2S_parseStatusSubstring
 
-	// send XYZ_@3D:7
+	serialSendMessage("XYZ_@3D:7");
+	//****FixMe, 
 	// in loop read line and call V2S_parseStatusSubstring
 
-	// send XYZ_@3D:8
+	serialSendMessage("XYZ_@3D:8");
+	//****FixMe, 
 	// in loop read line and call V2S_parseStatusSubstring
 }
 
@@ -4386,11 +4433,10 @@ void XYZV3::V2S_SendFirmware(const char* buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_SendFirmware()");
 
-	// 	> XYZ_@3D:3
-	//	< FWOK
-	//	> M1:firmware,<bytes> , // ie M1:firmware,249344 ,
-	//	> <firmware file>
-
+	serialSendMessage("XYZ_@3D:3");
+	waitForResponse("FWOK");
+	serialSendMessage("M1:firmware,%d ,", len); // ie M1:firmware,249344 ,
+	m_stream->write(buf, len);
 }
 
 void XYZV3::V2S_SendFile(const char* buf, int len)
@@ -4458,14 +4504,15 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart(%d, %s)", doPrint, s);
 
-	//****Fill me in
-	// >  {"command":4} // query?
-	// <  {"result":1,"command":4,"message":"No printing job!"}
+	serialSendMessage("{\"command\":4}");
+	const char *s1 = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
+	//****FixMe, parse output
+
+	serialSendMessage("{\"command\":2,\"query\":\"%s\"}", "all");
+	const char *s2 = waitForLine(); // <  {"result":0,"command":2,"data":{"p":"dvF110B000","i":"3F11XPGBXTH5320151","v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"},"w":["W1:--------------","W2:--------------"],"f":[0,0],"t":["--","--"],"j":10,"L":{"m":"4183146537","e":"21785"},"s":{"e":0,"c":0,"j":0,"o":0},"e":2,"b":"--","d":{"message":"No printing job!"},"o":{"p":0,"t":0,"f":0}}}
+	//****FixMe, parse output
 
 	/*
-	>  {"command":2,"query":"all"}
-	<  {"result":0,"command":2,"data":{"p":"dvF110B000","i":"3F11XPGBXTH5320151","v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"},"w":["W1:--------------","W2:--------------"],"f":[0,0],"t":["--","--"],"j":10,"L":{"m":"4183146537","e":"21785"},"s":{"e":0,"c":0,"j":0,"o":0},"e":2,"b":"--","d":{"message":"No printing job!"},"o":{"p":0,"t":0,"f":0}}}
-
   // query is all, or one below
   // data
     b // bed temperature
@@ -4498,7 +4545,6 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, char *s)
     L
       e // extruder life
       m // machine life
-
 	*/
 }
 
@@ -4513,13 +4559,15 @@ void XYZV3::V2W_SendFile(const char* buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_SendFile()");
 
-	//****Fill me in
+	// start print
+	serialSendMessage("{\"command\":1,\"fileName\":\"temp.gcode\",\"fileLen\":%d,\"ee1\":\"EE1_OK\",\"ee2\":\"EE2_OK\"}", len);
+	waitForResponse("START_RECEIVE");
+
+	// send file
+	m_stream->write(buf, len);
+	serialSendMessage("<EOF>");
+	int result = waitForInt("result\":");
 	/*
-	>  {"command":1,"fileName":"temp.gcode","fileLen":5,"ee1":"EE1_OK","ee2":"EE2_OK"}
-	<  {"result":1,"command":1,"message":"START_RECEIVE"}
-	>  [filebytes]<EOF>
-	<  {"result":4,"command":1,"message":"File checksum error!"}
-    // EE1_OK, EE1_NG, EE2_OK, EE2_NG
 	result == 0 // success
 	result == 1 // success?
 	result == 2 // unsupported file format
@@ -4529,48 +4577,79 @@ void XYZV3::V2W_SendFile(const char* buf, int len)
 	*/
 }
 
-void V2W_CaptureImage()
+void XYZV3::V2W_CaptureImage()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage()");
 
-	//****Fill me in
-	//>  {"command":3} // query?
-	//<  {"result":0,"command":3,"message":"START_SEND","length":136811}
-	//>  {"ack":"START_RECEIVE"}
+	// request image
+	serialSendMessage("{\"command\":3}");
+	int len = waitForResponse("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
+
+	// ready to recieve
+	serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
+
+	// recieve buffer
+	//****FixMe, finish this
 	//<  [JFIF blob]{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
 	// if result == 0 is success, length is length of data returned
 }
 
-void V2W_PausePrint()
+void XYZV3::V2W_PausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
 
-	//****Fill me in
-	// >  {"command":6,"state":1,"token":x} // pause
-	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
-	// token is returned when print starts, possibly the file name?
-	// result // 0,1,2,4,5,6
+	//****FixMe, work out what token is
+	char *token = "???";
 
+	// token is returned when print starts, possibly the file name?
+	serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token); // pause
+	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	/*
+	result == 0 // success
+	result == 1 // success?
+	result == 2 // unsupported file format
+    result == 4 // file checksum error
+    result == 5 // invalid command
+    result == 6 // printer buisy
+	*/
 }
 
-void V2W_ResumePrint()
+void XYZV3::V2W_ResumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
 
-	//****Fill me in
-	// >  {"command":6,"state":2,"token":x} // resume
-	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	//****FixMe, work out what token is
+	char *token = "???";
+
 	// token is returned when print starts, possibly the file name?
-	// result // 0,1,2,4,5,6
+	serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token); // resume
+	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	/*
+	result == 0 // success
+	result == 1 // success?
+	result == 2 // unsupported file format
+    result == 4 // file checksum error
+    result == 5 // invalid command
+    result == 6 // printer buisy
+	*/
 }
 
-void V2W_CancelPrint()
+void XYZV3::V2W_CancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
 
-	//****Fill me in
-	// >  {"command":6,"state":3,"token":x} // stop
-	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	//****FixMe, work out what token is
+	char *token = "???";
+
 	// token is returned when print starts, possibly the file name?
-	// result // 0,1,2,4,5,6
+	serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token); // stop
+	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	/*
+	result == 0 // success
+	result == 1 // success?
+	result == 2 // unsupported file format
+    result == 4 // file checksum error
+    result == 5 // invalid command
+    result == 6 // printer buisy
+	*/
 }
