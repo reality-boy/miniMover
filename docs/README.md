@@ -8,15 +8,19 @@ http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 
 This works with the following printers over a USB connection.  There is limited wireless support but it is not fully functional yet.
 
-   da Vinci Nano  
+   da Vinci nano  
+   da Vinci nano w
    da Vinci miniMaker  
-   da Vinci Mini w  
+   da Vinci mini w  
+   da Vinci mini wA  
+   da Vinci mini w+  
    da Vinci Jr. 1.0  
    da Vinci Jr. 1.0W  
    da Vinci Jr. 1.0A  
    da Vinci Jr. 1.0 3in1  
    da Vinci Jr. 1.0 3in1 (Open filament)  
    da Vinci Jr. 1.0 Pro  
+   da Vinci Jr. 1.0W Pro  
    da Vinci Jr. 2.0 Mix  
    da Vinci 1.0 Pro  
    da Vinci 1.0 Pro 3in1  
@@ -27,7 +31,7 @@ With these printers I can only convert from gcode to 3w files and back.  They us
    da Vinci 1.0  
    da Vinci 1.0A  
    da Vinci 1.0 AiO  
-   da Vinci 1.1 Plus  
+   da Vinci 1.1 Plus *** May partially work over usb
    da Vinci 2.0 Duo  
    da Vinci 2.0A Duo  
 
