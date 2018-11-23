@@ -436,8 +436,6 @@ protected:
 	// convert a 3w file to gcode
 	bool decryptFile(const char *inPath, const char *outPath = NULL);
 
-	bool waitForResponse(const char *response); //****RemoveMe
-
 	// helper functions that upload a firmware or 3w file
 	bool sendFileInit(const char *path, bool isPrint);
 	bool sendFileProcess();
@@ -543,6 +541,31 @@ protected:
 	char m_fileOutPath[MAX_PATH];
 
 	const static int m_bodyOffset = 8192;
+
+protected:
+
+	//****Note, this is all experimental, so I left it blocking for now
+	// that makes it simpler to reconfigure while we work out the details
+
+	// helper function
+	bool waitForResponse(const char *response);
+
+	//v2 serial protocol
+	void V2S_queryStatusStart(bool doPrint, char *s);
+	void V2S_parseStatusSubstring(const char *str);
+	void V2S_SendFirmware(const char* buf, int len);
+	void V2S_SendFile(const char* buf, int len);
+
+	// v2 wifi protocol
+	void V2W_queryStatusStart(bool doPrint, char *s);
+	void V2W_parseStatusSubstring(const char *str);
+	// can't send firmware over wifi?
+	void V2W_SendFile(const char* buf, int len);
+	// wifi only commands?
+	void V2W_CaptureImage();
+	void V2W_PausePrint();
+	void V2W_ResumePrint();
+	void V2W_CancelPrint();
 };
 
 #endif // XYZV3_H

@@ -33,6 +33,9 @@
 #include "socket.h"
 #include "xyzv3.h"
 
+// uncomment to test out experimental v2 protocol
+//#define USE_V2
+
 const char* g_ver = "v0.9.5";
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters        Machine capabilities
@@ -271,7 +274,7 @@ const Stream* XYZV3::getStream()
 
 bool XYZV3::serialCanSendMessage()
 {
-	//if(m_stream && m_stream->isWIFI())
+	//if(isWIFI())
 	//	return m_sDelay.isTimeout();
 	//else
 		return true;
@@ -2472,37 +2475,6 @@ bool XYZV3::waitForConfigOK()
 }
 
 
-bool XYZV3::waitForResponse(const char *response)
-{
-	if(m_stream && m_stream->isOpen())
-	{
-		// wait for M1_OK
-		msTimeout timeout(m_stream->getDefaultTimeout());
-		const int len = 1024;
-		char retBuf[len] = "";
-		do
-		{
-			if(m_stream->readLine(retBuf, len))
-				break;
-		} 
-		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
-
-		if(*retBuf)
-		{
-			if(0 == strcmp(retBuf, response))
-			{
-				// success
-				return true;
-			}
-			else
-				debugPrint(DBG_WARN, "error: %s", retBuf);
-		}
-		else
-			debugPrint(DBG_WARN, "timeout waiting for %s", response);
-	}
-	return false;
-}
-
 bool XYZV3::sendFileInit(const char *path, bool isPrint)
 {
 	debugPrint(DBG_LOG, "XYZV3::sendFileInit(%s, %d)", path, isPrint);
@@ -2543,7 +2515,14 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						// zero terminate header string
 						//****Note, only valid if !isPrint
 						header[16] = '\0';
-#if 1 // V3
+#ifdef USE_V2
+						//****RemoveMe, temporary hack to test code out
+						// find a better way to integrate this
+						if(isWIFI())
+							V2W_SendFile(buf, len); // v2 wifi/network
+						else
+							V2S_SendFile(buf, len); // V2 serial (usb)
+#else // V3 protocol
 						// now we have a buffer, go ahead and start to print it
 						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
 						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
@@ -2574,60 +2553,6 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						}
 						else
 							debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
-#else // V2
-						// start print
-						serialSendMessage("XYZ_@3D:4");
-						// 200 ms delay
-
-						// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
-						waitForResponse("OFFLINE_OK"); // wait 5 seconds
-
-						// send file info
-						if(isPrint)
-							serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
-						// else ???
-						// 1000 ms delay
-
-						// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
-						waitForResponse("M1_OK"); // wait 5 seconds
-
-						// prepare to send data in frames
-						char *dataArray = buf;
-						int frameLen = 10236;
-						int lastFrameLen = len % frameLen;
-						int frameCount = len / frameLen;
-						int frameNum = 0;
-
-						// in loop
-						while (m_stream && m_stream->isOpen() && frameNum <= frameCount)
-						{
-							int tFrameLen = (frameNum < frameCount) ? frameLen : lastFrameLen;
-
-							// calc a checksum
-							int chk = 0;
-							for (int i = 0; i < tFrameLen; i++)
-							{
-								chk = ((unsigned char)dataArray[i]) + chk;
-							}
-
-							// byteswap to network byte order
-							chk = swap32bit(chk);
-
-							// send data
-							m_stream->write(dataArray, tFrameLen);
-							// send checksum
-							m_stream->write((char*)&chk, 4);
-
-							// wait for M2_OK or CheckSumOK
-							// or if CheckSumFail send again
-							// or if OFFLINE_NO then give up
-							waitForResponse("M2_OK"); // wait 50 ms
-
-							dataArray += frameLen;
-							frameNum++;
-						}
-
-						// close stream
 #endif
 					}
 
@@ -4320,4 +4245,332 @@ const char* XYZV3::serialToName(const char *serialNum)
 bool XYZV3::isWIFI()
 {
 	return m_stream && m_stream->isWIFI();
+}
+
+
+// experimental v2 protocol
+
+bool XYZV3::waitForResponse(const char *response)
+{
+	debugPrint(DBG_LOG, "XYZV3::waitForResponse(%s)", response);
+
+	if(m_stream && m_stream->isOpen())
+	{
+		// wait for M1_OK
+		msTimeout timeout(m_stream->getDefaultTimeout());
+		const int len = 1024;
+		char retBuf[len] = "";
+		do
+		{
+			if(m_stream->readLine(retBuf, len))
+				break;
+		} 
+		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
+
+		if(*retBuf)
+		{
+			if(response && 0 == strcmp(retBuf, response))
+			{
+				// success
+				return true;
+			}
+			else
+				debugPrint(DBG_WARN, "error: %s", retBuf);
+		}
+		else
+			debugPrint(DBG_WARN, "timeout waiting for %s", response);
+	}
+	return false;
+}
+
+// === v2 serial protocol ===
+
+void XYZV3::V2S_queryStatusStart(bool doPrint, char *s)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2S_queryStatusStart(%d, %s...)", doPrint, s);
+
+	// send XYZ_@3D:0
+	// in loop read line and call V2S_parseStatusSubstring
+
+	// send XYZ_@3D:5
+	// in loop read line and call V2S_parseStatusSubstring
+
+	// send XYZ_@3D:6
+	// in loop read line and call V2S_parseStatusSubstring
+
+	// send XYZ_@3D:7
+	// in loop read line and call V2S_parseStatusSubstring
+
+	// send XYZ_@3D:8
+	// in loop read line and call V2S_parseStatusSubstring
+}
+
+void XYZV3::V2S_parseStatusSubstring(const char *str)
+{
+	debugPrint(DBG_VERBOSE, "XYZV3::V2S_parseStatusSubstring(%s)", str);
+
+	if(str && str[0] != '\0')
+	{
+		/*
+		Welcome:daVinciF11		// 3W file model number
+		XYZ_@3D:start
+		MDU:dvF110B000			// p, printer model number
+		// or MDU:daVinciF10
+		// or MDU:dvF100A000
+		OS_V:1.1.0.19			// v, os firmware versions
+		APP_V:1.1.7.3			// v, app fw version
+		FW_V:N/A				// v, firmware version
+		// or FW_V:1.1.G
+		MCH_ID:3F11XPGBXTH5320151	// i, machine serial number convert ? to -
+		PRT_NAME:da Vinci 1.1 Plus	// n, printer name
+		PRT_IP:192.168.1.126		// 4, printer ip
+		PROTOCOL:2
+		MCHLIFE:70145			// L, lifetime timers
+		MCHEXDUR_LIFE:21785		// L extruder life
+		W1:--------------		// w & f, fillament info for first spool
+		// or W1:++++++++++++++,?:FilTotalLen ?:HeadTemp ?:?
+		// or W1:FilSerNum,?:FilRemLen ?:HeadTemp ?:?
+		// or EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52 // optional last parameter ,0 is illegal fillament
+		//	xyzCode(Z),material(ABS A),color(white W),Mdate(41A), total_length (mm), remain_length (mm), temperatureHead ©, temperatureBed ©, Mloc (TH), Dloc(GB),SN(SERIAL),security_code,check_illegal
+		W2:--------------		// w & f, fillament info for second spool
+		// or EE2:xxxx
+		WORK_PARSENT:0		// d, print status	percent finished
+		WORK_TIME:0			// d elapsed time?
+		EST_TIME:0			// d remaining time?
+		ET0:--				// t, extruder temp
+		//or ET0:31
+		ET1:--				// t, second extruder temp
+		//or ET1:31
+		BT:--				// b, bed temp
+		//or BT:28
+		MCH_STATE:2			// e, error status
+		PRN_STATE:10		// j, printer status
+		LANG:0
+		*/
+
+		// possible return values, but have not seen them yet
+		/*
+		FIRMWARE_NAME: // older firmware may contain repetier, marlin, sprinter
+		Tmp:		// line tmp?
+		Length:		// line length?
+		Color:		// line color?
+		Matrl:		// line material?
+		TalLength:	// line total length?
+		FSS:		// filament load?
+		CART_STATE:	// cartridge status
+		JOB_STATE:	// job status
+		X:		// L or ?, x offset?
+		Y:		// y offset?
+		Z:		// z offset?
+		E:		// extruder offset?
+		SpeedMultiply:	// speed multiply? int value between 25 and 300
+		FlowMultiply:	// flow multiply? int value between 50 and 150
+		TargetExtr0:	// target temp exdruder 0 
+		TargetExtr1:	// target temp extruder 1
+		TargetBed:	// target temp bed
+		Fanspeed:	// fan voltage
+		RequestPause:
+		T:		// temp
+		T0:		// dual extruder temp?
+		B:		// bed temp
+		EPR:		// eprom ???
+		MTEMP:		// ?? ?? ?? ??
+		Error:		// error
+		*/
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2S_parseStatusSubstring invalid input");
+}
+
+void XYZV3::V2S_SendFirmware(const char* buf, int len)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2S_SendFirmware()");
+
+	// 	> XYZ_@3D:3
+	//	< FWOK
+	//	> M1:firmware,<bytes> , // ie M1:firmware,249344 ,
+	//	> <firmware file>
+
+}
+
+void XYZV3::V2S_SendFile(const char* buf, int len)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2S_SendFile()");
+
+	// start print
+	serialSendMessage("XYZ_@3D:4");
+	// 200 ms delay
+
+	// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
+	waitForResponse("OFFLINE_OK"); // wait 5 seconds
+
+	// send file info
+	//if(isPrint)
+		serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
+	// else ???
+	// 1000 ms delay
+
+	// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
+	waitForResponse("M1_OK"); // wait 5 seconds
+
+	// prepare to send data in frames
+	const char *dataArray = buf;
+	int frameLen = 10236;
+	int lastFrameLen = len % frameLen;
+	int frameCount = len / frameLen;
+	int frameNum = 0;
+
+	// in loop
+	while (m_stream && m_stream->isOpen() && frameNum <= frameCount)
+	{
+		int tFrameLen = (frameNum < frameCount) ? frameLen : lastFrameLen;
+
+		// calc a checksum
+		int chk = 0;
+		for (int i = 0; i < tFrameLen; i++)
+		{
+			chk = ((unsigned char)dataArray[i]) + chk;
+		}
+
+		// byteswap to network byte order
+		chk = swap32bit(chk);
+
+		// send data
+		m_stream->write(dataArray, tFrameLen);
+		// send checksum
+		m_stream->write((char*)&chk, 4);
+
+		// wait for M2_OK or CheckSumOK
+		// or if CheckSumFail send again
+		// or if OFFLINE_NO then give up
+		waitForResponse("M2_OK"); // wait 50 ms
+
+		dataArray += frameLen;
+		frameNum++;
+	}
+
+	// close stream
+}
+
+// === v2 wifi protocol ===
+
+void XYZV3::V2W_queryStatusStart(bool doPrint, char *s)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart(%d, %s)", doPrint, s);
+
+	//****Fill me in
+	// >  {"command":4} // query?
+	// <  {"result":1,"command":4,"message":"No printing job!"}
+
+	/*
+	>  {"command":2,"query":"all"}
+	<  {"result":0,"command":2,"data":{"p":"dvF110B000","i":"3F11XPGBXTH5320151","v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"},"w":["W1:--------------","W2:--------------"],"f":[0,0],"t":["--","--"],"j":10,"L":{"m":"4183146537","e":"21785"},"s":{"e":0,"c":0,"j":0,"o":0},"e":2,"b":"--","d":{"message":"No printing job!"},"o":{"p":0,"t":0,"f":0}}}
+
+  // query is all, or one below
+  // data
+    b // bed temperature
+    d // print status? <optional>
+      message // message, or the following
+      print_percentage
+      elapsed_time
+      estimated_time
+    e // error
+    f[2] // fillament left
+    i // machine serial number
+    j // machine state
+    n // printer name
+    o // printer options
+      p
+      t
+      f
+    p // module name or printer type
+    s
+      e
+      c
+      j
+      0
+    t[2] // extruder temperature(s)
+    v
+      app // app version
+      engine // engine version
+      os // os version
+    w[2] // eeprom
+    L
+      e // extruder life
+      m // machine life
+
+	*/
+}
+
+void XYZV3::V2W_parseStatusSubstring(const char *str)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_parseStatusSubstring(%s)", str);
+
+	//****Fill me in
+}
+
+void XYZV3::V2W_SendFile(const char* buf, int len)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_SendFile()");
+
+	//****Fill me in
+	/*
+	>  {"command":1,"fileName":"temp.gcode","fileLen":5,"ee1":"EE1_OK","ee2":"EE2_OK"}
+	<  {"result":1,"command":1,"message":"START_RECEIVE"}
+	>  [filebytes]<EOF>
+	<  {"result":4,"command":1,"message":"File checksum error!"}
+    // EE1_OK, EE1_NG, EE2_OK, EE2_NG
+	result == 0 // success
+	result == 1 // success?
+	result == 2 // unsupported file format
+    result == 4 // file checksum error
+    result == 5 // invalid command
+    result == 6 // printer buisy
+	*/
+}
+
+void V2W_CaptureImage()
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage()");
+
+	//****Fill me in
+	//>  {"command":3} // query?
+	//<  {"result":0,"command":3,"message":"START_SEND","length":136811}
+	//>  {"ack":"START_RECEIVE"}
+	//<  [JFIF blob]{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
+	// if result == 0 is success, length is length of data returned
+}
+
+void V2W_PausePrint()
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
+
+	//****Fill me in
+	// >  {"command":6,"state":1,"token":x} // pause
+	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	// token is returned when print starts, possibly the file name?
+	// result // 0,1,2,4,5,6
+
+}
+
+void V2W_ResumePrint()
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
+
+	//****Fill me in
+	// >  {"command":6,"state":2,"token":x} // resume
+	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	// token is returned when print starts, possibly the file name?
+	// result // 0,1,2,4,5,6
+}
+
+void V2W_CancelPrint()
+{
+	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
+
+	//****Fill me in
+	// >  {"command":6,"state":3,"token":x} // stop
+	// <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	// token is returned when print starts, possibly the file name?
+	// result // 0,1,2,4,5,6
 }
