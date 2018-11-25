@@ -54,8 +54,37 @@ XYZ_@3D:3	// uploadFirmwareBinary
 
 	> XYZ_@3D:3
 	< FWOK
-	> M1:firmware,<bytes> , // ie M1:firmware,249344 ,
-	> <firmware file>
+
+	// choose one
+
+	// v1.0 printer (and 2.0?)
+	> M1:firmwarelast,<bytes>
+
+	// v1.1 printer, engine fw
+	> M2:engine,engine_data.bin,<bytes>
+
+	// v1.1 printer, app fw
+	> M2:app,app_data.zip,<bytes>
+
+	// v1.1 printer, os fw
+	> M2:os,XYZ_Update.zip,<bytes>
+
+	< M2_OK
+
+	in loop
+		> send data in 10236 byte chunks
+		> send 4 byte checksume of each frame of data
+		< M2_OK // or CheckSumOK or if CheckSumFail send again or if OFFLINE_NO then give up
+
+	// on v1.1 printers, upload all three firmwares then
+	// send bitmask to tell printer what firmware to install
+
+	// if engine
+	> UPDATE_START:1
+	// if app
+	> UPDATE_START:2
+	// if os
+	> UPDATE_START:4
 
 XYZ_@3D:4	// uploadGCodeText
 
