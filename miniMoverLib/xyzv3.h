@@ -553,10 +553,20 @@ protected:
 	int waitForInt(const char *response);
 
 	//v2 serial protocol
+	enum v2sFileMode
+	{
+		V2S_FILE,
+		V2S_10_FW, // v1.0 printer (and 2.0?)
+		V2S_11_FW_ENGINE, // v1.1 printer, engine fw
+		V2S_11_FW_APP, // v1.1 printer, app fw
+		V2S_11_FW_OS, // v1.1 printer, os fw
+	};
+
 	void V2S_queryStatusStart(bool doPrint, char *s);
 	void V2S_parseStatusSubstring(const char *str);
 	void V2S_SendFirmware(const char* buf, int len);
 	void V2S_SendFile(const char* buf, int len);
+	void V2S_SendFileHelper(const char* buf, int len, v2sFileMode mode);
 
 	// v2 wifi protocol
 	void V2W_queryStatusStart(bool doPrint, char *s);

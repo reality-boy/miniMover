@@ -69,7 +69,7 @@ XYZ_@3D:3	// uploadFirmwareBinary
 	// v1.1 printer, os fw
 	> M2:os,XYZ_Update.zip,<bytes>
 
-	< M2_OK
+	< M2_OK // M1_OK on 1.0 ?
 
 	in loop
 		> send data in 10236 byte chunks

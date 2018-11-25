@@ -4433,31 +4433,92 @@ void XYZV3::V2S_SendFirmware(const char* buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_SendFirmware()");
 
-	serialSendMessage("XYZ_@3D:3");
-	waitForResponse("FWOK");
-	serialSendMessage("M1:firmware,%d ,", len); // ie M1:firmware,249344 ,
-	m_stream->write(buf, len);
+	// this is experimental, don't run unless you know how to recover
+	assert(false);
+
+	// pick one, based on machine type and firmware type
+	V2S_SendFileHelper(buf, len, V2S_10_FW);
+	//V2S_SendFileHelper(buf, len, V2S_11_FW_ENGINE);
+	//V2S_SendFileHelper(buf, len, V2S_11_FW_APP);
+	//V2S_SendFileHelper(buf, len, V2S_11_FW_OS);
 }
 
 void XYZV3::V2S_SendFile(const char* buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_SendFile()");
 
+	V2S_SendFileHelper(buf, len, V2S_FILE);
+}
+
+void XYZV3::V2S_SendFileHelper(const char* buf, int len, v2sFileMode mode)
+{
+	debugPrint(DBG_LOG, "XYZV3::V2S_SendFile()");
+
 	// start print
-	serialSendMessage("XYZ_@3D:4");
-	// 200 ms delay
+	switch(mode)
+	{
+	case V2S_FILE:
+		serialSendMessage("XYZ_@3D:4"); // 200 ms delay
+		break;
+	case V2S_10_FW:
+	case V2S_11_FW_ENGINE:
+	case V2S_11_FW_APP:
+	case V2S_11_FW_OS:
+		serialSendMessage("XYZ_@3D:3");
+		break;
+	}
 
 	// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
-	waitForResponse("OFFLINE_OK"); // wait 5 seconds
+	switch(mode)
+	{
+	case V2S_FILE:
+		waitForResponse("OFFLINE_OK"); // wait 5 seconds
+		break;
+	case V2S_10_FW:
+	case V2S_11_FW_ENGINE:
+	case V2S_11_FW_APP:
+	case V2S_11_FW_OS:
+		waitForResponse("FWOK");
+		break;
+	}
 
 	// send file info
-	//if(isPrint)
+	switch(mode)
+	{
+	case V2S_FILE:
 		serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
-	// else ???
+		break;
+	case V2S_10_FW:
+		serialSendMessage("M1:firmwarelast,%d", len);
+		break;
+	case V2S_11_FW_ENGINE:
+		serialSendMessage("M2:engine,engine_data.bin,%d", len);
+		break;
+	case V2S_11_FW_APP:
+		serialSendMessage("M2:app,app_data.zip,%d", len);
+		break;
+	case V2S_11_FW_OS:
+		serialSendMessage("M2:os,XYZ_Update.zip,%d", len);
+		break;
+	}
 	// 1000 ms delay
 
 	// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
-	waitForResponse("M1_OK"); // wait 5 seconds
+	switch(mode)
+	{
+	case V2S_FILE:
+		waitForResponse("M1_OK"); // wait 5 seconds
+		break;
+	case V2S_10_FW:
+		//****FixMe, may not even be returned on 1.0 machine
+		waitForResponse("M1_OK"); // wait 5 seconds
+		break;
+	case V2S_11_FW_ENGINE:
+	case V2S_11_FW_APP:
+	case V2S_11_FW_OS:
+		waitForResponse("M2_OK"); // wait 5 seconds
+		break;
+	}
 
 	// prepare to send data in frames
 	const char *dataArray = buf;
@@ -4493,6 +4554,23 @@ void XYZV3::V2S_SendFile(const char* buf, int len)
 
 		dataArray += frameLen;
 		frameNum++;
+	}
+
+	// on 1.1 Plus we send down 3 different firmwares
+	// we could send all three then ask them all to
+	// be installed at once, but for now just install them as we download them
+	// all other machines install all firmwares automatically after downloading
+	switch(mode)
+	{
+	case V2S_11_FW_ENGINE:
+		serialSendMessage("UPDATE_START:1");
+		break;
+	case V2S_11_FW_APP:
+		serialSendMessage("UPDATE_START:2");
+		break;
+	case V2S_11_FW_OS:
+		serialSendMessage("UPDATE_START:4");
+		break;
 	}
 
 	// close stream
