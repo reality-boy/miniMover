@@ -578,7 +578,10 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//   os is os version string
 				//   ap is app version string
 				//v:1.1.1
-				sscanf(str, "v:%s", m_status.vFirmwareVersion);
+				if(strchr(str, ','))
+					sscanf(str, "v:%s,%s,%s", m_status.vOsFirmwareVersion, m_status.vAppFirmwareVersion, m_status.vFirmwareVersion);
+				else
+					sscanf(str, "v:%s", m_status.vFirmwareVersion);
 				break;
 
 			case 'w': // filament serian number, w:id,sn,xx
@@ -4325,31 +4328,68 @@ int XYZV3::waitForInt(const char *response)
 	return -1;
 }
 
+const char* XYZV3::findValue(const char *str, const char *key)
+{
+	if(str &&*str && key && *key)
+	{
+		const char *t = strstr(str, key);
+		if(t)
+		{
+			t += strlen(key);
+			if(*t)
+				return t;
+		}
+	}
+	return NULL;
+}
+
 // === v2 serial protocol ===
 
 void XYZV3::V2S_queryStatusStart(bool doPrint, char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_queryStatusStart(%d, %s...)", doPrint, s);
 
+	const char *buf;
+
 	serialSendMessage("XYZ_@3D:0");
-	//****FixMe, 
-	// in loop read line and call V2S_parseStatusSubstring
+	buf = checkForLine(); //****FixMe should be wait for line
+	while(*buf) 
+	{
+		V2S_parseStatusSubstring(buf);
+		buf = checkForLine();
+	}
 
 	serialSendMessage("XYZ_@3D:5");
-	//****FixMe, 
-	// in loop read line and call V2S_parseStatusSubstring
+	buf = checkForLine(); //****FixMe should be wait for line
+	while(*buf) 
+	{
+		V2S_parseStatusSubstring(buf);
+		buf = checkForLine();
+	}
 
 	serialSendMessage("XYZ_@3D:6");
-	//****FixMe, 
-	// in loop read line and call V2S_parseStatusSubstring
+	buf = checkForLine(); //****FixMe should be wait for line
+	while(*buf) 
+	{
+		V2S_parseStatusSubstring(buf);
+		buf = checkForLine();
+	}
 
 	serialSendMessage("XYZ_@3D:7");
-	//****FixMe, 
-	// in loop read line and call V2S_parseStatusSubstring
+	buf = checkForLine(); //****FixMe should be wait for line
+	while(*buf) 
+	{
+		V2S_parseStatusSubstring(buf);
+		buf = checkForLine();
+	}
 
 	serialSendMessage("XYZ_@3D:8");
-	//****FixMe, 
-	// in loop read line and call V2S_parseStatusSubstring
+	buf = checkForLine(); //****FixMe should be wait for line
+	while(*buf) 
+	{
+		V2S_parseStatusSubstring(buf);
+		buf = checkForLine();
+	}
 }
 
 void XYZV3::V2S_parseStatusSubstring(const char *str)
@@ -4358,42 +4398,101 @@ void XYZV3::V2S_parseStatusSubstring(const char *str)
 
 	if(str && str[0] != '\0')
 	{
-		/*
-		Welcome:daVinciF11		// 3W file model number
-		XYZ_@3D:start
-		MDU:dvF110B000			// p, printer model number
-		// or MDU:daVinciF10
-		// or MDU:dvF100A000
-		OS_V:1.1.0.19			// v, os firmware versions
-		APP_V:1.1.7.3			// v, app fw version
-		FW_V:N/A				// v, firmware version
-		// or FW_V:1.1.G
-		MCH_ID:3F11XPGBXTH5320151	// i, machine serial number convert ? to -
-		PRT_NAME:da Vinci 1.1 Plus	// n, printer name
-		PRT_IP:192.168.1.126		// 4, printer ip
-		PROTOCOL:2
-		MCHLIFE:70145			// L, lifetime timers
-		MCHEXDUR_LIFE:21785		// L extruder life
-		W1:--------------		// w & f, fillament info for first spool
-		// or W1:++++++++++++++,?:FilTotalLen ?:HeadTemp ?:?
-		// or W1:FilSerNum,?:FilRemLen ?:HeadTemp ?:?
-		// or EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52 // optional last parameter ,0 is illegal fillament
-		//	xyzCode(Z),material(ABS A),color(white W),Mdate(41A), total_length (mm), remain_length (mm), temperatureHead ©, temperatureBed ©, Mloc (TH), Dloc(GB),SN(SERIAL),security_code,check_illegal
-		W2:--------------		// w & f, fillament info for second spool
-		// or EE2:xxxx
-		WORK_PARSENT:0		// d, print status	percent finished
-		WORK_TIME:0			// d elapsed time?
-		EST_TIME:0			// d remaining time?
-		ET0:--				// t, extruder temp
-		//or ET0:31
-		ET1:--				// t, second extruder temp
-		//or ET1:31
-		BT:--				// b, bed temp
-		//or BT:28
-		MCH_STATE:2			// e, error status
-		PRN_STATE:10		// j, printer status
-		LANG:0
-		*/
+		const char *s;
+
+		s = findValue(str, "Welcome:"); //daVinciF11		// 3W file model number
+		// ignore output for now
+
+		s = findValue(str, "XYZ_@3D:"); //start
+		// ignore output for now
+
+		s = findValue(str, "MDU:"); // p, printer model number
+		if(s) strcpy(m_status.pMachineModelNumber, s);
+
+		s = findValue(str, "OS_V:"); // v, os firmware versions
+		if(s) strcpy(m_status.vOsFirmwareVersion, s);
+
+		s = findValue(str, "APP_V:"); // v, app fw version
+		if(s) strcpy(m_status.vAppFirmwareVersion, s);
+
+		s = findValue(str, "FW_V:"); // v, firmware version
+		if(s) strcpy(m_status.vFirmwareVersion, s);
+
+		s = findValue(str, "MCH_ID:"); // i, machine serial number convert ? to -
+		if(s) strcpy(m_status.iMachineSerialNum, s);
+
+		s = findValue(str, "PRT_NAME:"); // n, printer name
+		if(s) strcpy(m_status.nMachineName, s);
+
+		s = findValue(str, "PRT_IP:"); // 4, printer ip
+		if(s) strcpy(m_status.N4NetIP, s);
+
+		s = findValue(str, "PROTOCOL:"); //2
+		// ignore output for now
+
+		s = findValue(str, "MCHLIFE:"); // L, lifetime timers
+		if(s) m_status.LPrinterLifetimePowerOnTime_min = atoi(s);
+
+		s = findValue(str, "MCHEXDUR_LIFE:"); // L extruder life
+		if(s) m_status.LExtruderLifetimePowerOnTime_min = atoi(s);
+
+		// are W1 and EE1 the same thing?
+		s = findValue(str, "W1:"); // w & f, fillament info for first spool
+		if(s) strcpy(m_status.wFilament1SerialNumber, s);
+
+		s = findValue(str, "EE1:"); // EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52 // optional last parameter ,0 is illegal fillament
+		// ignore output for now
+
+		// are W2 and EE2 the same thing?
+		s = findValue(str, "W2:"); // w & f, fillament info for second spool
+		if(s) strcpy(m_status.wFilament2SerialNumber, s);
+
+		s = findValue(str, "EE2:");
+		// ignore output for now
+
+		s = findValue(str, "WORK_PARSENT:"); // d, print status	percent finished
+		if(s) m_status.dPrintPercentComplete = atoi(s);
+
+		s = findValue(str, "WORK_TIME:"); // d elapsed time?
+		if(s) m_status.dPrintElapsedTime_m = atoi(s);
+
+		s = findValue(str, "EST_TIME:"); // d remaining time?
+		if(s) m_status.dPrintTimeLeft_m = atoi(s);
+
+		s = findValue(str, "ET0:"); // t, extruder temp
+		if(s) m_status.tExtruder1ActualTemp_C = atoi(s);
+
+		s = findValue(str, "ET1:"); // t, second extruder temp
+		if(s) m_status.tExtruder2ActualTemp_C = atoi(s);
+
+		s = findValue(str, "BT:"); // b, bed temp
+		if(s) m_status.bBedActualTemp_C = atoi(s);
+
+		s = findValue(str, "MCH_STATE:"); // e, error status
+		if(s) 
+		{
+			m_status.eErrorStatus = atoi(s);
+			const char *strPtr = errorCodeToStr(m_status.eErrorStatus);
+			if(strPtr)
+				strcpy(m_status.eErrorStatusStr, strPtr);
+			else
+				m_status.eErrorStatusStr[0] = '\0';
+		}
+
+		s = findValue(str, "PRN_STATE:"); // j, printer status
+		if(s) 
+		{
+			m_status.jPrinterState = translateStatus(atoi(s));
+			const char *strPtr = stateCodesToStr(m_status.jPrinterState, 0);
+			if(strPtr)
+				strcpy(m_status.jPrinterStateStr, strPtr);
+			else
+				m_status.jPrinterStateStr[0] = '\0';
+		}
+
+		s = findValue(str, "LANG:"); //0			// l, sort of?
+		//****FixMe, this is some sort of an integer list, but what is what
+		// ignore output for now
 
 		// possible return values, but have not seen them yet
 		/*

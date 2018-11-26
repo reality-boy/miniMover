@@ -147,6 +147,8 @@ struct XYZPrinterStatus
 	int tExtruder2ActualTemp_C;
 	int tExtruderTargetTemp_C; // set by t: or O:
 
+	char vOsFirmwareVersion[64]; //10
+	char vAppFirmwareVersion[64]; //10
 	char vFirmwareVersion[64]; //10
 
 	int wFilamentCount;
@@ -551,6 +553,7 @@ protected:
 	const char* waitForLine();
 	bool waitForResponse(const char *response);
 	int waitForInt(const char *response);
+	const char* findValue(const char *str, const char *key);
 
 	//v2 serial protocol
 	enum v2sFileMode
