@@ -52,6 +52,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 //	{"dvF210B000",   "daVinciF21",..., "da Vinci 2.1 Duo"}, // F21
 //	{"dvF210A000",..., "da Vinci 2.1A Duo"},				// F21A
 //	{"dvF210P000",..., "da Vinci 2.1 Duo Plus"},			// F21P
+//	{"??????????",..., "da Vinci 2.1 Duo Plus (AIO)"},		// F21S
 	{"dv1J00A000",  "daVinciJR10", "3F1J0X", "dv1J00A000_V2",   false, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0"},		// FJR10, all jr's support optional 0.3mm nozzle
 	{"dv1JA0A000",   "dv1JA0A000", "3F1JAP", "dv1JA0A000_V2",   false, false,  true,    true, false, false, false, false,  true,   175, 175, 175,   "da Vinci Jr. 1.0A"},		// FJR10A
 	{"dv1JW0A000", "daVinciJR10W", "3F1JWP", "dv1JW0A000_V2",   false, false,  true,    true, false, false,  true, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w"},		// FJR10W
@@ -68,18 +69,21 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 
 	{"dv1JP0A000",   "dv1JP0A000", "3F1JPP", "dv1JP0A000_V2",    true, false,  true,    true, false, false, false, false, false,   150, 150, 150,   "da Vinci Jr. 1.0 Pro"},	// FJR10PRO
 	{"dv1JPWA000",   "dv1JPWA000", "3F1JPW", "dv1JPWA000_V2",    true, false,  true,    true, false, false,  true, false, false,   150, 150, 150,   "da Vinci Jr. 1.0w Pro"},
+//  "da Vinci Jr. 1.0 Pro X" // F1JPX
 	{"dvF1W0A000",  "daVinciAW10", "3F1AWP", "dvF1W0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0 Pro"},		// F1AW
 //	{"dv1JA0A000",   "dv1JA0A000", "3F1JAA", "dv1JA0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   200, 200, 200,   "da Vinci 1.0A Pro"},
 	{"dvF1WSA000",  "daVinciAS10", "3F1ASP", "dvF1WSA000_V2",    true, false,  true,    true,  true, false,  true,  true,  true,   200, 200, 190,   "da Vinci 1.0 Pro 3in1"},	// F1AS
 	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   300, 300, 300,   "da Vinci Super"},			// F1SW, 0.4mm/0.6mm/0.8mm nozzles
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",    true,  false, true,    true, false, false,  true, false, false,   200, 200, 150,   "da Vinci Color"}, // no heated bed, but full color! // does not support 3w file format
-//  {"dv1CPSA000",             "", "3FC1SP", "dv1CPSA000_V2",..., "XYZprinting da Vinci Color AiO"},
+//  {"dv1CPSA000",             "", "3FC1SP", "dv1CPSA000_V2",..., 200,200,150,"XYZprinting da Vinci Color AiO"}, //PartPro200 xTCS
+//  da Vinci Color mini //F1CORM
+//  da Vinci Color 5D
 };
 
 	//  unknown
 
-	//       da Vinci PartPro200 xTCS
-	//3F3PMP XYZprinting da Vinci PartPro 300xT
+	//       da Vinci PartPro200 xTCS // F1CORA
+	//3F3PMP XYZprinting da Vinci PartPro 300xT //F10PXT
 	//3FWB1P XYZprinting WiFi Box 
 	//3F21X  da Vinci 2.1 Duo Plus
 	//3FCM1  da Vinci ?
@@ -88,6 +92,9 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	//3L10A  Nobel SuperFine DLP         
 	//3L10X  Nobel ?
 	//****Note, a fileNum of FXX may be a universal demo file marker that any printer can load
+	// 3D Desktop Scanner // D10
+	// 3D Scanner 1.0 // H10
+	// 3D Scanner 1.0A // H10A
 
 	/*
 	//dvF100B000 daVinciF10 davincif10_V2
@@ -118,31 +125,30 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	//dvF210A000
 	//dvF210P000
 	//dv1J00A000 dv1J00A000_V2
-	//dv1JW0A000 dv1JW0A000_V2
-	//dv1JS0A000 dv1JS0A000_V2
+	//dv1JW0A000 dv1JW0A000_V2 JR10
+	//dv1JS0A000 dv1JS0A000_V2 JR10
 	//dv2JW0A000 dv2JW0A000_V2
-	//dv1JA0A000 dv1JA0A000_V2
-	//dvF1W0A000 dvF1W0A000_V2
-	//dvF1WSA000 dvF1WSA000_V2
-	//dv1MW0A000 dv1MW0A000_V2
-	//dv1MX0A000 dv1MX0A000_V2
-	//dv1NX0A000 dv1NX0A000_V2
-	//dv1NW0A000 dv1NW0A000_V2
-	//dv1MW0C000 dv1MW0C000_V2
-	//dv1SW0A000 dv1SW0A000_V2
-	//dv1JP0A000 dv1JP0A000_V2
+	//dv1JA0A000 dv1JA0A000_V2 JR10A
+	//dvF1W0A000 dvF1W0A000_V2 AW10?
+	//dvF1WSA000 dvF1WSA000_V2 AS10?
+	//dv1MW0A000 dv1MW0A000_V2 mini w
+	//dv1MX0A000 dv1MX0A000_V2 miniMaker
+	//dv1NX0A000 dv1NX0A000_V2 nano
+	//dv1NW0A000 dv1NW0A000_V2 nano
+	//dv1MW0C000 dv1MW0C000_V2 mini w
+	//dv1SW0A000 dv1SW0A000_V2 da Vinci Super
+	//dv1JP0A000 dv1JP0A000_V2 da Vinci Jr Pro
 	//dv1JSOA000 dv1JS0A000_V2
-	//dv1CP0A000 dv1CP0A000_V2
-	//dv1JPWA000 dv1JPWA000_V2
+	//dv1CP0A000 dv1CP0A000_V2 da Vinci Color
+	//dv1JPWA000 dv1JPWA000_V2 da Vinci Jr 1.0w Pro
 	//           dv1MW0B000_V2
 	
-	dv1PW3A000 dv1PW3A000_V2
-	dv1MWCA000 dv1MWCA000_V2
+	dv1PW3A000 dv1PW3A000_V2 da Vinci Part Pro
+	dv1MWCA000 dv1MWCA000_V2 da Vinci Color Mini
 	dv1JZ0A000 dv1JZ0A000_V2
 	dv1JPXA000 dv1JPXA000_V2
 	           dv1WB0A000_V2
 	*/
-
 
 // internal action state
 enum ActState
