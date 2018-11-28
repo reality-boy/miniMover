@@ -18,6 +18,7 @@
     <ClCompile Include="socket.cpp" />
     <ClCompile Include="stream.cpp" />
     <ClCompile Include="timer.cpp" />
+    <ClCompile Include="XYZPrinterList.cpp" />
     <ClCompile Include="xyzv3.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +29,7 @@
     <ClInclude Include="socket.h" />
     <ClInclude Include="stream.h" />
     <ClInclude Include="timer.h" />
+    <ClInclude Include="XYZPrinterList.h" />
     <ClInclude Include="xyzv3.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

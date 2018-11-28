@@ -93,7 +93,13 @@ int SerialHelper::queryForPorts(const char *hint)
 								{
 									// append device name to display name
 									int len = strlen(portInfo[m_portCount].displayName);
-									sprintf(portInfo[m_portCount].displayName + len, " (%s)", portInfo[m_portCount].deviceName);
+
+									// strip leading slashes from windows port def
+									const char *dev = portInfo[m_portCount].deviceName;
+									if(0 == strncmp("\\\\.\\", dev, strlen("\\\\.\\")))
+										dev += strlen("\\\\.\\");
+
+									sprintf(portInfo[m_portCount].displayName + len, " (%s)", dev);
 
 									// check if this port matches our hint
 									// for now we take the last match

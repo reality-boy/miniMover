@@ -664,7 +664,7 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 								st->cCalib[6], st->cCalib[7], st->cCalib[8]);
 		listAddLine(hwndListInfo, "Auto level: %d", st->oAutoLevelEnabled);
 		listAddLine(hwndListInfo, "Buzzer: %d", st->sBuzzerEnabled);
-		listAddLine(hwndListInfo, "Z Offset: %d", st->zOffset);
+		listAddLine(hwndListInfo, "Z Offset: %0.2f mm", st->zOffset/100.0f);
 		listAddLine(hwndListInfo, "oT: %d, oC: %d, Fd: %d, Fm: %d", 
 			st->oT, st->oC, st->sFd, st->sFm);
 
@@ -822,7 +822,8 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	{
 		// look for screen name
 		const char *name = XYZV3::serialToName(g_wifiList.m_list[i].m_serialNum);
-		sprintf(tstr, "%s (%s:%d)", name, g_wifiList.m_list[i].m_ip, g_wifiList.m_list[i].m_port);
+		//sprintf(tstr, "%s (%s:%d)", name, g_wifiList.m_list[i].m_ip, g_wifiList.m_list[i].m_port);
+		sprintf(tstr, "%s (%s)", name, g_wifiList.m_list[i].m_ip);
 		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)tstr);
 		ent++;
 	}
@@ -833,7 +834,8 @@ void MainDlgUpdateComDropdown(HWND hDlg)
 	int count = SerialHelper::getPortCount();
 	for(int i=0; i< count; i++)
 	{
-		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)SerialHelper::getPortDisplayName(i));
+		const char *port = SerialHelper::getPortDisplayName(i);
+		SendDlgItemMessage(hDlg, IDC_COMBO_PORT, CB_ADDSTRING, 0, (LPARAM)port);
 		ent++;
 	}
 }
@@ -847,6 +849,25 @@ void MainDlgUpdateModelDropdown(HWND hDlg)
 		SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_ADDSTRING, 0, (LPARAM)XYZV3::indexToInfo(i)->screenName);
 	}
 	SendDlgItemMessage(hDlg, IDC_COMBO_MODEL, CB_SETCURSEL, 0, 0);
+}
+
+void setZOffset(HWND hDlg, int zOffset)
+{
+	char tstr[32];
+	sprintf(tstr, "%d.%02d", zOffset / 100, zOffset % 100);
+	SetDlgItemTextA(hDlg, IDC_EDIT_ZOFF, tstr);
+}
+
+int getZOffset(HWND hDlg)
+{
+	char tstr[32];
+	if(GetDlgItemTextA(hDlg, IDC_EDIT_ZOFF, tstr, 32))
+	{
+		int a = 0, b = 0;
+		sscanf(tstr, "%d.%d", &a, &b);
+		return a * 100 + b;
+	}
+	return -1;
 }
 
 void MainDlgUpdate(HWND hDlg)
@@ -879,7 +900,7 @@ void MainDlgUpdate(HWND hDlg)
 
 				// only update if changed
 				if(g_prSt.zOffset != st->zOffset)
-					SetDlgItemInt(hDlg, IDC_EDIT_ZOFF, st->zOffset, false);
+					setZOffset(hDlg, st->zOffset);
 
 				//****FixMe, save these off in the registry so we can
 				// detect the printer when the usb is disconnected
@@ -1091,16 +1112,16 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
-		// Cleanup everything
-		g_wifiList.writeWifiList();
-		KillTimer(hDlg, g_main_timer);
-		xyz.setStream(NULL);
 		PostQuitMessage(0);
 		break;
 
 	case WM_CLOSE:
+		// Cleanup everything
 		DestroyWindow(hDlg);
-		return true;
+		g_wifiList.writeWifiList();
+		KillTimer(hDlg, g_main_timer);
+		xyz.setStream(NULL);
+		return TRUE;
 
 	case WM_ACTIVATE:
 		break;
@@ -1109,20 +1130,50 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		MainDlgUpdate(hDlg);
 		break;
 
+	case WM_NOTIFY:
+		{
+			LPNMUPDOWN lpnmud = (LPNMUPDOWN) lParam;
+			int zOffset;
+
+			switch(LOWORD(wParam))
+			{
+			case IDC_SPIN_ZOFF:
+				zOffset = getZOffset(hDlg);
+				if(zOffset >= 0)
+				{
+					zOffset += lpnmud->iDelta;
+					setZOffset(hDlg, zOffset);
+					RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", zOffset);
+				}
+				break;
+			}
+		}
+		break;
+
+		/*
 	case  WM_VSCROLL:
 		if(LOWORD(wParam) == SB_ENDSCROLL)
 		{
 			if((HWND)lParam ==  GetDlgItem(hDlg, IDC_SPIN_ZOFF)) 
-				RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false));
+			{
+				int zOffset = getZOffset(hDlg);
+				if(zOffset >= 0)
+					RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", zOffset);
+			}
 		}
 		break;
+		*/
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam))
 		{
 		case IDOK:
 			if(GetFocus() == GetDlgItem(hDlg, IDC_EDIT_ZOFF))
-				RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false));
+			{
+				int zOffset = getZOffset(hDlg);
+				if(zOffset >= 0)
+					RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", zOffset);
+			}
 			else if(GetFocus() == GetDlgItem(hDlg, IDC_EDIT_MACHINE_NAME))
 			{
 				GetDlgItemTextA(hDlg, IDC_EDIT_MACHINE_NAME, g_run_str1, sizeof(g_run_str1));
@@ -1288,7 +1339,11 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_EDIT_ZOFF:
 			if(HIWORD(wParam) == EN_KILLFOCUS)
-				RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", GetDlgItemInt(hDlg, IDC_EDIT_ZOFF, NULL, false));
+			{
+				int zOffset = getZOffset(hDlg);
+				if(zOffset >= 0)
+					RunDialogStart(hDlg, ACT_SET_ZOFFSET, "set z-offset", zOffset);
+			}
 			break;
 
 		case IDC_EDIT_MACHINE_NAME:

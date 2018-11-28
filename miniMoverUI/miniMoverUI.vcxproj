@@ -79,11 +79,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="XYZPrinterList.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniMoverUI.cpp" />
-    <ClCompile Include="XYZPrinterList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="miniMoverUI.rc" />

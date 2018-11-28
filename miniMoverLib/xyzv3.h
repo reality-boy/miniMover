@@ -322,7 +322,7 @@ public:
 
 	// update status struct
 	// a updates all status, b-z updates individual status entries
-	void queryStatusStart(bool doPrint = false, char *s = "a");
+	void queryStatusStart(bool doPrint = false, const char *s = "a");
 	const XYZPrinterStatus* getPrinterStatus() { return &m_status; }
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
@@ -428,7 +428,7 @@ protected:
 	void simpleCommandRun();
 
 	// substate, so it can run inside of other states
-	void queryStatusSubStateStart(bool doPrint = false, char *s = "a");
+	void queryStatusSubStateStart(bool doPrint = false, const char *s = "a");
 	bool queryStatusSubStateRun();
 
 	// convert a gcode file to 3w format

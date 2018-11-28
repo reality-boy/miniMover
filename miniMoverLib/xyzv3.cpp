@@ -76,7 +76,7 @@ const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters 
 	{"dv1SW0A000",   "dv1SW0A000", "3F1SWP", "dv1SW0A000_V2",    true, false,  true,    true,  true, false,  true, false,  true,   300, 300, 300,   "da Vinci Super"},			// F1SW, 0.4mm/0.6mm/0.8mm nozzles
 //	{"dv1CP0A000",             "", "3FC1XP", "dv1CP0A000_V2",    true,  false, true,    true, false, false,  true, false, false,   200, 200, 150,   "da Vinci Color"}, // no heated bed, but full color! // does not support 3w file format
 //  {"dv1CPSA000",             "", "3FC1SP", "dv1CPSA000_V2",..., 200,200,150,"XYZprinting da Vinci Color AiO"}, //PartPro200 xTCS
-//  da Vinci Color mini //F1CORM
+//  {"dv1MWCA000", "da Vinci Color mini"}, //F1CORM
 //  da Vinci Color 5D
 };
 
@@ -732,7 +732,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 			case '4': // Query IP
 				//4:0.0.0.0 or 
 				//4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
-				if(isdigit(str[0]))
+				if(strlen(str) >= 3 && (isdigit(str[1]) || isdigit(str[2])))
 					strcpy(m_status.N4NetIP, str);
 				else
 				{
@@ -784,7 +784,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 //
 // Otherwise we can query for up to 4 sub values
 // in that case only the sub values are returned, on wifi no terminating '$' is sent
-void XYZV3::queryStatusStart(bool doPrint, char *s)
+void XYZV3::queryStatusStart(bool doPrint, const char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::queryStatusStart(%d, %s...)", doPrint, s);
 	queryStatusSubStateStart(doPrint, s);
@@ -797,7 +797,7 @@ void XYZV3::queryStatusRun()
 		setState(m_actSubState);
 }
 
-void XYZV3::queryStatusSubStateStart(bool doPrint, char *s)
+void XYZV3::queryStatusSubStateStart(bool doPrint, const char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::queryStatusSubStateStart(%d, %s...)", doPrint, s);
 
@@ -817,7 +817,6 @@ void XYZV3::queryStatusSubStateStart(bool doPrint, char *s)
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::queryStatusSubStateStart invalid input");
-
 }
 
 bool XYZV3::queryStatusSubStateRun()
@@ -4676,6 +4675,8 @@ void XYZV3::V2S_SendFileHelper(const char* buf, int len, v2sFileMode mode)
 	case V2S_11_FW_OS:
 		serialSendMessage("UPDATE_START:4");
 		break;
+	default:
+		break;
 	}
 
 	// close stream
@@ -4689,11 +4690,11 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, char *s)
 
 	serialSendMessage("{\"command\":4}");
 	const char *s1 = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
-	//****FixMe, parse output
+	(void)s1; //****FixMe, parse output
 
 	serialSendMessage("{\"command\":2,\"query\":\"%s\"}", "all");
 	const char *s2 = waitForLine(); // <  {"result":0,"command":2,"data":{"p":"dvF110B000","i":"3F11XPGBXTH5320151","v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"},"w":["W1:--------------","W2:--------------"],"f":[0,0],"t":["--","--"],"j":10,"L":{"m":"4183146537","e":"21785"},"s":{"e":0,"c":0,"j":0,"o":0},"e":2,"b":"--","d":{"message":"No printing job!"},"o":{"p":0,"t":0,"f":0}}}
-	//****FixMe, parse output
+	(void)s2; //****FixMe, parse output
 
 	/*
   // query is all, or one below
@@ -4750,6 +4751,7 @@ void XYZV3::V2W_SendFile(const char* buf, int len)
 	m_stream->write(buf, len);
 	serialSendMessage("<EOF>");
 	int result = waitForInt("result\":");
+	(void)result;
 	/*
 	result == 0 // success
 	result == 1 // success?
@@ -4767,6 +4769,7 @@ void XYZV3::V2W_CaptureImage()
 	// request image
 	serialSendMessage("{\"command\":3}");
 	int len = waitForResponse("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
+	(void)len; //****FixMe allocate a buffer
 
 	// ready to recieve
 	serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
@@ -4782,11 +4785,12 @@ void XYZV3::V2W_PausePrint()
 	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
 
 	//****FixMe, work out what token is
-	char *token = "???";
+	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
 	serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token); // pause
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
 	result == 1 // success?
@@ -4802,11 +4806,12 @@ void XYZV3::V2W_ResumePrint()
 	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
 
 	//****FixMe, work out what token is
-	char *token = "???";
+	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
 	serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token); // resume
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
 	result == 1 // success?
@@ -4822,11 +4827,12 @@ void XYZV3::V2W_CancelPrint()
 	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
 
 	//****FixMe, work out what token is
-	char *token = "???";
+	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
 	serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token); // stop
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
 	result == 1 // success?

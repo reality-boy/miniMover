@@ -21,6 +21,7 @@
 #include "socket.h"
 #include "debug.h"
 #include "xyzv3.h"
+#include "XYZPrinterList.h"
 
 //****FixMe, move somewhere else
 #ifndef _WIN32
@@ -109,6 +110,7 @@ XYZV3 xyz;
 Serial serial;
 Socket soc;
 char deviceName[SERIAL_MAX_DEV_NAME_LEN] = "";
+WifiList g_wifiList;
 
 void postHelp()
 {
@@ -152,48 +154,56 @@ bool checkCon()
 	if(!xyz.isStreamSet())
 	{
 		const char *tDevice = deviceName;
-		if(Stream::isNetworkAddress(tDevice))
+
+		// if name not set, auto detect, 
+		//****FixMe, could be a lot more intelligent than just trying the first 
+		// printer found in the list
+
+		// try serial first
+		if(!tDevice || !tDevice[0])
+			tDevice = SerialHelper::getPortDeviceName(SerialHelper::queryForPorts("XYZ"));
+		// then wifi
+		if(!tDevice || !tDevice[0])
+			if(g_wifiList.m_count > 0) // try wifi
+				tDevice = g_wifiList.m_list[0].m_ip;
+
+		if(tDevice && tDevice[0])
 		{
-			//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
-			// this will allow us to support a custom wifi to usb adapter
-			if(soc.openStream(tDevice, 9100))
+			if(Stream::isNetworkAddress(tDevice))
 			{
-				xyz.setStream(&soc);
-
-				// force a status update if new connection
-				if(xyz.isStreamSet())
+				//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
+				// this will allow us to support a custom wifi to usb adapter
+				if(soc.openStream(tDevice, 9100))
 				{
-					xyz.queryStatusStart();
-					while(xyz.isInProgress())
-						doProcessWithSleep();
+					xyz.setStream(&soc);
+
+					// force a status update if new connection
+					if(xyz.isStreamSet())
+					{
+						xyz.queryStatusStart();
+						while(xyz.isInProgress())
+							doProcessWithSleep();
+					}
+
+					return true;
 				}
-
-				return true;
 			}
-		}
-		else // serial port
-		{
-			// if name not set, auto detect
-			if(!tDevice[0])
+			else // serial port
 			{
-				int id = SerialHelper::queryForPorts("XYZ");
-				tDevice = SerialHelper::getPortDeviceName(id);
-			}
-
-			// if name
-			if(tDevice && tDevice[0] && serial.openStream(tDevice, 115200))
-			{
-				xyz.setStream(&serial);
-
-				// force a status update if new connection
-				if(xyz.isStreamSet())
+				if(serial.openStream(tDevice, 115200))
 				{
-					xyz.queryStatusStart();
-					while(xyz.isInProgress())
-						doProcessWithSleep();
-				}
+					xyz.setStream(&serial);
 
-				return true;
+					// force a status update if new connection
+					if(xyz.isStreamSet())
+					{
+						xyz.queryStatusStart();
+						while(xyz.isInProgress())
+							doProcessWithSleep();
+					}
+
+					return true;
+				}
 			}
 		}
 
@@ -561,7 +571,7 @@ void runTimedTest(float delay_s)
 
 			// and delay
 			if(delay_s > 0)
-				Sleep((DWORD)(delay_s * 1000.0f));
+				Sleep((int)(delay_s * 1000.0f));
 
 			// bail on keyboard hit
 			if(kbhit())
@@ -602,6 +612,9 @@ int main(int argc, char **argv)
 {
 	debugInit();
 	msTimer tm;
+
+	// read cached list of known networked printers 
+	g_wifiList.readWifiList();
 
 	if(argc <= 1)
 	{

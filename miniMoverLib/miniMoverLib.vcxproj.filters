@@ -9,6 +9,7 @@
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="xyzv3.cpp" />
     <ClCompile Include="socket.cpp" />
+    <ClCompile Include="XYZPrinterList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aes.h" />
@@ -19,5 +20,6 @@
     <ClInclude Include="timer.h" />
     <ClInclude Include="xyzv3.h" />
     <ClInclude Include="socket.h" />
+    <ClInclude Include="XYZPrinterList.h" />
   </ItemGroup>
 </Project>

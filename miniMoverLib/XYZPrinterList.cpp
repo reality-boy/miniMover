@@ -1,13 +1,17 @@
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+# include <SDKDDKVer.h>
+# include <Windows.h>
+# pragma warning(disable: 4996) // disable deprecated warning 
+#else
+//****FixMe linux stuff
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "XYZPrinterList.h"
-
-#pragma warning(disable: 4996) // disable deprecated warning 
 
 void WifiEntry::reset()
 {
@@ -34,6 +38,7 @@ bool WifiList::readXYZLastPrint(WifiEntry *ent)
 
 	if(ent)
 	{
+#ifdef _WIN32
 		HKEY key;
 		if(RegOpenKeyA(HKEY_CURRENT_USER, "Software\\XYZware\\xyzsetting\\", &key) == ERROR_SUCCESS)
 		{
@@ -66,6 +71,7 @@ bool WifiList::readXYZLastPrint(WifiEntry *ent)
 			ent->m_port = 0;
 			ent->m_serialNum[0] = '\0';
 		}
+#endif
 	}
 
 	return success;
@@ -73,6 +79,7 @@ bool WifiList::readXYZLastPrint(WifiEntry *ent)
 
 void WifiList::readWifiList()
 {
+#ifdef _WIN32
 	m_count = 0;
 	//m_lastPrint = -1;
 
@@ -142,10 +149,12 @@ void WifiList::readWifiList()
 	// if last print does not point to a valid entry, set it to unknown
 	//if(m_lastPrint < 0 || m_lastPrint >= m_count)
 	//	m_lastPrint = -1;
+#endif
 }
 
 void WifiList::writeWifiList()
 {
+#ifdef _WIN32
 	// open base key
 	HKEY baseKey;
 	if(RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\miniMover\\", 0, NULL, 0, KEY_WRITE, NULL, &baseKey, NULL) == ERROR_SUCCESS)
@@ -187,6 +196,7 @@ void WifiList::writeWifiList()
 		}
 		RegCloseKey(baseKey);
 	}
+#endif
 }
 
 WifiEntry* WifiList::findEntry(const char *serialNum, bool addIfNotFound)
