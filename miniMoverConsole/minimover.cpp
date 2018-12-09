@@ -23,40 +23,24 @@
 #include "xyzv3.h"
 #include "XYZPrinterList.h"
 
-//****FixMe, move somewhere else
 #ifndef _WIN32
-//-------------------
 // from https://jakash3.wordpress.com/2011/12/23/conio-h-for-linux/
- 
 #include <unistd.h>
 #include <termios.h>
 #include <sys/select.h>
  
-// Set cursor position
-void gotoxy(int x, int y) { printf("\x1B[%d;%df", y, x); }
- 
-// Clear terminal screen and set cursor to top left
-void clrscr() { printf("\x1B[2J\x1B[0;0f"); }
- 
-void setTerminal(bool useBuf, bool doEcho) 
+void setTerminal(bool state) 
 {
-	struct termios oldt, newt;
+	struct termios newt;
+	tcgetattr(0, &newt);
 
-	tcgetattr(0, &oldt);
-	newt = oldt;
-
-	// turn terminal line buffering on or off
-	// on waits for enter before returning data
-	if (!useBuf) 
+	if (!state) {
 		newt.c_lflag &= ~ICANON;
-	else 
-		newt.c_lflag |= ICANON;
-
-	// turn terminal keyboard echo on or off
-	if (!doEcho) 
 		newt.c_lflag &= ~ECHO;
-	else 
+	} else {
+		newt.c_lflag |= ICANON;
 		newt.c_lflag |= ECHO;
+	}
 
 	tcsetattr(0, TCSANOW, &newt);
 }
@@ -64,19 +48,11 @@ void setTerminal(bool useBuf, bool doEcho)
 // Get next immediate character input (no echo)
 int getch() 
 {
-	setTerminal(false, false);
-	int ch = getchar();
-	setTerminal(true, true);
+	setTerminal(false);
 
-	return ch;
-}
- 
-// Get next immediate character input (with echo)
-int getche() 
-{
-	setTerminal(false, true);
 	int ch = getchar();
-	setTerminal(true, true);
+
+	setTerminal(true);
 
 	return ch;
 }
@@ -84,24 +60,21 @@ int getche()
 // Check if a key has been pressed at terminal
 int kbhit() 
 {
-	setTerminal(false, false);
+	setTerminal(false);
 
 	struct timeval tv;
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
-
 	fd_set fds;
 	FD_ZERO(&fds);
-
 	FD_SET(0, &fds);
 	select(1, &fds, 0, 0, &tv);
 	int ret = FD_ISSET(0, &fds);
 
-	setTerminal(true, true);
+	setTerminal(true);
 
 	return ret;
 }
-//-------------------
 #endif
 
 // comment out to try network connection
@@ -156,8 +129,8 @@ bool checkCon()
 		const char *tDevice = deviceName;
 
 		// if name not set, auto detect, 
-		//****FixMe, could be a lot more intelligent than just trying the first 
-		// printer found in the list
+		//****FixMe, could be a lot more intelligent than just trying 
+		// the first printer found in the list
 
 		// try serial first
 		if(!tDevice || !tDevice[0])

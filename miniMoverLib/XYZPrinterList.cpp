@@ -13,6 +13,12 @@
 
 #include "XYZPrinterList.h"
 
+//****FixMe, this is very windows centric using the registry
+// rewrite so we can optionally use an ini file
+//****FixMe, this is not picky enough, should work harder to
+// clean out duplicates
+//****FixMe, keep track of last printer connected to 
+
 void WifiEntry::reset()
 {
 	m_serialNum[0] = '\0';

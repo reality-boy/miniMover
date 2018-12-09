@@ -745,12 +745,6 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		else
 			SendDlgItemMessage(hDlg, IDC_BUTTON_PRINT, WM_SETTEXT, 0, (LPARAM)"Print File");
 
-		bool isWifiConnected = strlen(st->WPHY) > 0 || strlen(st->N4NetIP) > 0;
-		if(isWifiConnected)
-			SendDlgItemMessage(hDlg, IDC_BUTTON_WIFI_SET, WM_SETTEXT, 0, (LPARAM)"Disconnect");
-		else
-			SendDlgItemMessage(hDlg, IDC_BUTTON_WIFI_SET, WM_SETTEXT, 0, (LPARAM)"Apply");
-
 		if(!isPrinting && st->dPrintPercentComplete == 0 && st->dPrintElapsedTime_m == 0 && st->dPrintTimeLeft_m == 0)
 		{
 				//listAddLine(hwndListInfo, "No job running");
@@ -901,20 +895,6 @@ void MainDlgUpdate(HWND hDlg)
 				// only update if changed
 				if(g_prSt.zOffset != st->zOffset)
 					setZOffset(hDlg, st->zOffset);
-
-				//****FixMe, save these off in the registry so we can
-				// detect the printer when the usb is disconnected
-				// st->N4NetIP
-				// st->N4NetSSID
-				// st->nMachineName
-				// 
-				// or check out
-				// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting
-				//   DefaultIP     192.168.0.20
-				//   DefaultPort   COM3
-				//   DefaultPrinter  XYZprinting da Vinci miniMaker
-				//   LastPrinterSN 3FM1XPUS5CA68P0591
-				// Computer\HKEY_CURRENT_USER\Software\XYZware\xyzsetting\3FM1XPUS5CA68P0591
 
 				// I believe the W functions represent wifi network as configured on the machine
 				// and 4 functions represent the network as connected
@@ -1312,29 +1292,26 @@ BOOL CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON_WIFI_SET:
 			{
-				const XYZPrinterStatus *st = xyz.getPrinterStatus();
-				bool isWifiConnected = !st || strlen(st->WPHY) > 0 || strlen(st->N4NetIP) > 0;
-				if(isWifiConnected)
-					RunDialogStart(hDlg, ACT_DISCONNECT_WIFI, "disconnect from WiFi");
-				else
-				{
-					GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, g_run_str1, sizeof(g_run_str1));
-					GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, g_run_str2, sizeof(g_run_str2));
-					int chan = GetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, NULL, false);
+				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_SSID, g_run_str1, sizeof(g_run_str1));
+				GetDlgItemTextA(hDlg, IDC_EDIT_WIFI_PASSWD, g_run_str2, sizeof(g_run_str2));
+				int chan = GetDlgItemInt(hDlg, IDC_EDIT_WIFI_CHAN, NULL, false);
 
-					bool noPass = (0 == strcmp(g_run_str2, "******"));
-					if(!*g_run_str1 || !*g_run_str2 || noPass || chan < 0)
-					{
-						MessageBox(NULL, "Invalid wifi settings.", "miniMover", MB_OK);
-						MainDlgSetStatus(hDlg, "set wifi parameters failed");
-					}
-					else 
-					{
-						RunDialogStart(hDlg, ACT_SET_WIFI, "setup WiFi", chan);
-						g_wifiOptionsEdited = false;
-					}
+				bool noPass = (0 == strcmp(g_run_str2, "******"));
+				if(!*g_run_str1 || !*g_run_str2 || noPass || chan < 0)
+				{
+					MessageBox(NULL, "Invalid wifi settings.", "miniMover", MB_OK);
+					MainDlgSetStatus(hDlg, "set wifi parameters failed");
+				}
+				else 
+				{
+					RunDialogStart(hDlg, ACT_SET_WIFI, "setup WiFi", chan);
+					g_wifiOptionsEdited = false;
 				}
 			}
+			break;
+
+		case IDC_BUTTON_WIFI_DISCONNECT:
+			RunDialogStart(hDlg, ACT_DISCONNECT_WIFI, "disconnect from WiFi");
 			break;
 
 		case IDC_EDIT_ZOFF:

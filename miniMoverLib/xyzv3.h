@@ -312,7 +312,7 @@ public:
 	bool isWIFI();
 
 	void doProcess();
-	bool isInProgress(); //****FixMe, add this into ui code
+	bool isInProgress();
 	bool isSuccess();
 
 	const char* getStateStr();
@@ -472,7 +472,7 @@ protected:
 	const char* filamentMaterialTypeToStr(int materialType);
 	const char* filamentColorIdToStr(int colorId);
 	int rssiToPct(int rssi);
-	bool findJsonVal(const char *str, const char *key, char *val);
+	bool findJsonVal(const char *str, const char *key, char *val, int maxLen);
 
 	void parseStatusSubstring(const char *str);
 
@@ -554,6 +554,7 @@ protected:
 	bool waitForResponse(const char *response);
 	int waitForInt(const char *response);
 	const char* findValue(const char *str, const char *key);
+	bool fillBuffer(char *buf, int len);
 
 	//v2 serial protocol
 	enum v2sFileMode
@@ -565,15 +566,14 @@ protected:
 		V2S_11_FW_OS, // v1.1 printer, os fw
 	};
 
-	void V2S_queryStatusStart(bool doPrint, char *s);
-	void V2S_parseStatusSubstring(const char *str);
+	void V2S_queryStatusStart(bool doPrint);
+	void V2S_parseStatusSubstring(const char *str, bool doPrint);
 	void V2S_SendFirmware(const char* buf, int len);
 	void V2S_SendFile(const char* buf, int len);
 	void V2S_SendFileHelper(const char* buf, int len, v2sFileMode mode);
 
 	// v2 wifi protocol
-	void V2W_queryStatusStart(bool doPrint, char *s);
-	void V2W_parseStatusSubstring(const char *str);
+	void V2W_queryStatusStart(bool doPrint, const char *s = "all");
 	// can't send firmware over wifi?
 	void V2W_SendFile(const char* buf, int len);
 	// wifi only commands?
