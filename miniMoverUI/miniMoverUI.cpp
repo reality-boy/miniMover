@@ -989,6 +989,9 @@ void MainDlgConnect(HWND hDlg)
 
 	// close old connection
 	xyz.setStream(NULL);
+	// clear out old status
+	SendMessage(hwndListInfo, LB_RESETCONTENT, 0, 0);
+	// and notify user
 	MainDlgSetStatus(hDlg, "not connected");
 	setDialogStr(hDlg, "MiniMoverUI %s - %s", g_ver, "not connected");
 

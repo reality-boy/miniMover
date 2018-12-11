@@ -408,6 +408,8 @@ public:
 
 protected:
 
+	void init();
+
 	void setState(int/*ActState*/ state, float timeout_s = -1, bool needsMachineState = false);
 	int /*ActState*/ getState();
 

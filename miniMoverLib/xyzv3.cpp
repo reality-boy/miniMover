@@ -230,9 +230,9 @@ enum ActState
 	ACT_SC_COMPLETE,
 };
 
-XYZV3::XYZV3() 
+void XYZV3::init()
 {
-	debugPrint(DBG_LOG, "XYZV3::XYZV3()");
+	debugPrint(DBG_LOG, "XYZV3::init()");
 
 	memset(&m_status, 0, sizeof(m_status));
 	memset(&pDat, 0, sizeof(pDat));
@@ -249,6 +249,13 @@ XYZV3::XYZV3()
 	m_fileIsTemp = false;
 	m_filePath[0] = '\0';
 	m_fileOutPath[0] = '\0';
+}
+
+XYZV3::XYZV3() 
+{
+	debugPrint(DBG_LOG, "XYZV3::XYZV3()");
+
+	init();
 } 
 
 XYZV3::~XYZV3() 
@@ -263,11 +270,12 @@ void XYZV3::setStream(Stream *s)
 	// close out old stream
 	if(m_stream)
 		m_stream->closeStream();
+
+	//reinitialize everything
+	init();
+
 	// and put new in its place
 	m_stream = s;
-
-	memset(&m_status, 0, sizeof(m_status));
-
 	if(m_stream)
 		m_stream->clear();
 }
