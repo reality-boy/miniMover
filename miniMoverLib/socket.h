@@ -5,6 +5,8 @@
 # include <Winsock2.h>
 #endif
 
+const static int SOCKET_MAX_ADDR_LEN = 256;
+
 // detect wifi network windows is using
 bool autoDetectWifi(char *ssid, char *password, int &channel);
 
@@ -16,6 +18,7 @@ public:
 
 	bool openStream(const char *ip, int port);
 
+	virtual bool reopenStream();
 	virtual void closeStream();
 	virtual bool isOpen();
 	virtual void clear();
@@ -42,6 +45,8 @@ protected:
 	int m_soc;
 #endif
 
+	char m_ipAddr[SOCKET_MAX_ADDR_LEN];
+	int m_port;
 };
 
 #endif //NETWORK_H

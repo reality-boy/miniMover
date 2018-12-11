@@ -137,12 +137,16 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 		name[SERIAL_MAX_DEV_NAME_LEN-1] = '\0';
 
 		// if already connected just return
-		if(0 == strcmp(name, m_deviceName) && 
+		if( isOpen() &&
+			0 == strcmp(name, m_deviceName) && 
 			m_baudRate == baudRate)
+		{
 			return true;
+		}
 
 		// close out any previous connection
-		closeStream();
+		if(isOpen()) 
+			closeStream();
 
 		// Open port
 	    m_handle = open(name, O_RDWR | O_NOCTTY);
@@ -220,6 +224,20 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 	return false;
 }
 
+bool Serial::reopenStream()
+{
+	debugPrint(DBG_LOG, "Serial::reopenStream()");
+
+	if(isOpen()) 
+		closeStream();
+
+	if(*m_deviceName)
+		return openStream(m_deviceName, m_baudRate);
+
+	return false;
+}
+
+
 void Serial::closeStream()
 {
 	debugPrint(DBG_LOG, "Serial::closeStream()");
@@ -236,8 +254,10 @@ void Serial::closeStream()
 		debugPrint(DBG_VERBOSE, "Serial::closeStream failed invalid connection");
 
 	m_handle = -1;
-	m_baudRate = -1;
-	m_deviceName[0] = '\0';
+
+	// don't forget about our last connection
+	//m_baudRate = -1;
+	//m_deviceName[0] = '\0';
 }
 
 bool Serial::isOpen()

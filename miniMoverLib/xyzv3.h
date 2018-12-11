@@ -483,7 +483,7 @@ protected:
 	bool waitForConfigOK(); // blocks for up to 5 seconds!
 
 	const char* checkForLine();
-	bool checkForJsonState(const char **val);
+	bool checkForJsonState(char *val, int maxLen);
 	bool jsonValEquals(const char *tVal, const char *val);
 	bool checkForState(int state, int substate = -1);
 	bool checkForNotState(int state, int substate = -1);

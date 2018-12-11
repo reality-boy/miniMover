@@ -231,12 +231,16 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 		sprintf(name, "\\\\.\\COM%d", port);
 
 		// if already connected just return
-		if(0 == strcmp(name, m_deviceName) && 
-			m_baudRate == baudRate)
+		if( isOpen() &&
+			0 == strcmp(name, m_deviceName) && 
+			m_baudRate == baudRate )
+		{
 			return true;
+		}
 
 		// close out any previous connection
-		closeStream();
+		if(isOpen()) 
+			closeStream();
 	
 		// open serial port
 		m_handle = CreateFileA( name, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -315,6 +319,19 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 	return false;
 }
 
+bool Serial::reopenStream()
+{
+	debugPrint(DBG_LOG, "Serial::reopenStream()");
+
+	if(isOpen()) 
+		closeStream();
+
+	if(*m_deviceName)
+		return openStream(m_deviceName, m_baudRate);
+
+	return false;
+}
+
 void Serial::closeStream()
 {
 	debugPrint(DBG_LOG, "Serial::closeStream()");
@@ -330,8 +347,10 @@ void Serial::closeStream()
 		debugPrint(DBG_VERBOSE, "Serial::closeStream failed invalid connection");
 
 	m_handle = INVALID_HANDLE_VALUE;
-	m_baudRate = -1;
-	m_deviceName[0] = '\0';
+
+	// don't forget about our last connection
+	//m_baudRate = -1;
+	//m_deviceName[0] = '\0';
 }
 
 bool Serial::isOpen()

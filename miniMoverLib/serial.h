@@ -47,6 +47,7 @@ public:
 
 	bool openStream(const char *deviceName, int baudRate);
 
+	virtual bool reopenStream();
 	virtual void closeStream();
 	virtual bool isOpen();
 	virtual void clear();

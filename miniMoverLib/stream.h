@@ -20,6 +20,11 @@ public:
 
 	// bool openStream(whatever parameters define the stream)
 
+	// reopen the stream, using the last parameters
+	// needed for wifi connections, since the 1.1 Plus machine closes connection
+	// after every single message is sent!
+	virtual bool reopenStream() = 0;
+
 	// close connection
 	virtual void closeStream() = 0;
 

@@ -294,7 +294,7 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 
 	if(m_stream && m_stream->isOpen() && format)
 	{
-		const static int BUF_SIZE  = 2048;
+		const int BUF_SIZE = 2048;
 		char msgBuf[BUF_SIZE];
 		va_list arglist;
 
@@ -591,8 +591,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//   ap is app version string
 				//v:1.1.1
 				if(strchr(str, ','))
-					//****FixMe, cant sscanf 3 strings
-					sscanf(str, "v:%s,%s,%s", m_status.vOsFirmwareVersion, m_status.vAppFirmwareVersion, m_status.vFirmwareVersion);
+					sscanf(str, "v:%[^,],%[^,],%s", m_status.vOsFirmwareVersion, m_status.vAppFirmwareVersion, m_status.vFirmwareVersion);
 				else
 					sscanf(str, "v:%s", m_status.vFirmwareVersion);
 				break;
@@ -619,8 +618,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//   	TTT - Mdate
 				//   	SSSS - serial number
 				//w:1,PMP6PTH6840596
-				//****FixMe, cant sscanf 2 strings
-				sscanf(str, "w:%d,%s,%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+				sscanf(str, "w:%d,%[^,],%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
 
 				if(strlen(m_status.wFilament1SerialNumber) > 4)
 				{
@@ -730,8 +728,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//     where xx is the nozzle serial number
 				//     and yy is the total nozzle print time (in minutes)
 				//   sn2 is optional second serial number for second nozzle
-				//****FixMe, cant sscanf 2 strings
-				sscanf(str, "X:%d,%s,%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
+				sscanf(str, "X:%d,%[^,],%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
 				m_status.XNozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.XNozzleID);
 				m_status.XNozzleIsLaser = XYZV3::nozzleIDIsLaser(m_status.XNozzleID);
 				break;
@@ -1415,7 +1412,8 @@ void XYZV3::calibrateBedStart()
 void XYZV3::calibrateBedRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::calibrateBedRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1435,7 +1433,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_START_SUCCESS: // wait on success
 		if(isWIFI())
 			setState(ACT_CB_HOME, 120, isWIFI());
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_CB_HOME, 120, isWIFI());
@@ -1448,7 +1446,7 @@ void XYZV3::calibrateBedRun()
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_HOME: // wait for signal to lower detector
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "pressdetector"))
 				setState(ACT_CB_ASK_LOWER, 240);
@@ -1481,7 +1479,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_CALIB_START: // wait for calibration to start
 		if(isWIFI())
 			setState(ACT_CB_CALIB_RUN, 240, isWIFI());
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "processing"))
 				setState(ACT_CB_CALIB_RUN, 240, isWIFI());
@@ -1494,7 +1492,7 @@ void XYZV3::calibrateBedRun()
 			m_progress = (int)(20.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_CB_CALIB_RUN: // wait for calibration to finish
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "ok")) // or stat:fail
 				setState(ACT_CB_ASK_RAISE, 240);
@@ -1528,7 +1526,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_COMPLETE:
 		if(isWIFI())
 			setState(ACT_SUCCESS);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete"))
 				setState(ACT_SUCCESS);
@@ -1585,7 +1583,8 @@ void XYZV3::cleanNozzleStart()
 void XYZV3::cleanNozzleRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::cleanNozzleRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1605,7 +1604,7 @@ void XYZV3::cleanNozzleRun()
 	case ACT_CL_START_SUCCESS:
 		if(isWIFI())
 			setState(ACT_CL_WARMUP_COMPLETE, 120, isWIFI());
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_CL_WARMUP_COMPLETE, 120, isWIFI());
@@ -1617,7 +1616,7 @@ void XYZV3::cleanNozzleRun()
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 	case ACT_CL_WARMUP_COMPLETE:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
 				setState(ACT_CL_CLEAN_NOZLE, 240);
@@ -1652,7 +1651,7 @@ void XYZV3::cleanNozzleRun()
 	case ACT_CL_COMPLETE:
 		if(isWIFI())
 			setState(ACT_SUCCESS);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "ok"))
 				setState(ACT_SUCCESS);
@@ -1693,7 +1692,8 @@ void XYZV3::homePrinterStart()
 void XYZV3::homePrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::homePrinterRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1713,7 +1713,7 @@ void XYZV3::homePrinterRun()
 	case ACT_HP_START_SUCCESS:
 		if(isWIFI())
 			setState(ACT_HP_HOME_COMPLETE, 120);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_HP_HOME_COMPLETE, 120);
@@ -1726,7 +1726,7 @@ void XYZV3::homePrinterRun()
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_HP_HOME_COMPLETE:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete"))
 				setState(ACT_SUCCESS);
@@ -1760,7 +1760,8 @@ void XYZV3::jogPrinterStart(char axis, int dist_mm)
 void XYZV3::jogPrinterRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::jogPrinterRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1780,7 +1781,7 @@ void XYZV3::jogPrinterRun()
 	case ACT_JP_START_SUCCESS:
 		if(isWIFI())
 			setState(ACT_JP_JOG_COMPLETE, 120);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_JP_JOG_COMPLETE, 120);
@@ -1793,7 +1794,7 @@ void XYZV3::jogPrinterRun()
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_JP_JOG_COMPLETE:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
 				setState(ACT_SUCCESS);
@@ -1824,7 +1825,8 @@ void XYZV3::loadFilamentStart()
 void XYZV3::loadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::loadFilamentRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1844,7 +1846,7 @@ void XYZV3::loadFilamentRun()
 	case ACT_LF_START_SUCCESS:
 		if(isWIFI())
 			setState(ACT_LF_HEATING, 120);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_LF_HEATING, 120);
@@ -1857,7 +1859,7 @@ void XYZV3::loadFilamentRun()
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_HEATING:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "heat"))
 				setState(ACT_LF_LOADING, 240, isWIFI());
@@ -1872,7 +1874,7 @@ void XYZV3::loadFilamentRun()
 			m_progress = (int)(10.0f + 30.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_LF_LOADING:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "load")) 
 				setState(ACT_LF_WAIT_LOAD, 240);
@@ -1910,7 +1912,7 @@ void XYZV3::loadFilamentRun()
 	case ACT_LF_LOAD_COMPLETE:
 		if(isWIFI())
 			setState(ACT_SUCCESS);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete"))
 				setState(ACT_SUCCESS);
@@ -1949,7 +1951,8 @@ void XYZV3::unloadFilamentStart()
 void XYZV3::unloadFilamentRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::unloadFilamentRun() %d", m_actState);
-	const char *val;
+	const int len = 1024;
+	char val[len];
 
 	if(!m_stream || !m_stream->isOpen())
 		setState(ACT_FAILURE);
@@ -1969,7 +1972,7 @@ void XYZV3::unloadFilamentRun()
 	case ACT_UF_START_SUCCESS:
 		if(isWIFI())
 			setState(ACT_UF_HEATING, 120);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "start"))
 				setState(ACT_UF_HEATING, 120);
@@ -1982,7 +1985,7 @@ void XYZV3::unloadFilamentRun()
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_HEATING:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "heat")) // could query temp and state with  XYZv3/query=jt
 				setState(ACT_UF_UNLOADING, 240, isWIFI());
@@ -1997,7 +2000,7 @@ void XYZV3::unloadFilamentRun()
 			m_progress = (int)(10.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOADING:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "unload")) // could query temp and state with  XYZv3/query=jt
 				setState(ACT_UF_UNLOAD_COMPLETE, 240);
@@ -2012,7 +2015,7 @@ void XYZV3::unloadFilamentRun()
 			m_progress = (int)(50.0f + 40.0f * m_timeout.getElapsedTime_pct());
 		break;
 	case ACT_UF_UNLOAD_COMPLETE:
-		if(!isWIFI() && checkForJsonState(&val))
+		if(!isWIFI() && checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete")) // or state is PRINT_NONE
 				setState(ACT_SUCCESS);
@@ -2044,7 +2047,7 @@ void XYZV3::unloadFilamentRun()
 	case ACT_UF_CANCEL_COMPLETE:
 		if(isWIFI())
 			setState(ACT_SUCCESS);
-		else if(checkForJsonState(&val))
+		else if(checkForJsonState(val, len))
 		{
 			if(jsonValEquals(val, "complete"))
 				setState(ACT_SUCCESS);
@@ -3307,17 +3310,17 @@ const char* XYZV3::checkForLine()
 	return "";
 }
 
-//****FixMe should pass in a buffer and length, not rely on a return from a static buf
-bool XYZV3::checkForJsonState(const char **val)
+bool XYZV3::checkForJsonState(char *val, int maxLen)
 {
-	const static char *key = "stat";
+	assert(val);
+
+	const char *key = "stat";
 	debugPrint(DBG_VERBOSE, "XYZV3::checkForJsonState(%s)", key);
 
-	if(val)
+	if(val && maxLen > 0)
 	{
-		*val = NULL;
-		static const int len = 1024;
-		static char tVal[len]; //****Warning, returned by function!
+		// return something
+		*val = '\0';
 
 		// return will look something like this
 		// unload:{"stat":"heat","extemp":"33"}
@@ -3329,9 +3332,8 @@ bool XYZV3::checkForJsonState(const char **val)
 
 			// now find key we are looking for in returned sub struct
 			// this will skip over any leading key if needed
-			if(findJsonVal(buf, key, tVal, sizeof(tVal)) && *tVal)
+			if(findJsonVal(buf, key, val, maxLen) && *val)
 			{
-				*val = tVal;
 				debugPrint(DBG_LOG, "XYZV3::checkForJsonState match found");
 				return true;
 			}
@@ -3381,53 +3383,73 @@ const char* getNextKey(const char *str, char *key, int maxLen)
 
 	debugPrint(DBG_VERBOSE, "XYZV3::getNextKey(%s, %d)", str, maxLen);
 
-	const char *tstr = str;
-	char *tkey = key;
-	bool isQuote = false;
-
-	// eat opening quote
-	if(*tstr == '"')
+	if(key && maxLen > 0)
 	{
-		tstr++;
-		isQuote = true;
-	}
-
-	while(*tstr)
-	{
-		// if quote, skip over string without investigating
-		if(isQuote) 
+		if(str)
 		{
+			const char *tstr = str;
+			char *tkey = key;
+			bool isQuote = false;
+
+			// eat opening quote
 			if(*tstr == '"')
-				isQuote = false;
+			{
+				tstr++;
+				isQuote = true;
+			}
+
+			while(*tstr)
+			{
+				// if quote, skip over string without investigating
+				if(isQuote) 
+				{
+					if(*tstr == '"')
+						isQuote = false;
+				}
+				else if(*tstr == '"')
+					isQuote = true;
+				else if(!isalnum(*tstr))
+					break;
+
+				// if room left
+				if(maxLen > 1)
+				{
+					*tkey = *tstr;
+					tkey++;
+					maxLen--;
+				}
+				tstr++;
+			}
+
+			// found a key, remove from string and return
+			if(*tstr == ':' && maxLen > 1)
+			{
+				assert(maxLen > 1);
+				if(maxLen <= 1)
+					debugPrint(DBG_WARN, "XYZV3::getNextKey maxLen too short!");
+
+				// terminate string
+				*tkey = '\0';
+				// skip over ':' character
+				tstr++;
+
+				// remove trailing quote
+				int len = strlen(key);
+				if(len > 0 && key[len-1] == '"')
+					key[len-1] = '\0';
+					
+				return tstr;
+			}
 		}
-		else if(*tstr == '"')
-			isQuote = true;
-		else if(!isalnum(*tstr))
-			break;
+		else
+			debugPrint(DBG_WARN, "XYZV3::getNextKey invalid input");
 
-		*tkey = *tstr;
-		tkey++;
-		tstr++;
+		// no key found, return unmodified string
+		*key = '\0';
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::getNextKey invalid input");
 
-	// found a key, remove from string and return
-	if(*tstr == ':')
-	{
-		// terminate string
-		*tkey = '\0';
-		// skip over ':' character
-		tstr++;
-
-		// remove trailing quote
-		int len = strlen(key);
-		if(len > 0 && key[len-1] == '"')
-			key[len-1] = '\0';
-			
-		return tstr;
-	}
-
-	// no key found, return unmodified string
-	*key = '\0';
 	return str;
 }
 
@@ -3438,90 +3460,108 @@ const char* getNextVal(const char *str, char *val, int maxLen)
 {
 	assert(str);
 	assert(val);
-	(void)maxLen; //****FixMe, deal with this
 
 	debugPrint(DBG_VERBOSE, "XYZV3::getNextVal(%s, %d)", str, maxLen);
 
-	int mode = 0;
-	int bracketCount = 0;
 	const char *tstr = str;
-	char *tval = val;
-	*tval = '\0';
 
-	// remove leading quote
-	if(*tstr == '"')
+	if(val && maxLen > 0)
 	{
-		tstr++;
-		mode = 1;
-	}
+		*val = '\0';
 
-	while(*tstr)
-	{
-		if(mode == 0) // look for opening " or [ or { end on , or }
+		if(str)
 		{
-			if(*tstr == ',' || *tstr == '}') // end of value
-			{
-				// skip over ',' or '}'
-				tstr++;
-				break;
-			}
-			else if(*tstr == '"') // start of quote
-				mode = 1;
-			else if(*tstr == '[') // start of bracket
-				mode = 2;
-			else if(*tstr == '{') // start of sub element
-			{
-				bracketCount++;
-				mode = 3;
-			}
-		}
-		else if(mode == 1) // look for closing "
-		{
+			int mode = 0;
+			int bracketCount = 0;
+			char *tval = val;
+
+			// remove leading quote
 			if(*tstr == '"')
-				mode = 0;
-		}
-		else if(mode == 2) // look for closing ]
-		{
-			if(*tstr == ']')
-				mode = 0;
-		}
-		else if(mode == 3) // look for closing } or nested {}
-		{
-			if(*tstr == '{')
-				bracketCount++;
-			else if(*tstr == '}')
 			{
-				bracketCount--;
-				if(bracketCount == 0)
-					mode = 0;
+				tstr++;
+				mode = 1;
 			}
+
+			while(*tstr)
+			{
+				if(mode == 0) // look for opening " or [ or { end on , or }
+				{
+					if(*tstr == ',' || *tstr == '}') // end of value
+					{
+						// { skip over ',' or '}'
+						tstr++;
+						break;
+					}
+					else if(*tstr == '"') // start of quote
+						mode = 1;
+					else if(*tstr == '[') // start of bracket
+						mode = 2;
+					else if(*tstr == '{') // start of sub element
+					{
+						bracketCount++;
+						mode = 3;
+					}
+				}
+				else if(mode == 1) // look for closing "
+				{
+					if(*tstr == '"')
+						mode = 0;
+				}
+				else if(mode == 2) // look for closing ]
+				{
+					if(*tstr == ']')
+						mode = 0;
+				}
+				else if(mode == 3) // look for closing or nested {}
+				{
+					if(*tstr == '{')
+						bracketCount++;
+					else if(*tstr == '}')
+					{
+						bracketCount--;
+						if(bracketCount == 0)
+							mode = 0;
+					}
+				}
+
+				if(maxLen > 1)
+				{
+					*tval = *tstr;
+					tval++;
+					maxLen--;
+				}
+				tstr++;
+			}
+
+			assert(maxLen > 1);
+			if(maxLen <= 1)
+				debugPrint(DBG_WARN, "XYZV3::getNextVal maxLen too short!");
+
+			// terminate string
+			*tval = '\0';
+
+			// remove trailing quote
+			int len = strlen(val);
+			if(len > 0 && val[len-1] == '"')
+				val[len-1] = '\0';
 		}
-
-		*tval = *tstr;
-		tval++;
-		tstr++;
+		else
+			debugPrint(DBG_WARN, "XYZV3::getNextVal invalid input");
 	}
-
-	// terminate string
-	*tval = '\0';
-
-	// remove trailing quote
-	int len = strlen(val);
-	if(len > 0 && val[len-1] == '"')
-		val[len-1] = '\0';
+	else
+		debugPrint(DBG_WARN, "XYZV3::getNextVal invalid input");
 
 	return tstr;
 }
 
 bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 {
-	(void)maxLen; //****FixMe, deal with this
 	debugPrint(DBG_VERBOSE, "XYZV3::findJsonVal(%s, %s, %s, %d)", str, key, val, maxLen);
 
-	if(val)
+	if(val && maxLen > 0)
 	{
 		// make sure we return something
-		val[0] = '\0';
+		*val = '\0';
 
 		const char *tstr = str;
 
@@ -3541,7 +3581,10 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 				if(*s == '"')
 					s++;
 
-				strcpy(val, s);
+				assert(strlen(s) < (size_t)maxLen);
+				strncpy(val, s, maxLen);
+				val[maxLen - 1] = '\0';
+
 				if(val[strlen(val)-1] == '"')
 					val[strlen(val)-1] = '\0';
 
@@ -3574,7 +3617,10 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 						if(*s == '"')
 							s++;
 
-						strcpy(val, s);
+						assert(strlen(s) < (size_t)maxLen);
+						strncpy(val, s, maxLen);
+						val[maxLen-1] = '\0';
+
 						if(val[strlen(val)-1] == '"')
 							val[strlen(val)-1] = '\0';
 
@@ -4481,15 +4527,16 @@ const char* XYZV3::waitForLine()
 		do
 		{
 			if(m_stream->readLine(buf, len))
-				break;
+				return buf;
 		} 
 		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
 
-		if(*buf)
-			return buf;
+		debugPrint(DBG_VERBOSE, "XYZV3::waitForLine failed, timed out");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
 
-	return NULL;
+	return "";
 }
 
 bool XYZV3::waitForResponse(const char *response)
@@ -4499,7 +4546,7 @@ bool XYZV3::waitForResponse(const char *response)
 	if(response)
 	{
 		const char *line = waitForLine();
-		if(line)
+		if(*line)
 		{
 			if(NULL != strstr(line, response))
 			{
@@ -4525,7 +4572,7 @@ int XYZV3::waitForInt(const char *response)
 	if(response)
 	{
 		const char *line = waitForLine();
-		if(line)
+		if(*line)
 		{
 			const char *ret = strstr(line, response);
 			if(ret)
@@ -4597,58 +4644,87 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 
 	const char *buf;
 
+	// zero out results, only if updating everything
+	//****FixMe, rather than clearing out old data, just keep an update count
+	// and provide a 'isNewData() test
+	memset(&m_status, 0, sizeof(m_status));
 	//****FixMe, work out how to set this right
 	m_status.isValid = true;
 
 	if(serialSendMessage("XYZ_@3D:0"))
 	{
 		buf = waitForLine();
-		while(buf && *buf) 
+		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
 			buf = checkForLine();
 		}
 	}
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 
 	if(serialSendMessage("XYZ_@3D:5"))
 	{
 		buf = waitForLine();
-		while(buf && *buf) 
+		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
 			buf = checkForLine();
 		}
 	}
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 
 	if(serialSendMessage("XYZ_@3D:6"))
 	{
 		buf = waitForLine();
-		while(buf && *buf) 
+		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
 			buf = checkForLine();
 		}
 	}
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 
 	if(serialSendMessage("XYZ_@3D:7"))
 	{
 		buf = waitForLine();
-		while(buf && *buf) 
+		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
 			buf = checkForLine();
 		}
 	}
 
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
+
 	if(serialSendMessage("XYZ_@3D:8"))
 	{
 		buf = waitForLine();
-		while(buf && *buf) 
+		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
 			buf = checkForLine();
 		}
 	}
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }
 
 void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
@@ -4802,6 +4878,7 @@ void XYZV3::V2S_SendFirmware(const char *buf, int len)
 	assert(false);
 
 	// pick one, based on machine type and firmware type
+	//****FixMe, work out how to do this
 	V2S_SendFileHelper(buf, len, V2S_10_FW);
 	//V2S_SendFileHelper(buf, len, V2S_11_FW_ENGINE);
 	//V2S_SendFileHelper(buf, len, V2S_11_FW_APP);
@@ -4940,6 +5017,12 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 		break;
 	}
 
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
+
 	// close stream
 }
 
@@ -4949,26 +5032,48 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart(%d, %s)", doPrint, s);
 
-	if(serialSendMessage("{\"command\":4}"))
+	if(0 == strcmp(s, "all"))
 	{
-		const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
-		if(str)
+		// on wifi, we need to reopen the stream before each command
+		if(m_stream)
+			m_stream->reopenStream();
+
+		// zero out results, only if updating everything
+		//****FixMe, rather than clearing out old data, just keep an update count
+		// and provide a 'isNewData() test
+		memset(&m_status, 0, sizeof(m_status));
+
+		if(serialSendMessage("{\"command\":4}"))
 		{
-			debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
-			if(doPrint)
-				printf("%s\n", str);
-			//****FixMe, parse output
+			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
+			if(*str)
+			{
+				debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
+				if(doPrint)
+					printf("%s\n", str);
+				//****FixMe, parse output
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
+
+			//****FixMe, some printers return '$\n\n' after 'ok\n'
+			// drain any left over messages
+			if(m_stream)
+				m_stream->clear();
+
 		}
 		else
-			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
+			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
 	}
-	else
-		debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	if(serialSendMessage("{\"command\":2,\"query\":\"%s\"}", s))
 	{
 		const char *str = waitForLine(); 
-		if(str)
+		if(*str)
 		{
 			debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
 			if(doPrint)
@@ -4994,16 +5099,14 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				}
 				
 				if(findJsonVal(datStr, "w", s1, sizeof(s1))) // "w":["W1:--------------","W2:--------------"], // eeprom
-					//****FixMe, cant sscanf 2 strings
-					sscanf(s1, "[\"W1:%s\",\"W2:%s\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+					sscanf(s1, "[\"W1:%[^\"]\",\"W2:%[^\"]\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
 				
 				if(findJsonVal(datStr, "f", s1, sizeof(s1))) // "f":[0,0], // fillament left
 					sscanf(s1,"[%d,%d]", &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
 
 				if(findJsonVal(datStr, "t", s1, sizeof(s1))) // "t":["--","--"], // extruder temperature(s)
 				{
-					//****FixMe, cant sscanf 2 strings
-					sscanf(s1, "[\"%s\",\"%s\"]", a, b);
+					sscanf(s1, "[\"%[^\"]\",\"%[^\"]\"]", a, b);
 					m_status.tExtruder1ActualTemp_C = atoi(a);
 					m_status.tExtruder2ActualTemp_C = atoi(b);
 				}
@@ -5022,6 +5125,7 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 
 				if(findJsonVal(datStr, "s", s1, sizeof(s1))) // "s":{"e":0,"c":0,"j":0,"o":0},
 				{
+					//****FixMe, work out what this is
 					// deal with s1
 					//if(findJsonVal(s1, "e", s2, sizeof(s2)))
 					//	m_status.s= atoi(s2);
@@ -5053,6 +5157,7 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 
 				if(findJsonVal(datStr, "o", s1, sizeof(s1))) // "o":{"p":0,"t":0,"f":0}, // printer options
 				{
+					//****FixMe, work out what this is
 					// deal with s1
 					//if(findJsonVal(s1, "p", s2, sizeof(s2)))
 					//	m_status.oPacketSize = atoi(s2);
@@ -5069,6 +5174,11 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
+
+		//****FixMe, some printers return '$\n\n' after 'ok\n'
+		// drain any left over messages
+		if(m_stream)
+			m_stream->clear();
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
@@ -5077,6 +5187,10 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 void XYZV3::V2W_SendFile(const char *buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_SendFile()");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	// start print
 	serialSendMessage("{\"command\":1,\"fileName\":\"temp.gcode\",\"fileLen\":%d,\"ee1\":\"EE1_OK\",\"ee2\":\"EE2_OK\"}", len);
@@ -5095,11 +5209,20 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }
 
 void XYZV3::V2W_CaptureImage()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage()");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	// request image
 	serialSendMessage("{\"command\":3}");
@@ -5137,11 +5260,20 @@ void XYZV3::V2W_CaptureImage()
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }
 
 void XYZV3::V2W_PausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	//****FixMe, work out what token is
 	const char *token = "???";
@@ -5158,11 +5290,20 @@ void XYZV3::V2W_PausePrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }
 
 void XYZV3::V2W_ResumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	//****FixMe, work out what token is
 	const char *token = "???";
@@ -5179,11 +5320,20 @@ void XYZV3::V2W_ResumePrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }
 
 void XYZV3::V2W_CancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
+
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+		m_stream->reopenStream();
 
 	//****FixMe, work out what token is
 	const char *token = "???";
@@ -5200,4 +5350,9 @@ void XYZV3::V2W_CancelPrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
+
+	//****FixMe, some printers return '$\n\n' after 'ok\n'
+	// drain any left over messages
+	if(m_stream)
+		m_stream->clear();
 }

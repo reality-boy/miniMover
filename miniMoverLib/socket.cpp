@@ -297,6 +297,8 @@ Socket::Socket()
 	debugPrint(DBG_LOG, "Socket::Socket()");
 
 	m_isInit = false;
+	m_ipAddr[0] = '\0';
+	m_port = 0;
 
 	// Initialize Winsock
 	WSADATA k_Data;
@@ -338,6 +340,10 @@ bool Socket::openStream(const char *ip, int port)
 
 	if(m_isInit)
 	{
+		// close out any previous connection
+		if(isOpen()) 
+			closeStream();
+
 		// Create a SOCKET for connecting to server
 		m_soc = socket(AF_INET, SOCK_STREAM, 0);
 		if(IS_VALID(m_soc)) 
@@ -358,6 +364,10 @@ bool Socket::openStream(const char *ip, int port)
 			{
 				if(waitOnSocket(1000, true) > 0)
 				{
+					// stash info on current connection
+					strcpy(m_ipAddr, ip);
+					m_port = port;
+
 					debugPrint(DBG_LOG, "Socket::openStream succeeded");
 					return true;
 				}
@@ -380,6 +390,19 @@ bool Socket::openStream(const char *ip, int port)
 	}
 	else
 		debugPrint(DBG_WARN, "Socket::openStream winsock not initialized");
+
+	return false;
+}
+
+bool Socket::reopenStream()
+{
+	debugPrint(DBG_LOG, "Socket::reopenStream()");
+
+	if(isOpen()) 
+		closeStream();
+
+	if(*m_ipAddr)
+		return openStream(m_ipAddr, m_port);
 
 	return false;
 }
