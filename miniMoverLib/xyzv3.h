@@ -308,7 +308,7 @@ public:
 	// old stream is returned so you can deal with closing it
 	void setStream(Stream *s);
 	const Stream* getStream();
-	bool isStreamSet() { return m_stream != NULL && m_stream->isOpen(); }
+	bool isStreamSet() { return m_stream != NULL /*&& m_stream->isOpen()*/; }
 	bool isWIFI();
 
 	void doProcess();
@@ -409,6 +409,8 @@ public:
 protected:
 
 	void init();
+	void startMessage();
+	void endMessage();
 
 	void setState(int/*ActState*/ state, float timeout_s = -1, bool needsMachineState = false);
 	int /*ActState*/ getState();

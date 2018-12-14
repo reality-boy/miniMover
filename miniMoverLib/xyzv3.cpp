@@ -35,6 +35,8 @@
 
 // uncomment to test out experimental v2 protocol
 //#define USE_V2
+// uncomment to force wifi connections to close between messages
+//#define CLOSE_ON_WIFI
 
 const char *g_ver = "v0.9.5";
 
@@ -230,6 +232,18 @@ enum ActState
 	ACT_SC_COMPLETE,
 };
 
+XYZV3::XYZV3() 
+{
+	debugPrint(DBG_LOG, "XYZV3::XYZV3()");
+
+	init();
+} 
+
+XYZV3::~XYZV3() 
+{
+	debugPrint(DBG_LOG, "XYZV3::~XYZV3()");
+} 
+
 void XYZV3::init()
 {
 	debugPrint(DBG_LOG, "XYZV3::init()");
@@ -251,17 +265,38 @@ void XYZV3::init()
 	m_fileOutPath[0] = '\0';
 }
 
-XYZV3::XYZV3() 
+void XYZV3::startMessage()
 {
-	debugPrint(DBG_LOG, "XYZV3::XYZV3()");
+	// on wifi, we need to reopen the stream before each command
+	if(m_stream)
+	{
+		if( 
+#ifdef CLOSE_ON_WIFI
+			m_stream->isWIFI() || 
+#endif
+			!m_stream->isOpen())
+		{
+			m_stream->reopenStream();
+		}
 
-	init();
-} 
+		m_stream->clear();
+	}
+}
 
-XYZV3::~XYZV3() 
+void XYZV3::endMessage()
 {
-	debugPrint(DBG_LOG, "XYZV3::~XYZV3()");
-} 
+	if(m_stream)
+	{
+		//****FixMe, some printers return '$\n\n' after 'ok\n'
+		// drain any left over messages
+		m_stream->clear();
+
+#ifdef CLOSE_ON_WIFI
+		if(m_stream->isWIFI())
+			m_stream->closeStream();
+#endif
+	}
+}
 
 void XYZV3::setStream(Stream *s)
 {
@@ -311,7 +346,6 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		m_stream->clear();
 		m_stream->writeStr(msgBuf);
 		m_sDelay.setTimeout_s(3);
 
@@ -501,6 +535,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				break;
 
 			case 'n': // printer name, n:nm - name as a string
+				//sscanf(str, "n:%s", m_status.nMachineName); // stops scanning at first space!
 				strcpy(m_status.nMachineName, str+2);
 				break;
 
@@ -747,7 +782,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//4:0.0.0.0 or 
 				//4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
 				if(strlen(str) >= 3 && (isdigit(str[1]) || isdigit(str[2])))
-					strcpy(m_status.N4NetIP, str);
+					sscanf(str, "4:%s", m_status.N4NetIP);
 				else
 				{
 					char tstr[512];
@@ -852,7 +887,9 @@ bool XYZV3::queryStatusSubStateRun()
 	const char *buf;
 	debugPrint(DBG_LOG, "XYZV3::queryStatusSubStateRun() %d", m_actSubState);
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setSubState(ACT_FAILURE);
 
 	switch(m_actSubState)
@@ -860,6 +897,7 @@ bool XYZV3::queryStatusSubStateRun()
 	case ACT_QS_START: // start
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/query=%s", m_qStr))
 			{
 				// zero out results, only if updating everything
@@ -1310,8 +1348,7 @@ void XYZV3::setState(int /*ActState*/ state, float timeout_s, bool needsMachineS
 {
 	// drain any leftover data if end of state
 	if(m_actState != state && (state == ACT_SUCCESS || state == ACT_FAILURE))
-		if(m_stream)
-			m_stream->clear();
+		endMessage();
 
 	m_actState = state;
 
@@ -1370,7 +1407,9 @@ void XYZV3::doProcess()
 {
 	debugPrint(DBG_LOG, "XYZV3::doProcess() %d", m_actState);
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	// if in middle of pumping state then don't process
@@ -1423,7 +1462,9 @@ void XYZV3::calibrateBedRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1431,6 +1472,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_START: // start
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=calibratejr:new"))
 				setState(ACT_CB_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -1478,6 +1520,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_LOWERED: // notify printer detecotr was lowered
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=calibratejr:detectorok"))
 				setState(ACT_CB_CALIB_START);
 			else setState(ACT_FAILURE);
@@ -1524,6 +1567,7 @@ void XYZV3::calibrateBedRun()
 	case ACT_CB_RAISED: // notify printer detector was raised
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=calibratejr:release"))
 				setState(ACT_CB_COMPLETE);
 			else setState(ACT_FAILURE);
@@ -1594,7 +1638,9 @@ void XYZV3::cleanNozzleRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1602,6 +1648,7 @@ void XYZV3::cleanNozzleRun()
 	case ACT_CL_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=cleannozzle:new"))
 				setState(ACT_CL_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -1649,6 +1696,7 @@ void XYZV3::cleanNozzleRun()
 	case ACT_CL_FINISH:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=cleannozzle:cancel"))
 				setState(ACT_CL_COMPLETE);
 			else setState(ACT_FAILURE);
@@ -1703,7 +1751,9 @@ void XYZV3::homePrinterRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1711,6 +1761,7 @@ void XYZV3::homePrinterRun()
 	case ACT_HP_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=home"))
 				setState(ACT_HP_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -1771,7 +1822,9 @@ void XYZV3::jogPrinterRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1779,6 +1832,7 @@ void XYZV3::jogPrinterRun()
 	case ACT_JP_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=jog:{\"axis\":\"%c\",\"dir\":\"%c\",\"len\":\"%d\"}", m_jogAxis, (m_jogDist_mm < 0) ? '-' : '+', abs(m_jogDist_mm)))
 				setState(ACT_JP_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -1836,7 +1890,9 @@ void XYZV3::loadFilamentRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1844,6 +1900,7 @@ void XYZV3::loadFilamentRun()
 	case ACT_LF_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=load:new"))
 				setState(ACT_LF_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -1909,6 +1966,7 @@ void XYZV3::loadFilamentRun()
 	case ACT_LF_LOAD_FINISHED:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=load:cancel"))
 				setState(ACT_LF_LOAD_COMPLETE);
 			else
@@ -1962,7 +2020,9 @@ void XYZV3::unloadFilamentRun()
 	const int len = 1024;
 	char val[len];
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -1970,6 +2030,7 @@ void XYZV3::unloadFilamentRun()
 	case ACT_UF_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=unload:new"))
 				setState(ACT_UF_START_SUCCESS);
 			else setState(ACT_FAILURE);
@@ -2042,6 +2103,7 @@ void XYZV3::unloadFilamentRun()
 	case ACT_UF_CANCEL:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage("XYZv3/action=unload:cancel"))
 				setState(ACT_UF_CANCEL_COMPLETE);
 			else if(m_timeout.isTimeout())
@@ -2119,7 +2181,9 @@ void XYZV3::simpleCommandRun()
 	debugPrint(DBG_LOG, "XYZV3::simpleCommandRun() %d", m_actState);
 	//const char *val;
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -2127,6 +2191,7 @@ void XYZV3::simpleCommandRun()
 	case ACT_SC_START:
 		if(serialCanSendMessage())
 		{
+			startMessage();
 			if(serialSendMessage(m_scCommand))
 			{
 				if(m_scGetZOffset)
@@ -2321,7 +2386,9 @@ void XYZV3::printFileRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::printFileRun() %d", m_actState);
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -2437,7 +2504,9 @@ void XYZV3::uploadFirmwareRun()
 {
 	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareRun() %d", m_actState);
 
-	if(!m_stream || !m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 		setState(ACT_FAILURE);
 
 	switch(m_actState)
@@ -2476,7 +2545,9 @@ bool XYZV3::waitForConfigOK()
 	const int len = 1024;
 	char buf[len] = "";
 
-	if(m_stream && m_stream->isOpen())
+	if(!m_stream 
+//		|| !m_stream->isOpen()
+		)
 	{
 		msTimeout timeout(m_stream->getDefaultTimeout());
 		do
@@ -4659,6 +4730,7 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	//****FixMe, work out how to set this right
 	m_status.isValid = true;
 
+	startMessage();
 	if(serialSendMessage("XYZ_@3D:0"))
 	{
 		buf = waitForLine();
@@ -4668,12 +4740,9 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 			buf = checkForLine();
 		}
 	}
+	endMessage();
 
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
-
+	startMessage();
 	if(serialSendMessage("XYZ_@3D:5"))
 	{
 		buf = waitForLine();
@@ -4683,12 +4752,9 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 			buf = checkForLine();
 		}
 	}
+	endMessage();
 
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
-
+	startMessage();
 	if(serialSendMessage("XYZ_@3D:6"))
 	{
 		buf = waitForLine();
@@ -4698,12 +4764,9 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 			buf = checkForLine();
 		}
 	}
+	endMessage();
 
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
-
+	startMessage();
 	if(serialSendMessage("XYZ_@3D:7"))
 	{
 		buf = waitForLine();
@@ -4713,12 +4776,9 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 			buf = checkForLine();
 		}
 	}
+	endMessage();
 
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
-
+	startMessage();
 	if(serialSendMessage("XYZ_@3D:8"))
 	{
 		buf = waitForLine();
@@ -4728,11 +4788,7 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 			buf = checkForLine();
 		}
 	}
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
+	endMessage();
 }
 
 void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
@@ -4905,6 +4961,7 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 	debugPrint(DBG_LOG, "XYZV3::V2S_SendFile()");
 
 	// start print
+	startMessage();
 	switch(mode)
 	{
 	case V2S_FILE:
@@ -4931,8 +4988,10 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 		waitForResponse("FWOK");
 		break;
 	}
+	endMessage();
 
 	// send file info
+	startMessage();
 	switch(mode)
 	{
 	case V2S_FILE:
@@ -5005,11 +5064,13 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 		dataArray += frameLen;
 		frameNum++;
 	}
+	endMessage();
 
 	// on 1.1 Plus we send down 3 different firmwares
 	// we could send all three then ask them all to
 	// be installed at once, but for now just install them as we download them
 	// all other machines install all firmwares automatically after downloading
+	startMessage();
 	switch(mode)
 	{
 	case V2S_11_FW_ENGINE:
@@ -5024,14 +5085,7 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 	default:
 		break;
 	}
-
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
-
-	// close stream
+	endMessage();
 }
 
 // === v2 wifi protocol ===
@@ -5042,15 +5096,12 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 
 	if(0 == strcmp(s, "all"))
 	{
-		// on wifi, we need to reopen the stream before each command
-		if(m_stream)
-			m_stream->reopenStream();
-
 		// zero out results, only if updating everything
 		//****FixMe, rather than clearing out old data, just keep an update count
 		// and provide a 'isNewData() test
 		memset(&m_status, 0, sizeof(m_status));
 
+		startMessage();
 		if(serialSendMessage("{\"command\":4}"))
 		{
 			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
@@ -5063,21 +5114,13 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 			}
 			else
 				debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
-
-			//****FixMe, some printers return '$\n\n' after 'ok\n'
-			// drain any left over messages
-			if(m_stream)
-				m_stream->clear();
-
 		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
+		endMessage();
 	}
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
+	startMessage();
 	if(serialSendMessage("{\"command\":2,\"query\":\"%s\"}", s))
 	{
 		const char *str = waitForLine(); 
@@ -5182,25 +5225,18 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		}
 		else
 			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
-
-		//****FixMe, some printers return '$\n\n' after 'ok\n'
-		// drain any left over messages
-		if(m_stream)
-			m_stream->clear();
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
+	endMessage();
 }
 
 void XYZV3::V2W_SendFile(const char *buf, int len)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_SendFile()");
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
 	// start print
+	startMessage();
 	serialSendMessage("{\"command\":1,\"fileName\":\"temp.gcode\",\"fileLen\":%d,\"ee1\":\"EE1_OK\",\"ee2\":\"EE2_OK\"}", len);
 	waitForResponse("START_RECEIVE");
 
@@ -5208,6 +5244,8 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
 	m_stream->write(buf, len);
 	serialSendMessage("<EOF>");
 	int result = waitForInt("result\":");
+	endMessage();
+
 	(void)result;
 	/*
 	result == 0 // success
@@ -5217,30 +5255,24 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
 }
 
 void XYZV3::V2W_CaptureImage()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage()");
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
 	// request image
+	startMessage();
 	serialSendMessage("{\"command\":3}");
 	int len = waitForInt("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
+	endMessage();
 	if(len > 0)
 	{
 		char *buf = new char[len];
 		if(buf)
 		{
 			// ready to recieve
+			startMessage();
 			serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
 
 			// recieve buffer
@@ -5260,6 +5292,7 @@ void XYZV3::V2W_CaptureImage()
 			}
 			else
 				debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
+			endMessage();
 
 			delete [] buf;
 		}
@@ -5269,26 +5302,21 @@ void XYZV3::V2W_CaptureImage()
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
 
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
 }
 
 void XYZV3::V2W_PausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
 	//****FixMe, work out what token is
 	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
+	startMessage();
 	serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token); // pause
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	endMessage();
+
 	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
@@ -5298,27 +5326,21 @@ void XYZV3::V2W_PausePrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
 }
 
 void XYZV3::V2W_ResumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
 	//****FixMe, work out what token is
 	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
+	startMessage();
 	serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token); // resume
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	endMessage();
+
 	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
@@ -5328,27 +5350,21 @@ void XYZV3::V2W_ResumePrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
 }
 
 void XYZV3::V2W_CancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
 
-	// on wifi, we need to reopen the stream before each command
-	if(m_stream)
-		m_stream->reopenStream();
-
 	//****FixMe, work out what token is
 	const char *token = "???";
 
 	// token is returned when print starts, possibly the file name?
+	startMessage();
 	serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token); // stop
 	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	endMessage();
+
 	(void)result; //****FixMe, check if we succeedded
 	/*
 	result == 0 // success
@@ -5358,9 +5374,4 @@ void XYZV3::V2W_CancelPrint()
     result == 5 // invalid command
     result == 6 // printer buisy
 	*/
-
-	//****FixMe, some printers return '$\n\n' after 'ok\n'
-	// drain any left over messages
-	if(m_stream)
-		m_stream->clear();
 }
