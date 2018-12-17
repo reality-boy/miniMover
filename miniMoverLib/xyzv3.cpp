@@ -663,7 +663,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//w:1,PMP6PTH6840596
 				sscanf(str, "w:%d,%[^,],%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
 
-				if(strlen(m_status.wFilament1SerialNumber) > 4)
+				if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
 				{
 					strPtr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
 					if(strPtr)
@@ -674,7 +674,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				else
 					m_status.wFilament1Color[0] = '\0';
 
-				if(strlen(m_status.wFilament2SerialNumber) > 4)
+				if(*m_status.wFilament2SerialNumber != '-' && strlen(m_status.wFilament2SerialNumber) > 4)
 				{
 					strPtr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
 					if(strPtr)
@@ -4738,13 +4738,13 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	//****FixMe, rather than clearing out old data, just keep an update count
 	// and provide a 'isNewData() test
 	memset(&m_status, 0, sizeof(m_status));
-	//****FixMe, work out how to set this right
-	m_status.isValid = true;
 
 	startMessage();
 	if(serialSendMessage("XYZ_@3D:0"))
 	{
 		buf = waitForLine();
+		if(*buf)
+			m_status.isValid = true;
 		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
@@ -4757,6 +4757,8 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	if(serialSendMessage("XYZ_@3D:5"))
 	{
 		buf = waitForLine();
+		if(*buf)
+			m_status.isValid = true;
 		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
@@ -4769,6 +4771,8 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	if(serialSendMessage("XYZ_@3D:6"))
 	{
 		buf = waitForLine();
+		if(*buf)
+			m_status.isValid = true;
 		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
@@ -4781,6 +4785,8 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	if(serialSendMessage("XYZ_@3D:7"))
 	{
 		buf = waitForLine();
+		if(*buf)
+			m_status.isValid = true;
 		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
@@ -4793,6 +4799,8 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	if(serialSendMessage("XYZ_@3D:8"))
 	{
 		buf = waitForLine();
+		if(*buf)
+			m_status.isValid = true;
 		while(*buf) 
 		{
 			V2S_parseStatusSubstring(buf, doPrint);
@@ -4819,53 +4827,12 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		s = findValue(str, "XYZ_@3D:"); //start
 		// ignore output for now
 
-		s = findValue(str, "MDU:"); // p, printer model number
-		if(s)
-		{
-			strcpy(m_status.pMachineModelNumber, s);
-			m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
-		}
+		// a
 
-		s = findValue(str, "OS_V:"); // v, os firmware versions
-		if(s) strcpy(m_status.vOsFirmwareVersion, s);
+		s = findValue(str, "BT:"); // b, bed temp
+		if(s) m_status.bBedActualTemp_C = atoi(s);
 
-		s = findValue(str, "APP_V:"); // v, app fw version
-		if(s) strcpy(m_status.vAppFirmwareVersion, s);
-
-		s = findValue(str, "FW_V:"); // v, firmware version
-		if(s) strcpy(m_status.vFirmwareVersion, s);
-
-		s = findValue(str, "MCH_ID:"); // i, machine serial number convert ? to -
-		if(s) strcpy(m_status.iMachineSerialNum, s);
-
-		s = findValue(str, "PRT_NAME:"); // n, printer name
-		if(s) strcpy(m_status.nMachineName, s);
-
-		s = findValue(str, "PRT_IP:"); // 4, printer ip
-		if(s) strcpy(m_status.N4NetIP, s);
-
-		s = findValue(str, "PROTOCOL:"); //2
-		// ignore output for now
-
-		s = findValue(str, "MCHLIFE:"); // L, lifetime timers
-		if(s) m_status.LPrinterLifetimePowerOnTime_min = atoi(s);
-
-		s = findValue(str, "MCHEXDUR_LIFE:"); // L extruder life
-		if(s) m_status.LExtruderLifetimePowerOnTime_min = atoi(s);
-
-		// are W1 and EE1 the same thing?
-		s = findValue(str, "W1:"); // w & f, fillament info for first spool
-		if(s) strcpy(m_status.wFilament1SerialNumber, s);
-
-		s = findValue(str, "EE1:"); // EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52 // optional last parameter ,0 is illegal fillament
-		// ignore output for now
-
-		// are W2 and EE2 the same thing?
-		s = findValue(str, "W2:"); // w & f, fillament info for second spool
-		if(s) strcpy(m_status.wFilament2SerialNumber, s);
-
-		s = findValue(str, "EE2:");
-		// ignore output for now
+		// c
 
 		s = findValue(str, "WORK_PARSENT:"); // d, print status	percent finished
 		if(s) m_status.dPrintPercentComplete = atoi(s);
@@ -4874,16 +4841,14 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		if(s) m_status.dPrintElapsedTime_m = atoi(s);
 
 		s = findValue(str, "EST_TIME:"); // d remaining time?
-		if(s) m_status.dPrintTimeLeft_m = atoi(s);
+		if(s) 
+		{
+			m_status.dPrintTimeLeft_m = atoi(s);
 
-		s = findValue(str, "ET0:"); // t, extruder temp
-		if(s) m_status.tExtruder1ActualTemp_C = atoi(s);
-
-		s = findValue(str, "ET1:"); // t, second extruder temp
-		if(s) m_status.tExtruder2ActualTemp_C = atoi(s);
-
-		s = findValue(str, "BT:"); // b, bed temp
-		if(s) m_status.bBedActualTemp_C = atoi(s);
+			// why is this set to this? is it a bad 3w file?
+			if(m_status.dPrintTimeLeft_m == 0x04444444)
+				m_status.dPrintTimeLeft_m = -1;
+		}
 
 		s = findValue(str, "MCH_STATE:"); // e, error status
 		if(s) 
@@ -4901,10 +4866,17 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 				m_status.eErrorStatusStr[0] = '\0';
 		}
 
+		// f-h
+
+		s = findValue(str, "MCH_ID:"); // i, machine serial number convert ? to -
+		if(s) strcpy(m_status.iMachineSerialNum, s);
+
 		s = findValue(str, "PRN_STATE:"); // j, printer status
 		if(s) 
 		{
 			m_status.jPrinterState = translateStatus(atoi(s));
+
+			// fill in status string
 			const char *strPtr = stateCodesToStr(m_status.jPrinterState, 0);
 			if(strPtr)
 				strcpy(m_status.jPrinterStateStr, strPtr);
@@ -4912,8 +4884,115 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 				m_status.jPrinterStateStr[0] = '\0';
 		}
 
+		// k
+
 		s = findValue(str, "LANG:"); //0			// l, sort of?
 		//****FixMe, this is some sort of an integer list, but what is what
+		// ignore output for now
+
+		// m
+
+		s = findValue(str, "PRT_NAME:"); // n, printer name
+		if(s) strcpy(m_status.nMachineName, s);
+
+		// o
+
+		s = findValue(str, "MDU:"); // p, printer model number
+		if(s)
+		{
+			strcpy(m_status.pMachineModelNumber, s);
+			m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
+		}
+
+		// q-s
+
+		s = findValue(str, "ET0:"); // t, extruder temp
+		if(s) 
+		{
+			m_status.tExtruder1ActualTemp_C = atoi(s);
+			m_status.tExtruderCount = 1;
+		}
+
+		s = findValue(str, "ET1:"); // t, second extruder temp
+		if(s)
+		{
+			m_status.tExtruder2ActualTemp_C = atoi(s);
+			m_status.tExtruderCount = 2;
+		}
+
+		// u
+
+		s = findValue(str, "OS_V:"); // v, os firmware versions
+		if(s) strcpy(m_status.vOsFirmwareVersion, s);
+
+		s = findValue(str, "APP_V:"); // v, app fw version
+		if(s) strcpy(m_status.vAppFirmwareVersion, s);
+
+		s = findValue(str, "FW_V:"); // v, firmware version
+		if(s) strcpy(m_status.vFirmwareVersion, s);
+
+		// are W1 and EE1 the same thing?
+		s = findValue(str, "W1:"); // w & f, fillament info for first spool
+		if(s)
+		{
+			strcpy(m_status.wFilament1SerialNumber, s);
+
+			if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
+			{
+				const char *tstr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
+				if(tstr)
+					strcpy(m_status.wFilament1Color, tstr);
+				else
+					m_status.wFilament1Color[0] = '\0';
+			}
+			else
+				m_status.wFilament1Color[0] = '\0';
+		}
+
+		s = findValue(str, "EE1:"); // EE1:5a,41,570000,343141,240000,240000,210,90,5448,4742,30313135,52 // optional last parameter ,0 is illegal fillament
+		// ignore output for now
+
+		// are W2 and EE2 the same thing?
+		s = findValue(str, "W2:"); // w & f, fillament info for second spool
+		if(s) 
+		{
+			strcpy(m_status.wFilament2SerialNumber, s);
+
+			if(*m_status.wFilament2SerialNumber != '-' && strlen(m_status.wFilament2SerialNumber) > 4)
+			{
+				const char *tstr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
+				if(tstr)
+					strcpy(m_status.wFilament2Color, tstr);
+				else
+					m_status.wFilament2Color[0] = '\0';
+			}
+			else
+				m_status.wFilament1Color[0] = '\0';
+		}
+
+		s = findValue(str, "EE2:");
+		// ignore output for now
+
+		// x-z
+
+		// A-K
+
+		s = findValue(str, "MCHLIFE:"); // L, lifetime timers
+		if(s) m_status.LPrinterLifetimePowerOnTime_min = atoi(s);
+
+		s = findValue(str, "MCHEXDUR_LIFE:"); // L extruder life
+		if(s) m_status.LExtruderLifetimePowerOnTime_min = atoi(s);
+
+		// M-Z
+
+		// 0-3
+
+		s = findValue(str, "PRT_IP:"); // 4, printer ip
+		if(s) strcpy(m_status.N4NetIP, s);
+
+		// 5-9
+
+		s = findValue(str, "PROTOCOL:"); //2
 		// ignore output for now
 
 		// possible return values, but have not seen them yet
@@ -5116,13 +5195,13 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		//****FixMe, rather than clearing out old data, just keep an update count
 		// and provide a 'isNewData() test
 		memset(&m_status, 0, sizeof(m_status));
-		//****FixMe, work out how to set this right
-		m_status.isValid = true;
 
 		startMessage();
 		if(serialSendMessage("{\"command\":4}"))
 		{
 			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
+			if(*str)
+				m_status.isValid = true;
 			if(*str)
 			{
 				debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
@@ -5143,6 +5222,8 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 	{
 		const char *str = waitForLine(); 
 		if(*str)
+			m_status.isValid = true;
+		if(*str)
 		{
 			debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
 			if(doPrint)
@@ -5155,55 +5236,29 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 
 			if(findJsonVal(str, "data", datStr, sizeof(datStr)))
 			{
-				if(findJsonVal(datStr, "p", m_status.pMachineModelNumber, sizeof(m_status.pMachineModelNumber))) // "p":"dvF110B000", // module name or printer type
-					m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
+				// a
 
-				findJsonVal(datStr, "i", m_status.iMachineSerialNum, sizeof(m_status.iMachineSerialNum)); // "i":"3F11XPGBXTH5320151", // machine serial number, convert ? to -
+				if(findJsonVal(datStr, "b", s1, sizeof(s1))) // "b":"--", // bed temperature
+					m_status.bBedActualTemp_C = atoi(s1);
 
-				if(findJsonVal(datStr, "v", s1, sizeof(s1))) // "v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"}, // fw version(s)
+				// c
+
+				if(findJsonVal(datStr, "d", s1, sizeof(s1))) // "d":{"message":"No printing job!"}, or "d":{"print_percentage":x,"elapsed_time":x,"estimated_time":x}, // print time
 				{
-					findJsonVal(s1, "os", m_status.vOsFirmwareVersion, sizeof(m_status.vOsFirmwareVersion)); // "os":"1.1.0.19"
-					findJsonVal(s1, "app", m_status.vAppFirmwareVersion, sizeof(m_status.vAppFirmwareVersion)); // "app":"1.1.7.3"
-					findJsonVal(s1, "engine", m_status.vFirmwareVersion, sizeof(m_status.vFirmwareVersion)); // "engine":"N/A"
-				}
-				
-				if(findJsonVal(datStr, "w", s1, sizeof(s1))) // "w":["W1:--------------","W2:--------------"], // eeprom
-					sscanf(s1, "[\"W1:%[^\"]\",\"W2:%[^\"]\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
-				
-				if(findJsonVal(datStr, "f", s1, sizeof(s1))) // "f":[0,0], // fillament left
-					sscanf(s1,"[%d,%d]", &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
+					if(findJsonVal(s1, "print_percentage", s2, sizeof(s2)))
+						m_status.dPrintPercentComplete = atoi(s2);
 
-				if(findJsonVal(datStr, "t", s1, sizeof(s1))) // "t":["--","--"], // extruder temperature(s)
-				{
-					sscanf(s1, "[\"%[^\"]\",\"%[^\"]\"]", a, b);
-					m_status.tExtruder1ActualTemp_C = atoi(a);
-					m_status.tExtruder2ActualTemp_C = atoi(b);
-				}
+					if(findJsonVal(s1, "elapsed_time", s2, sizeof(s2)))
+						m_status.dPrintElapsedTime_m = atoi(s2);
 
-				if(findJsonVal(datStr, "j", s1, sizeof(s1))) // "j":10, // machine state
-					m_status.jPrinterState = translateStatus(atoi(s1));
+					if(findJsonVal(s1, "estimated_time", s2, sizeof(s2)))
+					{
+						m_status.dPrintTimeLeft_m = atoi(s2);
 
-				if(findJsonVal(datStr, "L", s1, sizeof(s1))) // "L":{"m":"4183146537","e":"21785"}, // machine/extruder lifetime timers
-				{
-					if(findJsonVal(s1, "m", s2, sizeof(s2)))
-						m_status.LPrinterLifetimePowerOnTime_min = atoi(s2);
-
-					if(findJsonVal(s1, "e", s2, sizeof(s2)))
-						m_status.LExtruderLifetimePowerOnTime_min = atoi(s2);
-				}
-
-				if(findJsonVal(datStr, "s", s1, sizeof(s1))) // "s":{"e":0,"c":0,"j":0,"o":0},
-				{
-					//****FixMe, work out what this is
-					// deal with s1
-					//if(findJsonVal(s1, "e", s2, sizeof(s2)))
-					//	m_status.s= atoi(s2);
-					//if(findJsonVal(s1, "c", s2, sizeof(s2)))
-					//	m_status.s= atoi(s2);
-					//if(findJsonVal(s1, "j", s2, sizeof(s2)))
-					//	m_status.s= atoi(s2);
-					//if(findJsonVal(s1, "o", s2, sizeof(s2)))
-					//	m_status.s= atoi(s2);
+						// why is this set to this? is it a bad 3w file?
+						if(m_status.dPrintTimeLeft_m == 0x04444444)
+							m_status.dPrintTimeLeft_m = -1;
+					}
 				}
 
 				if(findJsonVal(datStr, "e", s1, sizeof(s1))) // "e":2, // error
@@ -5222,20 +5277,31 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 						m_status.eErrorStatusStr[0] = '\0';
 				}
 
-				if(findJsonVal(datStr, "b", s1, sizeof(s1))) // "b":"--", // bed temperature
-					m_status.bBedActualTemp_C = atoi(s1);
-
-				if(findJsonVal(datStr, "d", s1, sizeof(s1))) // "d":{"message":"No printing job!"}, or "d":{"print_percentage":x,"elapsed_time":x,"estimated_time":x}, // print time
+				if(findJsonVal(datStr, "f", s1, sizeof(s1))) // "f":[0,0], // fillament left
 				{
-					if(findJsonVal(s1, "print_percentage", s2, sizeof(s2)))
-						m_status.dPrintPercentComplete = atoi(s2);
-
-					if(findJsonVal(s1, "elapsed_time", s2, sizeof(s2)))
-						m_status.dPrintElapsedTime_m = atoi(s2);
-
-					if(findJsonVal(s1, "estimated_time", s2, sizeof(s2)))
-						m_status.dPrintTimeLeft_m = atoi(s2);
+					m_status.fFilamentSpoolCount =
+						sscanf(s1,"[%d,%d]", &m_status.fFilament1Remaining_mm, &m_status.fFilament2Remaining_mm);
 				}
+
+				// g-h
+
+				findJsonVal(datStr, "i", m_status.iMachineSerialNum, sizeof(m_status.iMachineSerialNum)); // "i":"3F11XPGBXTH5320151", // machine serial number, convert ? to -
+
+				if(findJsonVal(datStr, "j", s1, sizeof(s1))) // "j":10, // machine state
+				{
+					m_status.jPrinterState = translateStatus(atoi(s1));
+
+					// fill in status string
+					const char *tstr = stateCodesToStr(m_status.jPrinterState, m_status.jPrinterSubState);
+					if(tstr)
+						strcpy(m_status.jPrinterStateStr, tstr); 
+					else 
+						m_status.jPrinterStateStr[0] = '\0';
+				}
+
+				// k-m
+
+				findJsonVal(datStr, "n", m_status.nMachineName, sizeof(m_status.nMachineName)); // "n":"name" // printer name
 
 				if(findJsonVal(datStr, "o", s1, sizeof(s1))) // "o":{"p":0,"t":0,"f":0}, // printer options
 				{
@@ -5249,7 +5315,86 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 					//	m_status.o = atoi(s2);
 				}
 
-				findJsonVal(datStr, "n", m_status.nMachineName, sizeof(m_status.nMachineName)); // "n":"name" // printer name
+				if(findJsonVal(datStr, "p", m_status.pMachineModelNumber, sizeof(m_status.pMachineModelNumber))) // "p":"dvF110B000", // module name or printer type
+					m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
+
+				// q-r
+
+				if(findJsonVal(datStr, "s", s1, sizeof(s1))) // "s":{"e":0,"c":0,"j":0,"o":0},
+				{
+					//****FixMe, work out what this is
+					// deal with s1
+					//if(findJsonVal(s1, "e", s2, sizeof(s2)))
+					//	m_status.s= atoi(s2);
+					//if(findJsonVal(s1, "c", s2, sizeof(s2)))
+					//	m_status.s= atoi(s2);
+					//if(findJsonVal(s1, "j", s2, sizeof(s2)))
+					//	m_status.s= atoi(s2);
+					//if(findJsonVal(s1, "o", s2, sizeof(s2)))
+					//	m_status.s= atoi(s2);
+				}
+
+				if(findJsonVal(datStr, "t", s1, sizeof(s1))) // "t":["--","--"], // extruder temperature(s)
+				{
+					m_status.tExtruderCount =
+						sscanf(s1, "[\"%[^\"]\",\"%[^\"]\"]", a, b);
+					m_status.tExtruder1ActualTemp_C = atoi(a);
+					m_status.tExtruder2ActualTemp_C = atoi(b);
+				}
+
+				// u
+
+				if(findJsonVal(datStr, "v", s1, sizeof(s1))) // "v":{"os":"1.1.0.19","app":"1.1.7.3","engine":"N/A"}, // fw version(s)
+				{
+					findJsonVal(s1, "os", m_status.vOsFirmwareVersion, sizeof(m_status.vOsFirmwareVersion)); // "os":"1.1.0.19"
+					findJsonVal(s1, "app", m_status.vAppFirmwareVersion, sizeof(m_status.vAppFirmwareVersion)); // "app":"1.1.7.3"
+					findJsonVal(s1, "engine", m_status.vFirmwareVersion, sizeof(m_status.vFirmwareVersion)); // "engine":"N/A"
+				}
+				
+				if(findJsonVal(datStr, "w", s1, sizeof(s1))) // "w":["W1:--------------","W2:--------------"], // eeprom
+				{
+					m_status.wFilamentCount = 
+						sscanf(s1, "[\"W1:%[^\"]\",\"W2:%[^\"]\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+
+					if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
+					{
+						const char *tstr = filamentColorIdToStr(m_status.wFilament1SerialNumber[4]);
+						if(tstr)
+							strcpy(m_status.wFilament1Color, tstr);
+						else
+							m_status.wFilament1Color[0] = '\0';
+					}
+					else
+						m_status.wFilament1Color[0] = '\0';
+
+					if(*m_status.wFilament2SerialNumber != '-' && strlen(m_status.wFilament2SerialNumber) > 4)
+					{
+						const char *tstr = filamentColorIdToStr(m_status.wFilament2SerialNumber[4]);
+						if(tstr)
+							strcpy(m_status.wFilament2Color, tstr);
+						else
+							m_status.wFilament2Color[0] = '\0';
+					}
+					else
+						m_status.wFilament2Color[0] = '\0';
+				}
+				
+				// x-z
+
+				// A-K
+
+				if(findJsonVal(datStr, "L", s1, sizeof(s1))) // "L":{"m":"4183146537","e":"21785"}, // machine/extruder lifetime timers
+				{
+					if(findJsonVal(s1, "m", s2, sizeof(s2)))
+						m_status.LPrinterLifetimePowerOnTime_min = atoi(s2);
+
+					if(findJsonVal(s1, "e", s2, sizeof(s2)))
+						m_status.LExtruderLifetimePowerOnTime_min = atoi(s2);
+				}
+
+				// M-Z
+
+				// 0-9
 			}
 			else
 				debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to find data");
