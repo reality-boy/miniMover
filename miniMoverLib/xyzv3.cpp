@@ -4595,25 +4595,36 @@ const char* XYZV3::waitForLine()
 {
 	debugPrint(DBG_VERBOSE, "XYZV3::waitForLine()");
 
-	static const int len = 1024;
-	static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
-	*buf = '\0';
-
-	if(m_stream && m_stream->isOpen())
+	if(m_stream)
 	{
+		static const int len = 1024;
+		static char buf[len]; //****Note, this buffer is overwriten every time you call waitForLine!!!
+		*buf = '\0';
+
 		// wait for M1_OK
 		msTimeout timeout(m_stream->getDefaultTimeout());
 		do
 		{
+			// try at least once, even if connection is closed.
+			// we may have data in the buffer still
 			if(m_stream->readLine(buf, len))
 				return buf;
 		} 
-		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
+		while(!timeout.isTimeout() && m_stream->isOpen());
 
-		debugPrint(DBG_VERBOSE, "XYZV3::waitForLine failed, timed out");
+		if(m_stream->isOpen())
+			debugPrint(DBG_VERBOSE, "XYZV3::waitForLine failed, timed out");
+		else
+		{
+			// try once more, we may have data in the buffer still
+			if(m_stream->readLine(buf, len))
+				return buf;
+			else
+				debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
+		}
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
+		debugPrint(DBG_WARN, "XYZV3::waitForLine failed, invalid connection");
 
 	return "";
 }
@@ -4877,7 +4888,12 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		s = findValue(str, "MCH_STATE:"); // e, error status
 		if(s) 
 		{
-			m_status.eErrorStatus = atoi(s);
+			int t = atoi(s);
+			// 0x40 is extruder 1
+			// 0x20 is extruder 2
+			// 0x00 is everything else
+			m_status.eErrorStatusHiByte = (t & 0xFF000000) >> 24;
+			m_status.eErrorStatus = translateErrorCode(t);
 			const char *strPtr = errorCodeToStr(m_status.eErrorStatus);
 			if(strPtr)
 				strcpy(m_status.eErrorStatusStr, strPtr);
@@ -5100,6 +5116,8 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		//****FixMe, rather than clearing out old data, just keep an update count
 		// and provide a 'isNewData() test
 		memset(&m_status, 0, sizeof(m_status));
+		//****FixMe, work out how to set this right
+		m_status.isValid = true;
 
 		startMessage();
 		if(serialSendMessage("{\"command\":4}"))
@@ -5189,7 +5207,20 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				}
 
 				if(findJsonVal(datStr, "e", s1, sizeof(s1))) // "e":2, // error
-					m_status.eErrorStatus = atoi(s1);
+				{
+					int t = atoi(s1);
+					// 0x40 is extruder 1
+					// 0x20 is extruder 2
+					// 0x00 is everything else
+					m_status.eErrorStatusHiByte = (t & 0xFF000000) >> 24;
+					m_status.eErrorStatus = translateErrorCode(t);
+
+					const char *strPtr = errorCodeToStr(m_status.eErrorStatus);
+					if(strPtr)
+						strcpy(m_status.eErrorStatusStr, strPtr);
+					else
+						m_status.eErrorStatusStr[0] = '\0';
+				}
 
 				if(findJsonVal(datStr, "b", s1, sizeof(s1))) // "b":"--", // bed temperature
 					m_status.bBedActualTemp_C = atoi(s1);

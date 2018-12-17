@@ -63,7 +63,8 @@ int Stream::readLineFromBuffer(char *buf, int bufLen)
 		}
 
 		// if found, copy
-		if(i < m_lineBufCount)
+		// if connection closed then return what we have
+		if(i < m_lineBufCount || !isOpen())
 		{
 			int len = i;
 			if(len >= bufLen)
@@ -106,19 +107,19 @@ int Stream::readLine(char *buf, int bufLen)
 		// make sure we return something
 		*buf = '\0';
 
-		if(isOpen())
-		{
-			int len;
+		int len;
 
-			// check if we already have a newline terminated string
-			// do it here so we don't block if data already waiting
-			len = readLineFromBuffer(buf, bufLen);
-			if(len > 0)
-			{
-				debugPrint(DBG_LOG, "Stream::readLine returned '%s'", buf);
-				return len;
-			}
-			else // not found, pull more data
+		// check if we already have a newline terminated string
+		// do it here so we don't block if data already waiting
+		len = readLineFromBuffer(buf, bufLen);
+		if(len > 0)
+		{
+			debugPrint(DBG_LOG, "Stream::readLine returned '%s'", buf);
+			return len;
+		}
+		else // not found, pull more data
+		{
+			if(isOpen())
 			{
 				len = m_lineBufLen - m_lineBufCount - 1;
 				len = read(m_lineBuf + m_lineBufCount, len);
@@ -135,9 +136,9 @@ int Stream::readLine(char *buf, int bufLen)
 					}
 				}
 			}
+			else
+				debugPrint(DBG_WARN, "Stream::readLine failed invalid connection");
 		}
-		else
-			debugPrint(DBG_WARN, "Stream::readLine failed invalid connection");
 	}
 	else
 		debugPrint(DBG_WARN, "Stream::readLine failed invalid input");

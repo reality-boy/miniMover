@@ -329,7 +329,7 @@ void Socket::closeStream()
 	if(isOpen()) 
 	{
 		// drain buffers
-		Stream::clear();
+		//Stream::clear();
 
 		// tell server we are exiting
 		if(shutdown(m_soc, SHUT_RDWR) == SOCKET_ERROR) 
@@ -339,7 +339,7 @@ void Socket::closeStream()
 		if(close(m_soc) != SOCKET_ERROR)
 		{
 			// success
-			debugPrint(DBG_LOG, "Socket::closeStream succeeded");
+			debugPrint(DBG_VERBOSE, "Socket::closeStream succeeded");
 		}
 		else
 			debugPrint(DBG_WARN, "Socket::closeStream close socket failed with error: %s", getLastErrorMessage());
@@ -377,7 +377,7 @@ void Socket::clear() // is this ever needed?
 		}
 	}
 	else
-		debugPrint(DBG_WARN, "Socket::clear failed invalid connection");
+		debugPrint(DBG_VERBOSE, "Socket::clear failed invalid connection");
 }
 
 int Socket::read(char *buf, int len)

@@ -245,7 +245,7 @@ void Serial::closeStream()
 	if(isOpen())
 	{
 		// drain buffers
-		Stream::clear();
+		//Stream::clear();
 
 		tcdrain(m_handle);
 		close(m_handle);
@@ -289,7 +289,7 @@ void Serial::clear()
 		}
 	}
 	else
-		debugPrint(DBG_WARN, "Serial::clear failed invalid connection");
+		debugPrint(DBG_VERBOSE, "Serial::clear failed invalid connection");
 }
 
 int Serial::read(char *buf, int len)
