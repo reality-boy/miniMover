@@ -114,6 +114,7 @@ void postHelp()
 	printf("  -x num - jog x axis by num, or 10 if num not provided\n");
 	printf("  -y num - jog y axis by num, or 10 if num not provided\n");
 	printf("  -z num - jog z axis by num, or 10 if num not provided\n");
+	printf("  -i path - snap image from internal camera on 1.1 plus machines\n");
 }
 
 void doProcessWithSleep(int ms = 10)
@@ -886,38 +887,57 @@ int main(int argc, char **argv)
 				case 'x':
 					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1])) 
+					{
 						t = atoi(argv[i+1]);
+						i++;
+					}
+
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('x', t);
 						while(xyz.isInProgress())
 							doProcessWithSleep(); // spin
 					}
-					i++;
 					break;
 				case 'y':
 					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1]))
+					{
 						t = atoi(argv[i+1]);
+						i++;
+					}
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('y', t);
 						while(xyz.isInProgress())
 							doProcessWithSleep(); // spin
 					}
-					i++;
 					break;
 				case 'z':
 					t = 10;
 					if(i+1 < argc && !isKey(argv[i+1]))
+					{
 						t = atoi(argv[i+1]);
+						i++;
+					}
 					if(checkCon())
 					{
 						xyz.jogPrinterStart('z', t);
 						while(xyz.isInProgress())
 							doProcessWithSleep(); // spin
 					}
-					i++;
+					break;
+				case 'i':
+					{
+						const char *path = "image.jif";
+						if(i+1 < argc && !isKey(argv[i+1]))
+						{
+							path = argv[i+1];
+							i++;
+						}
+						if(checkCon())
+							xyz.captureImage(path);
+					}
 					break;
 				default:
 					printf("unknown argument '%s'\n", argv[i]);

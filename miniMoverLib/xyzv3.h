@@ -327,6 +327,7 @@ public:
 	const XYZPrinterInfo* getPrinterInfo() { return m_info; }
 
 	// === action commands ===
+	//****Note, currently only supported on mini and micro printers
 
 	// run auto bed leveling routine
 	void calibrateBedStart(); 
@@ -357,6 +358,7 @@ public:
 	void unloadFilamentCancel();
 
 	// === config commands ===
+	//****Note, currently only supported on mini and micro printers
 
 	// increment/decrement z offset by one step (1/100th of  a mm?)
 	void incrementZOffsetStart(bool up); // z-offset stored in XYZPrinterStatus
@@ -405,6 +407,11 @@ public:
 	static const XYZPrinterInfo* modelToInfo(const char *modelNum);
 	static const XYZPrinterInfo* serialToInfo(const char *serialNum);
 	static const char* serialToName(const char *serialNum);
+
+	// === misc commands ===
+
+	// only currently supported on the 1.1 plus (and unreleased 2.1 plus?)
+	void captureImage(const char *path) { V2W_CaptureImage(path); }
 
 protected:
 
@@ -522,6 +529,7 @@ protected:
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
 	float m_runTimeout;
+	bool m_useV2Protocol;
 
 	static const int m_infoArrayLen = 24;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];
@@ -581,7 +589,7 @@ protected:
 	// can't send firmware over wifi?
 	void V2W_SendFile(const char* buf, int len);
 	// wifi only commands?
-	void V2W_CaptureImage();
+	bool V2W_CaptureImage(const char *path);
 	void V2W_PausePrint();
 	void V2W_ResumePrint();
 	void V2W_CancelPrint();

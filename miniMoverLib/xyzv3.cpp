@@ -38,7 +38,7 @@
 // uncomment to force wifi connections to close between messages
 //#define CLOSE_ON_WIFI
 
-const char *g_ver = "v0.9.5";
+const char *g_ver = "v0.9.6 Beta";
 
 const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters        Machine capabilities
 	//   modelNum,       fileNum, serialNum,          webNum,    IsV5, IsZip, comV3,   tmenu, hbed,  dExtr, wifi,  scan, laser,    len, wid, hgt,   screenName
@@ -263,6 +263,11 @@ void XYZV3::init()
 	m_fileIsTemp = false;
 	m_filePath[0] = '\0';
 	m_fileOutPath[0] = '\0';
+#ifdef USE_V2
+	m_useV2Protocol = true
+#else
+	m_useV2Protocol = false;
+#endif
 }
 
 void XYZV3::startMessage()
@@ -839,19 +844,23 @@ void XYZV3::parseStatusSubstring(const char *str)
 // in that case only the sub values are returned, on wifi no terminating '$' is sent
 void XYZV3::queryStatusStart(bool doPrint, const char *s)
 {
-#ifdef USE_V2
-	//****RemoveMe, temporary hack to test code out
-	// find a better way to integrate this
-	if(isWIFI())
-		//V2W_CaptureImage();
-		V2W_queryStatusStart(doPrint);
-	else
-		V2S_queryStatusStart(doPrint);
-#else // V3 protocol
 	debugPrint(DBG_LOG, "XYZV3::queryStatusStart(%d, %s...)", doPrint, s);
-	queryStatusSubStateStart(doPrint, s);
-	setState(ACT_QS_START);
-#endif
+
+	if(m_useV2Protocol)
+	{
+		//****RemoveMe, temporary hack to test code out
+		// find a better way to integrate this
+		if(isWIFI())
+			//V2W_CaptureImage();
+			V2W_queryStatusStart(doPrint);
+		else
+			V2S_queryStatusStart(doPrint);
+	}
+	else // V3 protocol
+	{
+		queryStatusSubStateStart(doPrint, s);
+		setState(ACT_QS_START);
+	}
 }
 
 void XYZV3::queryStatusRun()
@@ -2452,19 +2461,43 @@ void XYZV3::printFileRun()
 void XYZV3::cancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::cancelPrint()");
-	simpleCommandStart(-1, false, "XYZv3/config=print[cancel]");
+
+	if(m_useV2Protocol)
+	{
+		if(isWIFI())
+			V2W_CancelPrint();
+		//else ????
+	}
+	else
+		simpleCommandStart(-1, false, "XYZv3/config=print[cancel]");
 }
 
 void XYZV3::pausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::pausePrint()");
-	simpleCommandStart(-1, false, "XYZv3/config=print[pause]");
+
+	if(m_useV2Protocol)
+	{
+		if(isWIFI())
+			V2W_PausePrint();
+		//else ????
+	}
+	else
+		simpleCommandStart(-1, false, "XYZv3/config=print[pause]");
 }
 
 void XYZV3::resumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::resumePrint()");
-	simpleCommandStart(-1, false, "XYZv3/config=print[resume]");
+
+	if(m_useV2Protocol)
+	{
+		if(isWIFI())
+			V2W_ResumePrint();
+		//else ????
+	}
+	else
+		simpleCommandStart(-1, false, "XYZv3/config=print[resume]");
 }
 
 // call when print finished to prep for a new job
@@ -2628,45 +2661,49 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						// zero terminate header string
 						//****Note, only valid if !isPrint
 						header[16] = '\0';
-#ifdef USE_V2
-						//****RemoveMe, temporary hack to test code out
-						// find a better way to integrate this
-						if(isWIFI())
-							V2W_SendFile(buf, len); // v2 wifi/network
-						else
-							V2S_SendFile(buf, len); // V2 serial (usb)
-#else // V3 protocol
-						// now we have a buffer, go ahead and start to print it
-						pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-						pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
-						pDat.lastBlockSize = len % pDat.blockSize;
-						pDat.curBlock = 0;
-						pDat.data = buf;
-						pDat.blockBuf = new char[pDat.blockSize + 12];
 
-						if(pDat.blockBuf)
+						if(m_useV2Protocol)
 						{
-							//if(serialCanSendMessage())
-							//{
-								if(isPrint)
-									serialSendMessage("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
-								else
-									serialSendMessage("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
-							//}
-							//else if(m_timeout.isTimeout())
-							//	setSubState(ACT_FAILURE);
+							//****RemoveMe, temporary hack to test code out
+							// find a better way to integrate this
+							if(isWIFI())
+								V2W_SendFile(buf, len); // v2 wifi/network
+							else
+								V2S_SendFile(buf, len); // V2 serial (usb)
+						}
+						else // V3 protocol
+						{
+							// now we have a buffer, go ahead and start to print it
+							pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
+							pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
+							pDat.lastBlockSize = len % pDat.blockSize;
+							pDat.curBlock = 0;
+							pDat.data = buf;
+							pDat.blockBuf = new char[pDat.blockSize + 12];
 
-							if(waitForConfigOK())
+							if(pDat.blockBuf)
 							{
-								pDat.isPrintActive = true;
-								success = true;
+								//if(serialCanSendMessage())
+								//{
+									if(isPrint)
+										serialSendMessage("XYZv3/upload=temp.gcode,%d%s\n", len, (saveToSD) ? ",SaveToSD" : "");
+									else
+										serialSendMessage("XYZv3/firmware=temp.bin,%d%s\n", len, (downgrade) ? ",Downgrade" : "");
+								//}
+								//else if(m_timeout.isTimeout())
+								//	setSubState(ACT_FAILURE);
+
+								if(waitForConfigOK())
+								{
+									pDat.isPrintActive = true;
+									success = true;
+								}
+								else
+									debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to send data");
 							}
 							else
-								debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to send data");
+								debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
 						}
-						else
-							debugPrint(DBG_WARN, "XYZV3::sendFileInit failed to allocate buffer");
-#endif
 					}
 
 					if(!success)
@@ -5433,51 +5470,61 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
 	*/
 }
 
-void XYZV3::V2W_CaptureImage()
+bool XYZV3::V2W_CaptureImage(const char *path)
 {
-	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage()");
+	debugPrint(DBG_LOG, "XYZV3::V2W_CaptureImage(%s)", path);
 
-	// request image
-	startMessage();
-	serialSendMessage("{\"command\":3}");
-	int len = waitForInt("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
-	endMessage();
-	if(len > 0)
+	bool ret = false;
+
+	if(path && *path)
 	{
-		char *buf = new char[len];
-		if(buf)
+		// request image
+		startMessage();
+		serialSendMessage("{\"command\":3}");
+		int len = waitForInt("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
+		endMessage();
+		if(len > 0)
 		{
-			// ready to recieve
-			startMessage();
-			serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
-
-			// recieve buffer
-			if(fillBuffer(buf, len))
+			char *buf = new char[len];
+			if(buf)
 			{
-				const char *str = waitForLine(); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
-				(void)str;
+				// ready to recieve
+				startMessage();
+				serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
 
-				FILE *f = fopen("image.jif", "wb");
-				if(f)
+				// recieve buffer
+				if(fillBuffer(buf, len))
 				{
-					fwrite(buf, sizeof(char), len, f);
-					fclose(f);
+					const char *str = waitForLine(); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
+					(void)str;
+
+					FILE *f = fopen(path, "wb");
+					if(f)
+					{
+						fwrite(buf, sizeof(char), len, f);
+						fclose(f);
+
+						ret = true; // success
+					}
+					else
+						debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
 				}
 				else
-					debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
+					debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
+				endMessage();
+
+				delete [] buf;
 			}
 			else
-				debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
-			endMessage();
-
-			delete [] buf;
+				debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to allocate buffer %d", len);
 		}
 		else
-			debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to allocate buffer %d", len);
+			debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
 	}
 	else
-		debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
+		debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage invalid path");
 
+	return ret;
 }
 
 void XYZV3::V2W_PausePrint()
