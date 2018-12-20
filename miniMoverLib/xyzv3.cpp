@@ -469,6 +469,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				break;
 
 			case 'e': // error status, e:ec - some sort of string?
+				t = 0;
 				sscanf(str, "e:%d", &t);
 				// 0x40 is extruder 1
 				// 0x20 is extruder 2
@@ -505,6 +506,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 			case 'j': // printer status, j:st,sb
 				//   st - status id
 				//   sb - substatus id
+				t = 0;
 				sscanf(str, "j:%d,%d", &t, &m_status.jPrinterSubState);
 				m_status.jPrinterState = translateStatus(t);
 
@@ -615,19 +617,25 @@ void XYZV3::parseStatusSubstring(const char *str)
 
 			case 't': // extruder temperature, t:ss,aa,bb,cc,dd
 				{
-				//   if ss == 1
-				//     aa is extruder temp in C
-				//     bb is target temp in C
-				//   else
-				//     aa is extruder 1 temp
-				//     bb is extruder 2 temp
-				//t:1,20,0
-				int t;
-				sscanf(str, "t:%d,%d,%d", &m_status.tExtruderCount, &m_status.tExtruder1ActualTemp_C, &t);
-				if(m_status.tExtruderCount == 1)
-					m_status.tExtruderTargetTemp_C = t; // set by O: if not set here
-				else
-					m_status.tExtruder2ActualTemp_C = t;
+					//   if ss == 1
+					//     aa is extruder temp in C
+					//     bb is target temp in C
+					//   else
+					//     aa is extruder 1 temp
+					//     bb is extruder 2 temp
+					//t:1,20,0
+					int t = 0;
+					sscanf(str, "t:%d,%d,%d", &m_status.tExtruderCount, &m_status.tExtruder1ActualTemp_C, &t);
+					if(m_status.tExtruderCount == 1)
+					{
+						m_status.tExtruderTargetTemp_C = t; // set by O: if not set here
+						m_status.tExtruder2ActualTemp_C = 0;
+					}
+					else
+					{
+						//m_status.tExtruderTargetTemp_C = 0; // set by O: if not set here
+						m_status.tExtruder2ActualTemp_C = t;
+					}
 				}
 				break;
 
@@ -4942,6 +4950,7 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 
 		// q-s
 
+		m_status.tExtruderTargetTemp_C = 0; // not available with v2 protocol?
 		s = findValue(str, "ET0:"); // t, extruder temp
 		if(s) 
 		{
@@ -4955,6 +4964,8 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 			m_status.tExtruder2ActualTemp_C = atoi(s);
 			m_status.tExtruderCount = 2;
 		}
+		else
+			m_status.tExtruder2ActualTemp_C = 0;
 
 		// u
 
@@ -5374,6 +5385,7 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				{
 					m_status.tExtruderCount =
 						sscanf(s1, "[\"%[^\"]\",\"%[^\"]\"]", a, b);
+					m_status.tExtruderTargetTemp_C = 0; // not available with v2 protocol?
 					m_status.tExtruder1ActualTemp_C = atoi(a);
 					m_status.tExtruder2ActualTemp_C = atoi(b);
 				}
