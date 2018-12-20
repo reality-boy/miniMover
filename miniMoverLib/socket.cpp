@@ -414,7 +414,7 @@ void Socket::closeStream()
 	if(isOpen()) 
 	{
 		// drain buffers
-		//Stream::clear();
+		//StreamT::clear();
 
 		// tell server we are exiting
 		if(shutdown(m_soc, SD_BOTH) == SOCKET_ERROR) 
@@ -447,7 +447,7 @@ void Socket::clear() // is this ever needed?
 	debugPrint(DBG_VERBOSE, "Socket::clear()");
 
 	// call parrent
-	Stream::clear();
+	StreamT::clear();
 
 	if(isOpen())
 	{
@@ -465,7 +465,7 @@ void Socket::clear() // is this ever needed?
 		debugPrint(DBG_VERBOSE, "Socket::clear failed invalid connection");
 }
 
-int Socket::read(char *buf, int len)
+int Socket::read(char *buf, int len, bool zeroTerminate)
 {
 	debugPrint(DBG_VERBOSE, "Socket::read()");
 
@@ -474,6 +474,7 @@ int Socket::read(char *buf, int len)
 
 	if(buf && len > 0)
 	{
+		//if(zeroTerminate) // no harm in terminating here
 		buf[0] = '\0';
 
 		if(isOpen())
@@ -482,13 +483,14 @@ int Socket::read(char *buf, int len)
 			int ret = waitOnSocket(100, false);
 			if(ret > 0)
 			{
-				int tLen = recv(m_soc, buf, len-1, 0);
+				int tLen = recv(m_soc, buf, (zeroTerminate) ? len-1 : len, 0);
 				if(tLen != SOCKET_ERROR)
 				{
 					if(tLen > 0)
 					{
 						// success
-						buf[tLen] = '\0';
+						if(zeroTerminate)
+							buf[tLen] = '\0';
 						debugPrint(DBG_VERBOSE, "Socket::read returned %d bytes", tLen);
 						return tLen;
 					}

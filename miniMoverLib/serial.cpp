@@ -339,7 +339,7 @@ void Serial::closeStream()
 	if(isOpen())
 	{
 		// drain buffers
-		//Stream::clear();
+		//StreamT::clear();
 
 		CloseHandle(m_handle);
 	}
@@ -365,7 +365,7 @@ void Serial::clear()
 	debugPrint(DBG_VERBOSE, "Serial::clear()");
 
 	// call parent
-	Stream::clear();
+	StreamT::clear();
 
 	if(isOpen())
 	{
@@ -386,7 +386,7 @@ void Serial::clear()
 		debugPrint(DBG_VERBOSE, "Serial::clear failed invalid connection");
 }
 
-int Serial::read(char *buf, int len)
+int Serial::read(char *buf, int len, bool zeroTerminate)
 {
 	debugPrint(DBG_VERBOSE, "Serial::read()");
 
@@ -395,73 +395,19 @@ int Serial::read(char *buf, int len)
 
 	if(buf && len > 0)
 	{
+		//if(zeroTerminate) // no harm in terminating here
 		buf[0] = '\0';
 
 		if(isOpen())
 		{
-#if 0 
-			// debug path, dolls out data in small chuncks
-			static int tbufBytes = 0;
-			static char tbuf[512];
-			if(tbufBytes > 0)
-			{
-				int l = min(34, min(len, tbufBytes));
-				strncpy(buf, tbuf, l);
-				buf[l] = '\0';
-
-				tbufBytes -= l;
-				if(tbufBytes > 0)
-				{
-					for(int i=0; i<tbufBytes; i++)
-						tbuf[i] = tbuf[i+l];
-				}
-
-				debugPrint(DBG_LOG, "Serial::read cache returned %d bytes", l);
-
-				return l;
-			}
-			else
-			{
-				memset(tbuf, 0, sizeof(tbuf));
-
-				DWORD tLen;
-				if(ReadFile(m_handle, tbuf, sizeof(tbuf), &tLen, NULL))
-				{
-					if(tLen > 0)
-					{
-						tbufBytes = tLen;
-						int l = min(34, min(len, tbufBytes));
-						strncpy(buf, tbuf, l);
-						buf[l] = '\0';
-
-						tbufBytes -= l;
-						if(tbufBytes > 0)
-						{
-							for(int i=0; i<tbufBytes; i++)
-								tbuf[i] = tbuf[i+l];
-						}
-
-						debugPrint(DBG_LOG, "Serial::read returned %d bytes", l);
-
-						return l;
-					}
-					//else no data yet
-				}
-				else
-				{
-					debugPrint(DBG_WARN, "Serial::read failed with error %d", GetLastError());
-					closeStream();
-				}
-			}
-#else
-
 			DWORD tLen;
-			if(ReadFile(m_handle, buf, len-1, &tLen, NULL))
+			if(ReadFile(m_handle, buf, (zeroTerminate) ? len-1 : len, &tLen, NULL))
 			{
 				if(tLen > 0)
 				{
 					// success
-					buf[tLen] = '\0';
+					if(zeroTerminate)
+						buf[tLen] = '\0';
 					debugPrint(DBG_LOG, "Serial::read returned %d bytes", tLen);
 
 					return tLen;
@@ -472,7 +418,6 @@ int Serial::read(char *buf, int len)
 				debugPrint(DBG_WARN, "Serial::read failed with error %d", GetLastError());
 				closeStream();
 			}
-#endif
 		}
 		else
 			debugPrint(DBG_WARN, "Serial::read failed invalid connection");

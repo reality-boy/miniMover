@@ -306,8 +306,8 @@ public:
 	// attach to a serial stream
 	// pass in NULL to disconnect from stream
 	// old stream is returned so you can deal with closing it
-	void setStream(Stream *s);
-	const Stream* getStream();
+	void setStream(StreamT *s);
+	const StreamT* getStream();
 	bool isStreamSet() { return m_stream != NULL /*&& m_stream->isOpen()*/; }
 	bool isWIFI();
 
@@ -411,7 +411,7 @@ public:
 	// === misc commands ===
 
 	// only currently supported on the 1.1 plus (and unreleased 2.1 plus?)
-	void captureImage(const char *path) { V2W_CaptureImage(path); }
+	bool captureImage(const char *path) { return V2W_CaptureImage(path); }
 
 protected:
 
@@ -525,7 +525,7 @@ protected:
 
 	// decryptFile
 
-	Stream *m_stream;
+	StreamT *m_stream;
 	XYZPrinterStatus m_status;
 	const XYZPrinterInfo *m_info;
 	float m_runTimeout;

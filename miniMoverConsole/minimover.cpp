@@ -143,7 +143,7 @@ bool checkCon()
 
 		if(tDevice && tDevice[0])
 		{
-			if(Stream::isNetworkAddress(tDevice))
+			if(StreamT::isNetworkAddress(tDevice))
 			{
 				//****FixMe, add support for custom port by appending :9100 to end of ip like 192.168.1.118:9100
 				// this will allow us to support a custom wifi to usb adapter
@@ -936,7 +936,12 @@ int main(int argc, char **argv)
 							i++;
 						}
 						if(checkCon())
-							xyz.captureImage(path);
+						{
+							if(xyz.captureImage(path))
+								printf("image captured\n");
+							else
+								printf("failed to capture image\n");
+						}
 					}
 					break;
 				default:

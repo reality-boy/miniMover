@@ -7,14 +7,16 @@ Base class for serial based communicaiton protocols.
 
 #include "timer.h"
 
-class Stream
+class StreamT
 {
 public:
-	Stream() 
+	StreamT() 
 		: m_lineBufCount(0)
-	{}
+	{
+		*m_lineBuf = '\0';
+	}
 
-	virtual ~Stream() {}
+	virtual ~StreamT() {}
 
 	// functions handled by derived class
 
@@ -35,7 +37,7 @@ public:
 	virtual void clear() = 0;
 
 	// read all data available
-	virtual int read(char *buf, int bufLen) = 0;
+	virtual int read(char *buf, int bufLen, bool zeroTerminate = true) = 0;
 
 	// write a fixed length buffer
 	virtual int write(const char *buf, int bufLen) = 0;
@@ -48,7 +50,7 @@ public:
 	// local functions, don't override
 
 	// read only to newline char, buffering rest of data, return immediately if not found
-	int readLine(char *buf, int bufLen);
+	int readLine(char *buf, int bufLen, bool readPartial = false);
 
 	// write a null terminated string
 	int writeStr(const char *buf);
@@ -56,14 +58,14 @@ public:
 	// write a string formatted by printf
 	int writePrintf(const char *fmt, ...);
 
-
 	static bool isNetworkAddress(const char *addr);
 
 	msTimer m_msgTimer;
-private:
+
+//protected:
 
 	// helper function to read a line from m_lineBuf
-	int readLineFromBuffer(char *buf, int bufLen);
+	int readLineFromBuffer(char *buf, int bufLen, bool readPartial);
 	bool isLineInBuffer();
 
 	// readLine data

@@ -1,6 +1,8 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#include "stream.h"
+
 //Serial class that hides win32 serial api in a nicely wrapped package.
 
 const static int SERIAL_MAX_DEV_NAME_LEN = 256;
@@ -39,7 +41,7 @@ protected:
 
 //-----------------
 
-class Serial : public Stream
+class Serial : public StreamT
 {
 public:
 	Serial(); 
@@ -51,7 +53,7 @@ public:
 	virtual void closeStream();
 	virtual bool isOpen();
 	virtual void clear();
-	virtual int read(char *buf, int len);
+	virtual int read(char *buf, int len, bool zeroTerminate = true);
 	virtual int write(const char *buf, int len);
 
 	virtual bool isWIFI() { return false; }
@@ -59,7 +61,7 @@ public:
 	virtual float getDefaultTimeout() { return 5.0f; }
 
 	// from base class
-	//int readLine(char *buf, int bufLen);
+	//int readLine(char *buf, int bufLen, bool readPartial = false);
 	//int writeStr(const char *buf);
 	//int writePrintf(const char *fmt, ...);
 

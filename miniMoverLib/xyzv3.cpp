@@ -34,7 +34,7 @@
 #include "xyzv3.h"
 
 // uncomment to test out experimental v2 protocol
-//#define USE_V2
+#define USE_V2
 // uncomment to force wifi connections to close between messages
 //#define CLOSE_ON_WIFI
 
@@ -264,7 +264,7 @@ void XYZV3::init()
 	m_filePath[0] = '\0';
 	m_fileOutPath[0] = '\0';
 #ifdef USE_V2
-	m_useV2Protocol = true
+	m_useV2Protocol = true;
 #else
 	m_useV2Protocol = false;
 #endif
@@ -303,7 +303,7 @@ void XYZV3::endMessage()
 	}
 }
 
-void XYZV3::setStream(Stream *s)
+void XYZV3::setStream(StreamT *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::setStream(%d)", s);
 
@@ -320,7 +320,7 @@ void XYZV3::setStream(Stream *s)
 		m_stream->clear();
 }
 
-const Stream* XYZV3::getStream()
+const StreamT* XYZV3::getStream()
 {
 	debugPrint(DBG_LOG, "XYZV3::getStream()");
 	return m_stream;
@@ -2585,7 +2585,7 @@ bool XYZV3::waitForConfigOK()
 		msTimeout timeout(m_stream->getDefaultTimeout());
 		do
 		{
-			if(m_stream->readLine(buf, len))
+			if(m_stream->readLine(buf, len, m_useV2Protocol))
 				break;
 		} 
 		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
@@ -3367,7 +3367,7 @@ bool XYZV3::waitForEndCom()
 		msTimeout timeout(0.1f);
 		do
 		{
-			if(m_stream->readLine(buf, len))
+			if(m_stream->readLine(buf, len, m_useV2Protocol))
 				break;
 		} 
 		while(!timeout.isTimeout() && m_stream && m_stream->isOpen());
@@ -3413,7 +3413,7 @@ const char* XYZV3::checkForLine()
 
 	if(m_stream && m_stream->isOpen())
 	{
-		if(m_stream->readLine(buf, len))
+		if(m_stream->readLine(buf, len, m_useV2Protocol))
 		{
 			return buf;
 		}
@@ -4644,7 +4644,7 @@ const char* XYZV3::waitForLine()
 		{
 			// try at least once, even if connection is closed.
 			// we may have data in the buffer still
-			if(m_stream->readLine(buf, len))
+			if(m_stream->readLine(buf, len, m_useV2Protocol))
 				return buf;
 		} 
 		while(!timeout.isTimeout() && m_stream->isOpen());
@@ -4654,7 +4654,7 @@ const char* XYZV3::waitForLine()
 		else
 		{
 			// try once more, we may have data in the buffer still
-			if(m_stream->readLine(buf, len))
+			if(m_stream->readLine(buf, len, m_useV2Protocol))
 				return buf;
 			else
 				debugPrint(DBG_WARN, "XYZV3::waitForLine failed, connection closed");
@@ -4726,7 +4726,6 @@ bool XYZV3::fillBuffer(char *buf, int len)
 		msTimeout timeout(5000);
 		const int block = 1024;
 		int offset = 0;
-
 		while(offset < len &&
 			!timeout.isTimeout() && 
 			m_stream && m_stream->isOpen())
@@ -4736,12 +4735,12 @@ bool XYZV3::fillBuffer(char *buf, int len)
 			if(count > (len - offset))
 				count = (len - offset);
 
-			if(!m_stream->read(&buf[offset], count))
+			int read = m_stream->read(buf + offset, count, false);
+			if(read == 0)
 				break;
 
-			offset += count;
+			offset += read;
 		} 
-
 		return (offset == len);
 	}
 
@@ -5495,19 +5494,22 @@ bool XYZV3::V2W_CaptureImage(const char *path)
 				// recieve buffer
 				if(fillBuffer(buf, len))
 				{
-					const char *str = waitForLine(); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
-					(void)str;
-
-					FILE *f = fopen(path, "wb");
-					if(f)
+					int res = waitForInt("result\":"); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
+					if(res == 0)
 					{
-						fwrite(buf, sizeof(char), len, f);
-						fclose(f);
+						FILE *f = fopen(path, "wb");
+						if(f)
+						{
+							fwrite(buf, sizeof(char), len, f);
+							fclose(f);
 
-						ret = true; // success
+							ret = true; // success
+						}
+						else
+							debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
 					}
 					else
-						debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
+						debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed with bad result %d", res);
 				}
 				else
 					debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
