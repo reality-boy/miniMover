@@ -4782,76 +4782,113 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	//****FixMe, rather than clearing out old data, just keep an update count
 	// and provide a 'isNewData() test
 	memset(&m_status, 0, sizeof(m_status));
-
+	bool success;
+	
+	success = false;
 	startMessage();
 	if(serialSendMessage("XYZ_@3D:0"))
 	{
 		buf = waitForLine();
 		if(*buf)
-			m_status.isValid = true;
-		while(*buf) 
 		{
-			V2S_parseStatusSubstring(buf, doPrint);
-			buf = checkForLine();
+			m_status.isValid = true;
+			success = true;
+			while(*buf) 
+			{
+				V2S_parseStatusSubstring(buf, doPrint);
+				buf = checkForLine();
+			}
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed recieving status 0");
 	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed sending status 0");
 	endMessage();
 
-	startMessage();
-	if(serialSendMessage("XYZ_@3D:5"))
+	// bail early if rest of message failed
+	if(success)
 	{
-		buf = waitForLine();
-		if(*buf)
-			m_status.isValid = true;
-		while(*buf) 
+		startMessage();
+		if(serialSendMessage("XYZ_@3D:5"))
 		{
-			V2S_parseStatusSubstring(buf, doPrint);
-			buf = checkForLine();
+			buf = waitForLine();
+			if(*buf)
+			{
+				m_status.isValid = true;
+				while(*buf) 
+				{
+					V2S_parseStatusSubstring(buf, doPrint);
+					buf = checkForLine();
+				}
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed recieving status 5");
 		}
-	}
-	endMessage();
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed sending status 5");
+		endMessage();
 
-	startMessage();
-	if(serialSendMessage("XYZ_@3D:6"))
-	{
-		buf = waitForLine();
-		if(*buf)
-			m_status.isValid = true;
-		while(*buf) 
+		startMessage();
+		if(serialSendMessage("XYZ_@3D:6"))
 		{
-			V2S_parseStatusSubstring(buf, doPrint);
-			buf = checkForLine();
+			buf = waitForLine();
+			if(*buf)
+			{
+				m_status.isValid = true;
+				while(*buf) 
+				{
+					V2S_parseStatusSubstring(buf, doPrint);
+					buf = checkForLine();
+				}
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed recieving status 6");
 		}
-	}
-	endMessage();
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed sending status 6");
+		endMessage();
 
-	startMessage();
-	if(serialSendMessage("XYZ_@3D:7"))
-	{
-		buf = waitForLine();
-		if(*buf)
-			m_status.isValid = true;
-		while(*buf) 
+		startMessage();
+		if(serialSendMessage("XYZ_@3D:7"))
 		{
-			V2S_parseStatusSubstring(buf, doPrint);
-			buf = checkForLine();
+			buf = waitForLine();
+			if(*buf)
+			{
+				m_status.isValid = true;
+				while(*buf) 
+				{
+					V2S_parseStatusSubstring(buf, doPrint);
+					buf = checkForLine();
+				}
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed recieving status 7");
 		}
-	}
-	endMessage();
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed sending status 7");
+		endMessage();
 
-	startMessage();
-	if(serialSendMessage("XYZ_@3D:8"))
-	{
-		buf = waitForLine();
-		if(*buf)
-			m_status.isValid = true;
-		while(*buf) 
+		startMessage();
+		if(serialSendMessage("XYZ_@3D:8"))
 		{
-			V2S_parseStatusSubstring(buf, doPrint);
-			buf = checkForLine();
+			buf = waitForLine();
+			if(*buf)
+			{
+				m_status.isValid = true;
+				while(*buf) 
+				{
+					V2S_parseStatusSubstring(buf, doPrint);
+					buf = checkForLine();
+				}
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed recieving status 8");
 		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2S_queryStatusStart failed sending status 8");
+		endMessage();
 	}
-	endMessage();
 }
 
 void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
@@ -5102,131 +5139,102 @@ void XYZV3::V2S_SendFileHelper(const char *buf, int len, v2sFileMode mode)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2S_SendFile()");
 
+	bool ret;
+
 	// start print
 	startMessage();
-	switch(mode)
+	if(serialSendMessage((mode == V2S_FILE) ? "XYZ_@3D:4" : "XYZ_@3D:3")) // 200 ms delay
 	{
-	case V2S_FILE:
-		serialSendMessage("XYZ_@3D:4"); // 200 ms delay
-		break;
-	case V2S_10_FW:
-	case V2S_11_FW_ENGINE:
-	case V2S_11_FW_APP:
-	case V2S_11_FW_OS:
-		serialSendMessage("XYZ_@3D:3");
-		break;
-	}
-
-	// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
-	switch(mode)
-	{
-	case V2S_FILE:
-		waitForResponse("OFFLINE_OK"); // wait 5 seconds
-		break;
-	case V2S_10_FW:
-	case V2S_11_FW_ENGINE:
-	case V2S_11_FW_APP:
-	case V2S_11_FW_OS:
-		waitForResponse("FWOK");
-		break;
-	}
-	endMessage();
-
-	// send file info
-	startMessage();
-	switch(mode)
-	{
-	case V2S_FILE:
-		serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
-		break;
-	case V2S_10_FW:
-		serialSendMessage("M1:firmwarelast,%d", len);
-		break;
-	case V2S_11_FW_ENGINE:
-		serialSendMessage("M2:engine,engine_data.bin,%d", len);
-		break;
-	case V2S_11_FW_APP:
-		serialSendMessage("M2:app,app_data.zip,%d", len);
-		break;
-	case V2S_11_FW_OS:
-		serialSendMessage("M2:os,XYZ_Update.zip,%d", len);
-		break;
-	}
-	// 1000 ms delay
-
-	// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
-	switch(mode)
-	{
-	case V2S_FILE:
-		waitForResponse("M1_OK"); // wait 5 seconds
-		break;
-	case V2S_10_FW:
-		//****FixMe, may not even be returned on 1.0 machine
-		waitForResponse("M1_OK"); // wait 5 seconds
-		break;
-	case V2S_11_FW_ENGINE:
-	case V2S_11_FW_APP:
-	case V2S_11_FW_OS:
-		waitForResponse("M2_OK"); // wait 5 seconds
-		break;
-	}
-
-	// prepare to send data in frames
-	const char *dataArray = buf;
-	int frameLen = 10236;
-	int lastFrameLen = len % frameLen;
-	int frameCount = len / frameLen;
-	int frameNum = 0;
-
-	// in loop
-	while (m_stream && m_stream->isOpen() && frameNum <= frameCount)
-	{
-		int tFrameLen = (frameNum < frameCount) ? frameLen : lastFrameLen;
-
-		// calc a checksum
-		int chk = 0;
-		for (int i = 0; i < tFrameLen; i++)
+		// spinn till state is OFFLINE_OK, but not OFFLINE_FAIL, OFFLINE_NO, OFFLINE_NG
+		if(mode == V2S_FILE)
+			ret = waitForResponse("OFFLINE_OK"); // wait 5 seconds
+		else
+			ret = waitForResponse("FWOK");
+		if(ret)
 		{
-			chk = ((unsigned char)dataArray[i]) + chk;
+			// send file info
+			if(mode == V2S_FILE)
+				ret = serialSendMessage("M1:MyTest,%d,%d.%d.%d,EE1_OK,EE2_OK", len, 1, 0, 0);
+			else if(mode == V2S_10_FW)
+				ret = serialSendMessage("M1:firmwarelast,%d", len);
+			else if(mode == V2S_11_FW_ENGINE)
+				ret = serialSendMessage("M2:engine,engine_data.bin,%d", len);
+			else if(mode == V2S_11_FW_APP)
+				ret = serialSendMessage("M2:app,app_data.zip,%d", len);
+			else if(mode == V2S_11_FW_OS)
+				ret = serialSendMessage("M2:os,XYZ_Update.zip,%d", len);
+			// 1000 ms delay
+
+			if(ret)
+			{
+				// wat for M1_OK, or possibly M1_FAIL on 1.1 Plus
+				//****FixMe, may not even be returned on 1.0 machine
+				if(mode == V2S_FILE || mode == V2S_10_FW)
+					ret = waitForResponse("M1_OK"); // wait 5 seconds
+				else
+					ret = waitForResponse("M2_OK"); // wait 5 seconds
+
+				if(ret)
+				{
+					// prepare to send data in frames
+					const char *dataArray = buf;
+					int frameLen = 10236;
+					int lastFrameLen = len % frameLen;
+					int frameCount = len / frameLen;
+					int frameNum = 0;
+
+					// in loop
+					while (m_stream && m_stream->isOpen() && frameNum <= frameCount)
+					{
+						int tFrameLen = (frameNum < frameCount) ? frameLen : lastFrameLen;
+
+						// calc a checksum
+						int chk = 0;
+						for (int i = 0; i < tFrameLen; i++)
+						{
+							chk = ((unsigned char)dataArray[i]) + chk;
+						}
+
+						// byteswap to network byte order
+						chk = swap32bit(chk);
+
+						// send data
+						m_stream->write(dataArray, tFrameLen);
+						// send checksum
+						m_stream->write((const char*)&chk, 4);
+
+						// wait for M2_OK or CheckSumOK
+						// or if CheckSumFail send again
+						// or if OFFLINE_NO then give up
+						//****FixMe, check this
+						waitForResponse("M2_OK"); // wait 50 ms
+
+						dataArray += frameLen;
+						frameNum++;
+					}
+
+					// on 1.1 Plus we send down 3 different firmwares
+					// we could send all three then ask them all to
+					// be installed at once, but for now just install them as we download them
+					// all other machines install all firmwares automatically after downloading
+					if(mode == V2S_11_FW_ENGINE)
+						serialSendMessage("UPDATE_START:1");
+					if(mode == V2S_11_FW_APP)
+						serialSendMessage("UPDATE_START:2");
+					if(mode == V2S_11_FW_OS)
+						serialSendMessage("UPDATE_START:4");
+				}
+				else
+					debugPrint(DBG_LOG, "XYZV3::V2S_SendFile failed to recieve message");
+			}
+			else
+				debugPrint(DBG_LOG, "XYZV3::V2S_SendFile failed to send message");
 		}
-
-		// byteswap to network byte order
-		chk = swap32bit(chk);
-
-		// send data
-		m_stream->write(dataArray, tFrameLen);
-		// send checksum
-		m_stream->write((const char*)&chk, 4);
-
-		// wait for M2_OK or CheckSumOK
-		// or if CheckSumFail send again
-		// or if OFFLINE_NO then give up
-		waitForResponse("M2_OK"); // wait 50 ms
-
-		dataArray += frameLen;
-		frameNum++;
+		else
+			debugPrint(DBG_LOG, "XYZV3::V2S_SendFile failed to recieve message");
 	}
-	endMessage();
-
-	// on 1.1 Plus we send down 3 different firmwares
-	// we could send all three then ask them all to
-	// be installed at once, but for now just install them as we download them
-	// all other machines install all firmwares automatically after downloading
-	startMessage();
-	switch(mode)
-	{
-	case V2S_11_FW_ENGINE:
-		serialSendMessage("UPDATE_START:1");
-		break;
-	case V2S_11_FW_APP:
-		serialSendMessage("UPDATE_START:2");
-		break;
-	case V2S_11_FW_OS:
-		serialSendMessage("UPDATE_START:4");
-		break;
-	default:
-		break;
-	}
+	else
+		debugPrint(DBG_LOG, "XYZV3::V2S_SendFile failed to send message");
 	endMessage();
 }
 
@@ -5248,9 +5256,8 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		{
 			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
 			if(*str)
-				m_status.isValid = true;
-			if(*str)
 			{
+				m_status.isValid = true;
 				debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
 				if(doPrint)
 					printf("%s\n", str);
@@ -5269,9 +5276,8 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 	{
 		const char *str = waitForLine(); 
 		if(*str)
-			m_status.isValid = true;
-		if(*str)
 		{
+			m_status.isValid = true;
 			debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
 			if(doPrint)
 				printf("%s\n", str);
@@ -5461,24 +5467,40 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
 
 	// start print
 	startMessage();
-	serialSendMessage("{\"command\":1,\"fileName\":\"temp.gcode\",\"fileLen\":%d,\"ee1\":\"EE1_OK\",\"ee2\":\"EE2_OK\"}", len);
-	waitForResponse("START_RECEIVE");
-
-	// send file
-	m_stream->write(buf, len);
-	serialSendMessage("<EOF>");
-	int result = waitForInt("result\":");
+	if(serialSendMessage("{\"command\":1,\"fileName\":\"temp.gcode\",\"fileLen\":%d,\"ee1\":\"EE1_OK\",\"ee2\":\"EE2_OK\"}", len))
+	{
+		if(waitForResponse("START_RECEIVE"))
+		{
+			// send file
+			int tlen = m_stream->write(buf, len);
+			if(tlen == len)
+			{
+				if(serialSendMessage("<EOF>"))
+				{
+					int result = waitForInt("result\":");
+					(void)result;
+					debugPrint(DBG_LOG, "XYZV3::V2W_SendFile result was %d", result);
+					/*
+					result == 0 // success
+					result == 1 // success?
+					result == 2 // unsupported file format
+				    result == 4 // file checksum error
+				    result == 5 // invalid command
+				    result == 6 // printer buisy
+					*/
+				}
+				else
+					debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to send eof");
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to send body");
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to recieve ok");
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to send command");
 	endMessage();
-
-	(void)result;
-	/*
-	result == 0 // success
-	result == 1 // success?
-	result == 2 // unsupported file format
-    result == 4 // file checksum error
-    result == 5 // invalid command
-    result == 6 // printer buisy
-	*/
 }
 
 bool XYZV3::V2W_CaptureImage(const char *path)
@@ -5491,49 +5513,57 @@ bool XYZV3::V2W_CaptureImage(const char *path)
 	{
 		// request image
 		startMessage();
-		serialSendMessage("{\"command\":3}");
-		int len = waitForInt("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
-		endMessage();
-		if(len > 0)
+		if(serialSendMessage("{\"command\":3}"))
 		{
-			char *buf = new char[len];
-			if(buf)
+			int len = waitForInt("length\":"); //{"result":0,"command":3,"message":"START_SEND","length":136811}
+			endMessage();
+			if(len > 0)
 			{
-				// ready to recieve
-				startMessage();
-				serialSendMessage("{\"ack\":\"START_RECEIVE\"}");
-
-				// recieve buffer
-				if(fillBuffer(buf, len))
+				char *buf = new char[len];
+				if(buf)
 				{
-					int res = waitForInt("result\":"); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
-					if(res == 0)
+					// ready to recieve
+					startMessage();
+					if(serialSendMessage("{\"ack\":\"START_RECEIVE\"}"))
 					{
-						FILE *f = fopen(path, "wb");
-						if(f)
+						// recieve buffer
+						if(fillBuffer(buf, len))
 						{
-							fwrite(buf, sizeof(char), len, f);
-							fclose(f);
+							int res = waitForInt("result\":"); //{"result":0,"command":3,"message":"SEND_FINISH","length":136811}
+							if(res == 0)
+							{
+								FILE *f = fopen(path, "wb");
+								if(f)
+								{
+									fwrite(buf, sizeof(char), len, f);
+									fclose(f);
 
-							ret = true; // success
+									ret = true; // success
+								}
+								else
+									debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
+							}
+							else
+								debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed with bad result %d", res);
 						}
 						else
-							debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to open image");
+							debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
+						endMessage();
+
 					}
 					else
-						debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed with bad result %d", res);
+						debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to send data");
+
+					delete [] buf;
 				}
 				else
-					debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to recieve image");
-				endMessage();
-
-				delete [] buf;
+					debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to allocate buffer %d", len);
 			}
 			else
-				debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to allocate buffer %d", len);
+				debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
 		}
 		else
-			debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage image not ready");
+			debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage failed to send start");
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_CaptureImage invalid path");
@@ -5550,19 +5580,23 @@ void XYZV3::V2W_PausePrint()
 
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token); // pause
-	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	if(serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token)) // pause
+	{
+		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+		(void)result; //****FixMe, check if we succeedded
+		debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint result was %d", result);
+		/*
+		result == 0 // success
+		result == 1 // success?
+		result == 2 // unsupported file format
+	    result == 4 // file checksum error
+	    result == 5 // invalid command
+	    result == 6 // printer buisy
+		*/
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2W_PausePrint failed to send message");
 	endMessage();
-
-	(void)result; //****FixMe, check if we succeedded
-	/*
-	result == 0 // success
-	result == 1 // success?
-	result == 2 // unsupported file format
-    result == 4 // file checksum error
-    result == 5 // invalid command
-    result == 6 // printer buisy
-	*/
 }
 
 void XYZV3::V2W_ResumePrint()
@@ -5574,19 +5608,23 @@ void XYZV3::V2W_ResumePrint()
 
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token); // resume
-	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	if(serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token)) // resume
+	{
+		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+		(void)result; //****FixMe, check if we succeedded
+		debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint result was %d", result);
+		/*
+		result == 0 // success
+		result == 1 // success?
+		result == 2 // unsupported file format
+	    result == 4 // file checksum error
+	    result == 5 // invalid command
+	    result == 6 // printer buisy
+		*/
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2W_ResumePrint failed to send");
 	endMessage();
-
-	(void)result; //****FixMe, check if we succeedded
-	/*
-	result == 0 // success
-	result == 1 // success?
-	result == 2 // unsupported file format
-    result == 4 // file checksum error
-    result == 5 // invalid command
-    result == 6 // printer buisy
-	*/
 }
 
 void XYZV3::V2W_CancelPrint()
@@ -5598,17 +5636,21 @@ void XYZV3::V2W_CancelPrint()
 
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token); // stop
-	int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+	if(serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token)) // stop
+	{
+		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
+		(void)result; //****FixMe, check if we succeedded
+		debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint result was %d", result);
+		/*
+		result == 0 // success
+		result == 1 // success?
+		result == 2 // unsupported file format
+	    result == 4 // file checksum error
+	    result == 5 // invalid command
+	    result == 6 // printer buisy
+		*/
+	}
+	else
+		debugPrint(DBG_WARN, "XYZV3::V2W_CancelPrint failed to send");
 	endMessage();
-
-	(void)result; //****FixMe, check if we succeedded
-	/*
-	result == 0 // success
-	result == 1 // success?
-	result == 2 // unsupported file format
-    result == 4 // file checksum error
-    result == 5 // invalid command
-    result == 6 // printer buisy
-	*/
 }
