@@ -2590,8 +2590,8 @@ bool XYZV3::waitForConfigOK()
 	const int len = 1024;
 	char buf[len] = "";
 
-	if(!m_stream 
-//		|| !m_stream->isOpen()
+	if(m_stream 
+//		&& m_stream->isOpen()
 		)
 	{
 		msTimeout timeout(m_stream->getDefaultTimeout());
