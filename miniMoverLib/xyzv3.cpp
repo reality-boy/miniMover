@@ -34,7 +34,7 @@
 #include "xyzv3.h"
 
 // uncomment to test out experimental v2 protocol
-#define USE_V2
+//#define USE_V2
 // uncomment to force wifi connections to close between messages
 //#define CLOSE_ON_WIFI
 
@@ -863,6 +863,7 @@ void XYZV3::queryStatusStart(bool doPrint, const char *s)
 			V2W_queryStatusStart(doPrint);
 		else
 			V2S_queryStatusStart(doPrint);
+		setState(ACT_SUCCESS);
 	}
 	else // V3 protocol
 	{
@@ -2475,6 +2476,7 @@ void XYZV3::cancelPrint()
 		if(isWIFI())
 			V2W_CancelPrint();
 		//else ????
+		setState(ACT_SUCCESS);
 	}
 	else
 		simpleCommandStart(-1, false, "XYZv3/config=print[cancel]");
@@ -2489,6 +2491,7 @@ void XYZV3::pausePrint()
 		if(isWIFI())
 			V2W_PausePrint();
 		//else ????
+		setState(ACT_SUCCESS);
 	}
 	else
 		simpleCommandStart(-1, false, "XYZv3/config=print[pause]");
@@ -2503,6 +2506,7 @@ void XYZV3::resumePrint()
 		if(isWIFI())
 			V2W_ResumePrint();
 		//else ????
+		setState(ACT_SUCCESS);
 	}
 	else
 		simpleCommandStart(-1, false, "XYZv3/config=print[resume]");
@@ -2643,6 +2647,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 	bool success = false;
 
+	startMessage();
 	if(m_stream && m_stream->isOpen() && path)
 	{
 		// try to load file from disk
@@ -2675,9 +2680,25 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 							//****RemoveMe, temporary hack to test code out
 							// find a better way to integrate this
 							if(isWIFI())
-								V2W_SendFile(buf, len); // v2 wifi/network
+							{
+								if(isPrint)
+									V2W_SendFile(buf, len); // v2 wifi/network
+								else
+								{
+									// cant update firmware over wifi
+									debugPrint(DBG_WARN, "XYZV3::sendFileInit failure can't upload firmware over wifi");
+									assert(false);
+								}
+							}
 							else
-								V2S_SendFile(buf, len); // V2 serial (usb)
+							{
+								if(isPrint)
+									V2S_SendFile(buf, len); // V2 serial (usb)
+								else
+									V2S_SendFirmware(buf, len);
+							}
+							pDat.isPrintActive = true;
+							success = true;
 						}
 						else // V3 protocol
 						{
@@ -2743,6 +2764,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::sendFileInit invalid input");
+	endMessage();
 
 	return success;
 }
@@ -2762,6 +2784,9 @@ bool XYZV3::sendFileProcess()
 	debugPrint(DBG_LOG, "XYZV3::sendFileProcess()");
 
 	assert(pDat.isPrintActive);
+
+	if(m_useV2Protocol)
+		return false; // false == finished
 
 	bool success = false;
 	if(m_stream && m_stream->isOpen() && pDat.data && pDat.blockBuf)
@@ -2833,8 +2858,9 @@ bool XYZV3::sendFileFinalize()
 	//if(serialCanSendMessage())
 	//{
 		bool success = 
-			serialSendMessage("XYZv3/uploadDidFinish") &&
-			waitForConfigOK();
+			m_useV2Protocol ||
+			(serialSendMessage("XYZv3/uploadDidFinish") &&
+			waitForConfigOK());
 	//}
 	//else if(m_timeout.isTimeout())
 	//	setSubState(ACT_FAILURE);
