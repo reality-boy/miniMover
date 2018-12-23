@@ -699,7 +699,8 @@ void MainDlgUpdateStatusList(HWND hDlg, const XYZPrinterStatus *st, const XYZPri
 		m =  st->LExtruderLifetimePowerOnTime_min % 60;
 		listAddLine(hwndListInfo, "Extruder total time: %d d %d h %d m", d, h, m);
 
-		listAddLine(hwndListInfo, "Lang: %s", st->lLang);
+		if(*st->lLang)
+			listAddLine(hwndListInfo, "Lang: %s", st->lLang);
 
 		if(st->mVal[0] != 0)
 			listAddLine(hwndListInfo, "mVal: %d", st->mVal);

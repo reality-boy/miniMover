@@ -4803,13 +4803,8 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 	debugPrint(DBG_LOG, "XYZV3::V2S_queryStatusStart(%d)", doPrint);
 
 	const char *buf;
-
-	// zero out results, only if updating everything
-	//****FixMe, rather than clearing out old data, just keep an update count
-	// and provide a 'isNewData() test
-	memset(&m_status, 0, sizeof(m_status));
 	bool success;
-	
+
 	success = false;
 	startMessage();
 	if(serialSendMessage("XYZ_@3D:0"))
@@ -4817,6 +4812,10 @@ void XYZV3::V2S_queryStatusStart(bool doPrint)
 		buf = waitForLine();
 		if(*buf)
 		{
+			// zero out results, only if updating everything
+			//****FixMe, rather than clearing out old data, just keep an update count
+			// and provide a 'isNewData() test
+			memset(&m_status, 0, sizeof(m_status));
 			m_status.isValid = true;
 			success = true;
 			while(*buf) 
@@ -5088,7 +5087,8 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		// A-K
 
 		s = findValue(str, "MCHLIFE:"); // L, lifetime timers
-		if(s) m_status.LPrinterLifetimePowerOnTime_min = atoi(s);
+		if(s) 
+			m_status.LPrinterLifetimePowerOnTime_min = atoi(s);
 
 		s = findValue(str, "MCHEXDUR_LIFE:"); // L extruder life
 		if(s) m_status.LExtruderLifetimePowerOnTime_min = atoi(s);
@@ -5270,40 +5270,12 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart(%d, %s)", doPrint, s);
 
-	if(0 == strcmp(s, "all"))
-	{
-		// zero out results, only if updating everything
-		//****FixMe, rather than clearing out old data, just keep an update count
-		// and provide a 'isNewData() test
-		memset(&m_status, 0, sizeof(m_status));
-
-		startMessage();
-		if(serialSendMessage("{\"command\":4}"))
-		{
-			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
-			if(*str)
-			{
-				m_status.isValid = true;
-				debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
-				if(doPrint)
-					printf("%s\n", str);
-				//****FixMe, parse output
-			}
-			else
-				debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
-		}
-		else
-			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
-		endMessage();
-	}
-
 	startMessage();
 	if(serialSendMessage("{\"command\":2,\"query\":\"%s\"}", s))
 	{
 		const char *str = waitForLine(); 
 		if(*str)
 		{
-			m_status.isValid = true;
 			debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
 			if(doPrint)
 				printf("%s\n", str);
@@ -5315,6 +5287,12 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 
 			if(findJsonVal(str, "data", datStr, sizeof(datStr)))
 			{
+				// zero out results, only if updating everything
+				//****FixMe, rather than clearing out old data, just keep an update count
+				// and provide a 'isNewData() test
+				memset(&m_status, 0, sizeof(m_status));
+				m_status.isValid = true;
+
 				// a
 
 				if(findJsonVal(datStr, "b", s1, sizeof(s1))) // "b":"--", // bed temperature
@@ -5456,7 +5434,11 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 							m_status.wFilament2Color[0] = '\0';
 					}
 					else
+					{
 						m_status.wFilament2Color[0] = '\0';
+						if(m_status.wFilamentCount > 1)
+							m_status.wFilamentCount = 1;
+					}
 				}
 				
 				// x-z
@@ -5466,10 +5448,17 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				if(findJsonVal(datStr, "L", s1, sizeof(s1))) // "L":{"m":"4183146537","e":"21785"}, // machine/extruder lifetime timers
 				{
 					if(findJsonVal(s1, "m", s2, sizeof(s2)))
-						m_status.LPrinterLifetimePowerOnTime_min = atoi(s2);
+					{
+#ifdef _WIN32
+						__int64 t = _atoi64(s2);
+#else
+						long long t = atoll(s2);
+#endif
+						m_status.LPrinterLifetimePowerOnTime_min = (int) (t / 60000); // in milliseconds?
+					}
 
 					if(findJsonVal(s1, "e", s2, sizeof(s2)))
-						m_status.LExtruderLifetimePowerOnTime_min = atoi(s2);
+						m_status.LExtruderLifetimePowerOnTime_min = atoi(s2); // minutes
 				}
 
 				// M-Z
@@ -5485,6 +5474,28 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 	else
 		debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
 	endMessage();
+
+	if(0 == strcmp(s, "all"))
+	{
+		startMessage();
+		if(serialSendMessage("{\"command\":4}"))
+		{
+			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
+			if(*str)
+			{
+				debugPrint(DBG_LOG, "XYZV3::V2W_queryStatusStart recieved '%s'", str);
+				if(doPrint)
+					printf("%s\n", str);
+				//****FixMe, parse output
+			}
+			else
+				debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to get response");
+		}
+		else
+			debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
+		endMessage();
+	}
+
 }
 
 void XYZV3::V2W_SendFile(const char *buf, int len)
