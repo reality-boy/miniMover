@@ -530,6 +530,8 @@ protected:
 	const XYZPrinterInfo *m_info;
 	float m_runTimeout;
 	bool m_useV2Protocol;
+	char m_V2Token[40];			// v2 wifi protocol returns a token to match a print job to a command
+
 
 	static const int m_infoArrayLen = 24;
 	static const XYZPrinterInfo m_infoArray[m_infoArrayLen];

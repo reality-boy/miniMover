@@ -268,6 +268,7 @@ void XYZV3::init()
 #else
 	m_useV2Protocol = false;
 #endif
+	m_V2Token[0] = '\0';
 }
 
 void XYZV3::startMessage()
@@ -5475,9 +5476,11 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 		debugPrint(DBG_WARN, "XYZV3::V2W_queryStatusStart failed to send message");
 	endMessage();
 
+	//if(0 == strcmp(s, "all") && *m_V2Token)
 	if(0 == strcmp(s, "all"))
 	{
 		startMessage();
+		//if(serialSendMessage("{\"command\":4,\"token\":\"%s\"}", m_V2Token))
 		if(serialSendMessage("{\"command\":4}"))
 		{
 			const char *str = waitForLine(); // <  {"result":1,"command":4,"message":"No printing job!"}
@@ -5514,17 +5517,30 @@ void XYZV3::V2W_SendFile(const char *buf, int len)
 			{
 				if(serialSendMessage("<EOF>"))
 				{
-					int result = waitForInt("result\":");
-					(void)result;
-					debugPrint(DBG_LOG, "XYZV3::V2W_SendFile result was %d", result);
-					/*
-					result == 0 // success
-					result == 1 // success?
-					result == 2 // unsupported file format
-				    result == 4 // file checksum error
-				    result == 5 // invalid command
-				    result == 6 // printer buisy
-					*/
+					const char *str = waitForLine();
+					if(str)
+					{
+						// if print job succeeded then we will get a token identifying the job
+						if(!findJsonVal(str, "token", m_V2Token, sizeof(m_V2Token)))
+							m_V2Token[0] = '\0';
+
+						char tstr[32];
+						int result = -1;
+						if(findJsonVal(str, "result", tstr, sizeof(tstr)))
+							result = atoi(tstr);
+
+						debugPrint(DBG_LOG, "XYZV3::V2W_SendFile result was %d", result);
+						/*
+						result == 0 // success
+						result == 1 // success?
+						result == 2 // unsupported file format
+					    result == 4 // file checksum error
+					    result == 5 // invalid command
+					    result == 6 // printer buisy
+						*/
+					}
+					else
+						debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to recieve status");
 				}
 				else
 					debugPrint(DBG_WARN, "XYZV3::V2W_SendFile failed to send eof");
@@ -5612,12 +5628,9 @@ void XYZV3::V2W_PausePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_PausePrint()");
 
-	//****FixMe, work out what token is
-	const char *token = "???";
-
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	if(serialSendMessage("{\"command\":6,\"state\":1,\"token\":%s}", token)) // pause
+	if(serialSendMessage("{\"command\":6,\"state\":1,\"token\":\"%s\"}", m_V2Token)) // pause
 	{
 		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
 		(void)result; //****FixMe, check if we succeedded
@@ -5640,12 +5653,9 @@ void XYZV3::V2W_ResumePrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_ResumePrint()");
 
-	//****FixMe, work out what token is
-	const char *token = "???";
-
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	if(serialSendMessage("{\"command\":6,\"state\":2,\"token\":%s}", token)) // resume
+	if(serialSendMessage("{\"command\":6,\"state\":2,\"token\":\"%s\"}", m_V2Token)) // resume
 	{
 		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
 		(void)result; //****FixMe, check if we succeedded
@@ -5668,12 +5678,9 @@ void XYZV3::V2W_CancelPrint()
 {
 	debugPrint(DBG_LOG, "XYZV3::V2W_CancelPrint()");
 
-	//****FixMe, work out what token is
-	const char *token = "???";
-
 	// token is returned when print starts, possibly the file name?
 	startMessage();
-	if(serialSendMessage("{\"command\":6,\"state\":3,\"token\":%s}", token)) // stop
+	if(serialSendMessage("{\"command\":6,\"state\":3,\"token\":\"%s\"}", m_V2Token)) // stop
 	{
 		int result = waitForInt("result\":"); // <  {"result":5,"command":-1,"message":"Command incorrect!"}
 		(void)result; //****FixMe, check if we succeedded
