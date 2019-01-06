@@ -3121,7 +3121,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 			char tPath[MAX_PATH];
 			// and write to disk
 			FILE *fo = NULL;
-			if(outPath)
+			if(outPath && *outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
