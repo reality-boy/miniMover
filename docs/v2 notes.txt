@@ -3,6 +3,36 @@
 
 //---------
 
+// XYZprinting da Vinci AiO (COM8)
+
+ XYZ_@3D:0
+  XYZ_@3D:start
+  MDU:dvF10SA000
+  FW_V:1.2.4
+  MCH_ID:3S10APEU4TH4AF0417
+  PROTOCOL:2
+
+ XYZ_@3D:5
+  MCHLIFE:8233
+  MCHEXDUR_LIFE:5581
+
+ XYZ_@3D:6
+  EE1:5a,41,4b0000,353550,240000,78115,210,90,5448,3632,58304745,52,0
+
+ XYZ_@3D:7
+  EE2:00,00,000000,000000,0,0,0,0,0000,0000,,0,0
+
+ XYZ_@3D:8
+  WORK_PARSENT:0
+  WORK_TIME:0
+  EST_TIME:0
+  ET0:86
+  BT:51
+  MCH_STATE:8
+  LANG:4
+
+//---------
+
 XYZ_@3D:	// connect, only supported on older firmwares? see XYZ_@3D:0
 	DAVAPP_ACK@
 	DAVAPP_ERR@
