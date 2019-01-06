@@ -1,0 +1,358 @@
+https://xyzprod.blob.core.windows.net/firmware/?comp=list
+
+da Vinci mini w+
+https://xyzprod.blob.core.windows.net/firmware/008b01df-f846-4a40-885a-273bd6b4f18a_3FM3W_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/a522f78d-3d23-46f3-bf9b-1bc94a8816c0_3FM3W_FW_V1.0.9.bin
+https://xyzprod.blob.core.windows.net/firmware/f29ca564-4021-4d61-b7f8-8e5a62858d64_3FM3W_FW_V1.1.0.bin
+
+da Vinci Jr. 1.0 3in1
+https://xyzprod.blob.core.windows.net/firmware/a6728f7e-912b-4fea-9210-4562448c9e7a_3F1JS_FW_V1.0.3.bin
+https://xyzprod.blob.core.windows.net/firmware/95585aa8-e349-43e4-9ed1-4f3033f9aa8a_3F1JS_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/04ee46ea-e0cb-430e-bb40-66d32f4cd57e_3F1JS_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/a33c0378-4c25-4bd5-a949-c51236fc7e18_3F1JS_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/d1143a9f-801e-41e5-a07f-0c896f4d4e5a_3F1JS_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/00e577b2-2826-440a-9415-a415814e9113_3F1JS_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/2bc5542c-3c94-4fc6-b7cb-07a18e46388c_3F1JS_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/d24b7656-54a7-4f13-8788-953851ea38e0_3F1JS_FW_V1.1.2.bin
+
+da Vinci Jr. 2.0 Mix
+https://xyzprod.blob.core.windows.net/firmware/01af1cf0-f6eb-47e3-8663-fb1727436312_3F2JW_FW_V0.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/1cbadd96-00ca-4931-a9e4-a3b4c275677a_3F2JW_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/f102db60-6008-4a1a-85a8-c4ee88a8654d_3F2JW_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/8cef7cfd-5eef-4845-9ac2-83adb6aa40ce_3F2JW_FW_V1.0.6.bin
+
+da Vinci Super
+https://xyzprod.blob.core.windows.net/firmware/abee3bc9-5c51-47a2-8898-823325dc490c_3F1SW_FW_V0.1.1.bin
+https://xyzprod.blob.core.windows.net/firmware/02b1566d-5135-4250-8495-c67e7f9a5f46-3F1SW_FW_V0.1.7.bin
+https://xyzprod.blob.core.windows.net/firmware/111e9402-52d4-4183-a09c-f7632224b066-3F1SW_FW_V0.2.0.bin
+https://xyzprod.blob.core.windows.net/firmware/ac052201-5b3e-447a-8291-87c18aa6091f_3F1SW_FW_V1.0.0.bin
+https://xyzprod.blob.core.windows.net/firmware/270b1692-4cb4-419b-a5d6-0a6115c73681_3F1SW_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/06880c83-5ece-4ff6-80e5-a6ab2dbb4459_3F1SW_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/5ce8e6ca-b51a-4677-8a07-1547ae30ccc6_3F1SW_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/daa2fdeb-8b51-4c0b-86b8-9dc5080e6023_3F1SW_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/8f49718f-6492-45fa-9cb9-bb0a95c5f9a0_3F1SW_FW_V1.0.9.bin
+https://xyzprod.blob.core.windows.net/firmware/bf88f9b2-587f-11e6-8b77-86f30ca893d3_3F1SW_FW_V1.1.1.bin
+https://xyzprod.blob.core.windows.net/firmware/ef560702-0481-486d-ae95-872b91a071bf-3F1SW_FW_V1.1.1.bin
+https://xyzprod.blob.core.windows.net/firmware/311194b6-65e3-11e6-8b77-86f30ca893d3_3F1SW_FW_V1.1.2.bin
+https://xyzprod.blob.core.windows.net/firmware/9355717e-e50a-4314-89fe-a4f173853603_3F1SW_FW_V1.1.3.bin
+https://xyzprod.blob.core.windows.net/firmware/55641e32-4283-4054-868c-40dae1adb5ba_3F1SW_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/10d1fc7e-58ea-4649-8696-21ae6677d8f2_3F1SW_FW_V1.1.9.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/039830be-438a-41d0-9a62-ec15d1ec47fa_3F1JZ_FW_V1.1.0.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/a17aeb80-0c03-48ca-a5ec-9e698011b38a_3DD10_PANEL_FW_0.1.6.sn8
+https://xyzprod.blob.core.windows.net/firmware/a17aeb80-0c03-48ca-a5ec-9e698011b38a_3DD10_PANEL_FW_0.1.6.zip
+https://xyzprod.blob.core.windows.net/firmware/a50b991c-240e-4d89-8609-40e7816ea298_3DD10_ENGINE_FW_0.5.0.6.brn
+https://xyzprod.blob.core.windows.net/firmware/a50b991c-240e-4d89-8609-40e7816ea298_3DD10_ENGINE_FW_0.5.0.6.zip
+https://xyzprod.blob.core.windows.net/firmware/d158cebd-6163-4f28-8f78-b8e79a7df8c1_3DD10_ENGINE_FW_1.6.1.2.brn
+https://xyzprod.blob.core.windows.net/firmware/03c09c82-1d92-46b9-ab3a-48e5c637ba78_3DD10_ENGINE_FW_1.6.2.3.brn
+https://xyzprod.blob.core.windows.net/firmware/e0e1f2a4-d27a-4bae-a811-9c6f62eefe9e_3DD10_ENGINE_FW_1.6.2.3.brn
+https://xyzprod.blob.core.windows.net/firmware/e79e4db2-bdae-432d-a154-64d4ae507d9b_3DD10_ENGINE_FW_1.6.3.1.brn
+https://xyzprod.blob.core.windows.net/firmware/0f1c7a30-91bb-4923-994e-144086080a51_3DD10_ENGINE_FW_1.6.4.4.brn
+https://xyzprod.blob.core.windows.net/firmware/304a864c-5641-4208-bead-d1191672948f_3DD10_ENGINE_FW_1.6.5.2.brn
+https://xyzprod.blob.core.windows.net/firmware/cd219234-d4ad-4918-88e0-3f29c2d37594_3DD10_ENGINE_FW_1.6.6.2.brn
+https://xyzprod.blob.core.windows.net/firmware/e04d72f4-a5ed-4c80-adf4-62d5b0c73298_3DD10_ENGINE_FW_1.6.7.1.brn
+
+da Vinci Jr. 1.0 Pro
+https://xyzprod.blob.core.windows.net/firmware/cb3734e6-fd57-4dfc-819d-f6f793c3c839_3F1JP_FW_V1.0.0.bin
+https://xyzprod.blob.core.windows.net/firmware/07950b25-86bc-4b7f-9ad3-ec9f63fb0e97_3F1JP_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/e0d8e72f-b379-4d51-8f05-502d7f1dd1f7_3F1JP_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/2e4004c3-d30d-47ee-885c-3a0a8fe55d1a_3F1JP_FW_V1.0.3.bin
+https://xyzprod.blob.core.windows.net/firmware/d0185fa4-94d9-4f2f-84ae-0280af691fca_3F1JP_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/f8959cec-32f2-4c42-a44d-53a19bd4b039_3F1JP_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/36c2ea2e-b8a4-4660-800f-b10cb390787d_3F1JP_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/05c41bc1-942c-4a29-9ca2-78a473b9fc38_3F1JP_FW_V1.0.9.bin
+https://xyzprod.blob.core.windows.net/firmware/3827aa47-c4fa-479c-87bd-64db919c10b5_3F1JP_FW_V1.1.2.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/4421df0c-10f4-4e7e-b8ee-475670f9efff_XYZ_Update_1.1.0.22.zip
+https://xyzprod.blob.core.windows.net/firmware/f08097d0-0b1b-11e5-b939-0800200c9a66_XYZ_Update_1.1.0.25.zip
+https://xyzprod.blob.core.windows.net/firmware/ffe08d1b-5166-403f-9ce0-c55aafcf7328_XYZ_Update_2.1.0.28.zip
+https://xyzprod.blob.core.windows.net/firmware/d6f01b00-b837-11e5-a837-0800200c9a66_XYZ_Update_2.1.0.29.zip
+https://xyzprod.blob.core.windows.net/firmware/73dbc846-02ac-4f1d-9bd0-6c365f4ae0aa_XYZ_Update_2.1.0.31.zip
+https://xyzprod.blob.core.windows.net/firmware/06f75a13-f520-48a0-92ee-4baf27c14e58_XYZ_Update_2.1.0.32.zip
+https://xyzprod.blob.core.windows.net/firmware/fc50b342-5955-42e0-b334-a1a8b2934cf1_XYZ_Update_2.1.0.32.zip
+https://xyzprod.blob.core.windows.net/firmware/fd4ed003-12bb-4a56-8282-95a83a3031ce_XYZ_Update_2.1.0.33.zip
+
+da Vinci mini wA
+https://xyzprod.blob.core.windows.net/firmware/220c27f1-6546-4fd1-9da3-82a260a8c2ab_3FM1J_FW_V1.0.0.bin
+https://xyzprod.blob.core.windows.net/firmware/19b65f2f-c6be-4f1a-8917-6e6242ec6ccc_3FM1J_FW_V1.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/ff6568e6-091e-42ec-87a2-b5c8f77a8550_3FM1J_FW_V1.2.6.bin
+https://xyzprod.blob.core.windows.net/firmware/0903fbd8-75c6-452b-8cad-2f1841cc8ca1_3FM1J_FW_V1.2.7.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/cfa88640-fcf6-11e4-b939-0800200c9a66_SL10X_FW_V1.5.2.3.ram
+https://xyzprod.blob.core.windows.net/firmware/0d9a41a6-b523-4fd6-9be2-073c84e43b37_SL10X_ENGINE_FW_1.5.3.1.ram
+https://xyzprod.blob.core.windows.net/firmware/8f63eea0-2648-11e5-867f-0800200c9a66_SL10X_ENGINE_FW_1.5.4.1.ram
+https://xyzprod.blob.core.windows.net/firmware/d59b2da1-e5af-45ff-b9f0-3a3bdf0754f6_SL10X_ENGINE_1.5.6.3.ram
+
+da Vinci miniMaker
+https://xyzprod.blob.core.windows.net/firmware/11bc1bfb-ee36-4bf3-8516-02d62f02243e_3FM1X_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/1799ab47-7a18-4385-b6e2-dfe716e4ab61_3FM1X_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/4169230b-b5cd-4881-be2d-81415e153887_3FM1X_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/4642352c-92f8-470f-8295-862721515bb6_3FM1X_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/68981c12-95d8-429a-8751-b5716fa3a2bc_3FM1X_FW_V1.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/798920de-bf71-4301-9b5c-58721983bac2_3FM1X_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/8695a578-e90e-4e97-be3b-c1f1e3ff6a46_3FM1X_FW_V1.1.1.bin
+https://xyzprod.blob.core.windows.net/firmware/b45639bd-f109-47fc-ab17-861db35afe38_3FM1X_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/cae0533d-5650-4191-837d-381d4394310e_3FM1X_FW_V1.1.0.bin
+https://xyzprod.blob.core.windows.net/firmware/f0c1c290-519b-4db1-bf65-e8467d755c19_3FM1X_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/f2289396-deaa-48d7-9077-609389123e5a_3FM1X_FW_V1.0.3.bin
+
+da Vinci mini w
+https://xyzprod.blob.core.windows.net/firmware/124fc29f-c312-4a23-b48d-e6d11b501228_3FM1W_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/228c6b6f-c114-448d-a7cd-506ca3551e75_3FM1W_FW_V1.0.9.bin
+https://xyzprod.blob.core.windows.net/firmware/46bc0fcc-880f-4f1b-b0ca-76a7a637f908_3FM1W_FW_V1.2.1.bin
+https://xyzprod.blob.core.windows.net/firmware/4ae5d1b0-c354-408d-a30d-c91f69325e73_3FM1W_FW_V1.1.8.bin
+https://xyzprod.blob.core.windows.net/firmware/55842038-2048-4b4f-9f04-70090ef603e6_3FM1W_FW_V1.1.9.bin
+https://xyzprod.blob.core.windows.net/firmware/55a5e224-4f78-45ea-9198-214962d0b6cc_3FM1W_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/64d39b6c-1365-49b2-9f8d-d5d3ecbd71af_3FM1W_FW_V1.2.7.bin
+https://xyzprod.blob.core.windows.net/firmware/65393c32-aa1c-4cb7-a168-09d8e3684bd8_3FM1W_FW_V1.1.7.bin
+https://xyzprod.blob.core.windows.net/firmware/6cfd4131-4e47-4461-a09e-2055c435d6aa_3FM1W_FW_V1.1.0.bin
+https://xyzprod.blob.core.windows.net/firmware/76e42f48-9c30-4413-831d-9deeeebc651f_3FM1W_FW_V1.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/7d6dcc1b-fc6e-466d-991e-700385fda2db_3FM1W_FW_V1.2.6.bin
+https://xyzprod.blob.core.windows.net/firmware/9d01835b-f45d-408c-bb98-36a0c2df8737_3FM1W_FW_V1.1.2.bin
+https://xyzprod.blob.core.windows.net/firmware/aaafcbe4-b082-486c-960b-799467e8da5b_3FM1W_FW_V1.2.1.bin
+https://xyzprod.blob.core.windows.net/firmware/b830270c-79e4-4097-875c-c3bbbc58567c_3FM1W_FW_V1.2.2.bin
+https://xyzprod.blob.core.windows.net/firmware/be561dda-4e1c-11e6-beb8-9e71128cae77_3FM1W_FW_V1.0.6.bin
+
+da Vinci nano ????
+https://xyzprod.blob.core.windows.net/firmware/1371e13d-9682-4683-a1e5-7ee5a3e56624_3FNAX_FW_V1.0.1.bin
+https://xyzprod.blob.core.windows.net/firmware/58e34343-2d52-421b-8dea-71d9352ac1cf-3FNAX_FW_V0.0.15.bin
+https://xyzprod.blob.core.windows.net/firmware/59c8e982-e035-49f7-83d7-6cbb3278bad6_3FNAX_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/9eb27c78-51d6-4129-8a1d-40fc53d3b449_3FNAX_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/bf3e2601-48fa-4f6c-a9a3-e49c2f815c61_3FNAX_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/d9775c58-a1ff-42c1-ada3-5c1437043047_3FNAX_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/f6a72772-6a2a-4cb4-8bdd-b7f361f0f731_3FNAX_FW_V1.0.8.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/138a3476-a9bd-451f-8ef9-1ab26495af5e_app_data_1.1.9.14.zip
+https://xyzprod.blob.core.windows.net/firmware/481ee4ba-9f66-4235-b12c-907bc0607aae_app_data_1.1.9.9.zip
+https://xyzprod.blob.core.windows.net/firmware/633533c2-c435-4b31-9dc9-02531647d45d_app_data_1.1.9.10.zip
+https://xyzprod.blob.core.windows.net/firmware/6aec44f0-fad3-11e4-b939-0800200c9a66_app_data_1.1.9.2.zip
+https://xyzprod.blob.core.windows.net/firmware/70eab1b6-5d13-4fe7-95c3-0e9de2e0ae3f_app_data_1.1.9.15.zip
+https://xyzprod.blob.core.windows.net/firmware/9abf9002-0a40-4d99-b2f6-d8e8ce806c0e_app_data_1.1.9.zip
+https://xyzprod.blob.core.windows.net/firmware/9cf68aba-c1a0-4a4c-a8b0-efa89b8e5041_app_data_1.1.9.13.zip
+https://xyzprod.blob.core.windows.net/firmware/bf5ca942-a5f6-4977-b620-0d64c3fba234_app_data_1.1.9.14.zip
+https://xyzprod.blob.core.windows.net/firmware/d55f6a4e-db93-4e51-b74b-85d2a2ebdf1b_app_data_1.1.9.10.zip
+
+da Vinci Jr. 1.0A
+https://xyzprod.blob.core.windows.net/firmware/13dff047-962f-4380-8061-ca037353f7bc_3F1JA_FW_V1.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/46b502de-d339-485b-988a-62b8330497bc_3F1JA_FW_V1.0.8.bin
+https://xyzprod.blob.core.windows.net/firmware/82c5c8d4-3e19-4e72-8a67-76fa4bef3fd3_3F1JA_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/9af9ec42-4684-469d-b8ec-6b3e51eff4a7_3F1JA_FW_V1.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/a90c0dc4-a04f-408a-9349-09f13d777881_3F1JA_FW_V1.0.9.bin
+https://xyzprod.blob.core.windows.net/firmware/b4f7d943-aa36-468f-8b6d-3cd08c511573_3F1JA_FW_V1.1.6.bin
+https://xyzprod.blob.core.windows.net/firmware/eac8361b-2325-464a-b508-bd84429545ac_3F1JA_FW_V1.0.7.bin
+
+da Vinci Jr. 1.0
+https://xyzprod.blob.core.windows.net/firmware/15041c8d-1ce5-4e78-a98e-13d734890c56_3F1J0_FW_V2.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/4585e862-3349-4bd9-a3d8-01db91dfaff0_3F1J0_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/479df749-1a5d-4b23-8163-c6ec7c77f275_3F1J0_FW_V2.3.4.bin
+https://xyzprod.blob.core.windows.net/firmware/52e2d3b0-cd98-4447-b706-5c555bb1fe27_3F1J0_FW_V2.2.6.bin
+https://xyzprod.blob.core.windows.net/firmware/583718e5-790c-4ad5-a949-8fa8b405cc1a_3F1J0_FW_V2.2.4.bin
+https://xyzprod.blob.core.windows.net/firmware/5b35d4d6-5932-4fe4-bed5-ba31332d3dbe_3F1J0_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/64049a66-23c8-4be7-8ab4-6ff74b6b4aa4_3F1J0_FW_V2.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/6a098f69-ae6e-49af-aca9-60863ec8b10a_3F1J0_FW_V2.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/6b792ccc-6d60-44ba-bbd0-b1c4c2e3c684_3F1J0_FW_V2.3.1.bin
+https://xyzprod.blob.core.windows.net/firmware/6d5cab06-d52a-469e-af30-9112ae11b09a_3F1J0_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/8beaec6b-b2f0-484f-86ce-8200bec9c88a_3F1J0_FW_V2.4.2.bin
+https://xyzprod.blob.core.windows.net/firmware/96a46466-e4f3-40c5-bae5-ea3afb3f75c4_3F1J0_FW_V2.3.3.bin
+https://xyzprod.blob.core.windows.net/firmware/a4daf77e-40b5-4cb4-910b-354ca92d45ea_3F1J0_FW_V2.3.5.bin
+https://xyzprod.blob.core.windows.net/firmware/d305db90-342c-11e5-a2cb-0800200c9a66_3F1J0_FW_V2.0.3.bin
+https://xyzprod.blob.core.windows.net/firmware/e151fbef-5c83-4136-a779-b749ec82603d_3F1J0_FW_V2.2.7.bin
+https://xyzprod.blob.core.windows.net/firmware/f125f8ea-7542-42a1-bda2-1c97e964b4ec_3F1J0_FW_V2.2.0.bin
+https://xyzprod.blob.core.windows.net/firmware/fb128df0-b9f8-4092-b420-d6ba6c3fb7cb_3F1J0_FW_V2.2.8.bin
+
+da Vinci 1.0 AiO
+https://xyzprod.blob.core.windows.net/firmware/1588d30c-77e3-4e10-8d5d-96f98a451055_3S10A_FW_V1.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/16062ac7-85fe-4489-b509-4b71acf6d198_3S10A_FW_V1.1.3.bin
+https://xyzprod.blob.core.windows.net/firmware/5f7489c0-88d6-11e5-a837-0800200c9a66_3S10A_FW_V1.1.6.bin
+https://xyzprod.blob.core.windows.net/firmware/75a4ebbe-b0af-40f8-9ece-b119df8927bf_3S10A_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/88b4fa2f-92a2-4383-a0bf-25b14d6c98f5_3S10A_FW_V1.2.4.bin
+https://xyzprod.blob.core.windows.net/firmware/d5a1331a-c81a-4ea8-ab27-6a96b5a50f5b_3S10A_FW_V1.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/d64d0bf7-30c0-4ce9-8284-4d93121f3e13_3S10A_FW_V1.2.2.bin
+https://xyzprod.blob.core.windows.net/firmware/e0dd3c88-6e1a-42a3-a6b6-d3a59ddd0255_3S10A_FW_V1.2.0.bin
+
+da Vinci 1.0 Pro
+https://xyzprod.blob.core.windows.net/firmware/740935f0-5880-11e6-8b77-86f30ca893d3_3F1AW_FW_V1.3.0.bin
+https://xyzprod.blob.core.windows.net/firmware/179c1aa6-65e3-11e6-8b77-86f30ca893d3_3F1AW_FW_V1.3.1.bin
+https://xyzprod.blob.core.windows.net/firmware/18f05ed6-1ef7-407d-8ef0-df0871872565_3F1AW_FW_V1.1.2.bin
+https://xyzprod.blob.core.windows.net/firmware/31862b9c-03a6-4b1e-aa0f-84dc73e73640_3F1AW_FW_V1.2.6.bin
+https://xyzprod.blob.core.windows.net/firmware/37105c69-adb7-4cf5-93fa-f203375bf62b_3F1AW_FW_V1.3.2.bin
+https://xyzprod.blob.core.windows.net/firmware/6fa39c9d-9706-4a72-942f-48fb4e2a5b40_3F1AW_FW_V1.3.3.bin
+https://xyzprod.blob.core.windows.net/firmware/8ae8325e-8204-4f70-800a-8b74d38b3c0f_3F1AW_FW_V1.2.8.bin
+https://xyzprod.blob.core.windows.net/firmware/f4a69c93-e8f7-47d0-8938-6a23c6add929_3F1AW_FW_V1.3.8.bin
+https://xyzprod.blob.core.windows.net/firmware/fb408480-b9a5-11e5-a837-0800200c9a66_3F1AW_FW_V1.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/fb408480-b9a5-11e5-a837-0800200c9a66_3F1AW_FW_V1.2.3.bin
+
+da Vinci 1.0
+https://xyzprod.blob.core.windows.net/firmware/18e1b6d1-712d-43eb-8978-49ecd232be88_3DP01_FW_V1.2.0.bin
+https://xyzprod.blob.core.windows.net/firmware/1cf90d47-059c-46f5-87da-602fbe0f9a0d_3DP01_FW_V1.2.3.bin
+https://xyzprod.blob.core.windows.net/firmware/1ec98982-64ca-4c34-9afd-f8814fcaa153_3DP01_FW_V1.2.4.bin
+https://xyzprod.blob.core.windows.net/firmware/33b50811-89a7-419f-aa91-01cb0e21eab8_3DP01_FW_V1.3.3.bin
+https://xyzprod.blob.core.windows.net/firmware/4caf7d56-4375-44d6-bb60-36b82fa13ac8_3DP01_FW_V1.2.7.bin
+https://xyzprod.blob.core.windows.net/firmware/63871cef-65dd-4127-ae62-6d5c6735f01b_3DP01_FW_V1.3.1.bin
+https://xyzprod.blob.core.windows.net/firmware/7a9a3c93-59e8-4625-a103-94bbd29fb7d4_3DP01_FW_V1.3.4.bin
+https://xyzprod.blob.core.windows.net/firmware/b89f6f93-1c25-4464-8467-c909457a40c8_3DP01_FW_V1.2.7.bin
+https://xyzprod.blob.core.windows.net/firmware/d8341a45-6fee-4aae-8a93-f1e7e78ada5c_3DP01_FW_V1.2.6.bin
+
+da Vinci Color
+https://xyzprod.blob.core.windows.net/firmware/19fb1e2d-f535-489d-ba33-1626579a1e5c_3FC1X_FW_V1.2.4.bin
+https://xyzprod.blob.core.windows.net/firmware/39f7d3d0-22eb-4868-bf71-633cb580a781_3FC1X_FW_V1.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/4e14b8e8-6425-44a0-8946-aa3239c6c038_3FC1X_FW_V1.1.1.bin
+https://xyzprod.blob.core.windows.net/firmware/7ed0fcf9-4eb0-49d7-bd2a-c7f4537f5ce4_3FC1X_FW_V1.3.0.bin
+https://xyzprod.blob.core.windows.net/firmware/88eb0910-2651-416a-8e39-592dab3f8984_3FC1X_FW_V1.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/a648edbe-5b24-4eca-a28d-902fd135da71_3FC1X_FW_V1.0.7.bin
+https://xyzprod.blob.core.windows.net/firmware/b0353fee-9a09-43d6-9ed8-2992d77638fe-3FC1X_FW_V0.1.6.bin
+https://xyzprod.blob.core.windows.net/firmware/ca50d037-9117-4a34-87e6-a8ddda357442_3FC1X_FW_V1.3.6.bin
+https://xyzprod.blob.core.windows.net/firmware/deff67e4-3295-4073-aac3-a0a78b5091b0_3FC1X_FW_V1.3.3.bin
+https://xyzprod.blob.core.windows.net/firmware/fc6636f9-bc3e-4567-b53d-fddc43f30bb5_3FC1X_FW_V1.1.0.bin
+
+da Vinci 2.0A Duo
+https://xyzprod.blob.core.windows.net/firmware/205f7523-e943-4559-8c30-4cdbcd1430cb_3F20A_FW_V1.0.F.bin
+https://xyzprod.blob.core.windows.net/firmware/21bb89a0-8cc6-11e5-a837-0800200c9a66_3F20A_FW_V2.0.1.bin
+https://xyzprod.blob.core.windows.net/firmware/3a3f56c3-95d6-42b8-b07b-57fc8411527d_3F20A_FW_V1.0.B.bin
+https://xyzprod.blob.core.windows.net/firmware/44673479-60e7-481b-833c-d38ceea11c37_3F20A_FW_V1.0.D.bin
+https://xyzprod.blob.core.windows.net/firmware/7e4b7d92-14a3-4432-923c-559fc5f88857_3F20A_FW_V2.1.0.bin
+https://xyzprod.blob.core.windows.net/firmware/d4812a78-22bf-4224-85a1-aa6c6ff47aa5_3F20A_FW_V2.1.2.bin
+https://xyzprod.blob.core.windows.net/firmware/e24f4a8f-63b0-4de1-b75c-3e2b89bcad43_3F20A_FW_V2.0.0.bin
+https://xyzprod.blob.core.windows.net/firmware/f26646ff-3392-49f7-bb26-430bac0850ed_3F20A_FW_V2.1.1.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/4d717d87-4219-462a-a998-159105b1081d_3F10I_ENGINE_1.0.1.bin
+https://xyzprod.blob.core.windows.net/firmware/bba1f7df-f8ca-47d7-840c-9f447cea066a_3F10I_ENGINE_1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/5f57239b-5b28-4dd7-a3fa-1337bb3a3f32_3F10I_APP_1.1.22.zip
+https://xyzprod.blob.core.windows.net/firmware/22412166-9882-40b3-9e43-d00ca9e0d7a8_3F10I_APP_1.1.23.zip
+https://xyzprod.blob.core.windows.net/firmware/bc14eb29-9c06-425f-ade4-220e2dc90821_3F10I_APP_1.1.24.zip
+https://xyzprod.blob.core.windows.net/firmware/9cfb31d0-d9e7-4213-b371-e74a6bbb7f7b_3F10I_APP_1.1.25.zip
+https://xyzprod.blob.core.windows.net/firmware/681f5aef-cf0b-4a2f-ab30-77a40a7fea6c_3F10I_OS_1.1.0.20.zip
+
+????
+https://xyzprod.blob.core.windows.net/firmware/26284380-07b8-49f7-89a5-a98ff8cab298_nobel_super_engine_fw-v1.6.9.2.brn
+
+da Vinci 1.0A
+https://xyzprod.blob.core.windows.net/firmware/27795268-a11e-4ef4-a91c-661a7a1d3a9f_3F10A_FW_V2.1.0.bin
+https://xyzprod.blob.core.windows.net/firmware/6256c944-06bc-4e86-95ea-e807422085c8_3F10A_FW_V2.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/6cf4bcfc-e99f-494b-8376-661ada2488b8_3F10A_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/6d2b1f4e-5421-4381-bfa3-e10a71534d08_3F10A_FW_V2.0.0.bin
+https://xyzprod.blob.core.windows.net/firmware/90e46777-d0f5-4b42-8528-1746b6151634_3F10A_FW_V2.1.3.bin
+https://xyzprod.blob.core.windows.net/firmware/a0614265-b1e6-474a-b963-40c5bf6f4f39_3F10A_FW_V1.0.3.bin
+https://xyzprod.blob.core.windows.net/firmware/a5b2f28b-42b9-4007-9716-cdd748b69d01_3F10A_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/c49cb3e0-ee5d-435c-89a4-87b029ce77be_3F10A_FW_V2.0.1.bin
+https://xyzprod.blob.core.windows.net/firmware/eb44ed8f-054e-41f8-879d-2f3e9f12cfb9_3F10A_FW_V2.1.2.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/2bf4d2fa-ee6a-4e1e-af31-12f5c28aec0b_3L11X_ENGINE_FW_1.5.5.6.ram
+https://xyzprod.blob.core.windows.net/firmware/a8bc8fc1-051a-43a2-82c6-41ce780ae795_3L11X_ENGINE_FW_1.5.3.1.ram
+https://xyzprod.blob.core.windows.net/firmware/bad9dabc-2a0f-4cf8-b55a-c59910ad48a0_3L11X_ENGINE_FW_1.5.5.4.ram
+https://xyzprod.blob.core.windows.net/firmware/ca4799cf-5ef3-49b3-9a56-63663f64bee0_3L11X_ENGINE_FW_1.5.4.3.ram
+
+da Vinci 2.0 Duo
+https://xyzprod.blob.core.windows.net/firmware/392459bf-bfc4-4377-86db-79a009b2597b_3F20X_FW_V2.1.4.bin
+https://xyzprod.blob.core.windows.net/firmware/7e81bc40-2150-11e5-867f-0800200c9a66_3F20X_FW_V2.1.5.bin
+https://xyzprod.blob.core.windows.net/firmware/99e4b349-0f8a-466c-b482-4b7251af0e32_3F20X_FW_V2.1.7.bin
+https://xyzprod.blob.core.windows.net/firmware/9c0af7bd-0f64-4be9-8a34-1e709bb11e01_3F20X_FW_V2.1.3.bin
+https://xyzprod.blob.core.windows.net/firmware/a8ac8d80-61ac-4833-9c46-77de1746824a_3F20X_FW_V2.1.2.bin
+https://xyzprod.blob.core.windows.net/firmware/e666a527-6b81-44a0-a636-301bbf655c7f_3F20X_FW_V2.1.6.bin
+https://xyzprod.blob.core.windows.net/firmware/fe633ca9-4bfd-415a-8c2b-214ecb15e474_3F20X_FW_V2.1.8.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/3eb6f2e0-cdfb-11e4-8830-0800200c9a66_3L10X_FW_V1.5.ram
+https://xyzprod.blob.core.windows.net/firmware/9a3f4dcf-6222-4ba9-a6ca-7e4a109ddfe3_3L10X_LCM_FW_0.0.11.sn8
+https://xyzprod.blob.core.windows.net/firmware/fa61a6bb-d868-4273-842e-0b072ecd7b84_3L10X_LCM_FW_0.0.11.sn8
+https://xyzprod.blob.core.windows.net/firmware/3ccf4f25-f806-4251-8f1d-d0f7199bc5dc_3L10X_ENGINE_FW_1.5.1.7.ram
+https://xyzprod.blob.core.windows.net/firmware/410a169a-65d2-428e-8725-c8bedcc41688_3L10X_ENGINE_FW_1.5.5.1.ram
+https://xyzprod.blob.core.windows.net/firmware/4d7aefd0-f1dc-4890-874c-24c30c2a1974_3L10X_ENGINE_1.5.9.3.ram
+https://xyzprod.blob.core.windows.net/firmware/97ab542c-1360-4359-a71c-bb2f3bf927d4_3L10X_ENGINE_1.5.8.1.ram
+https://xyzprod.blob.core.windows.net/firmware/d103d0b8-a50b-464d-9771-0f008fedc45b_3L10X_ENGINE_1.5.10.1.ram
+
+da Vinci Jr. 1.0w
+https://xyzprod.blob.core.windows.net/firmware/3fb9e4dd-3f5b-4dd3-badb-052d495d42fc_3F1JW_FW_V2.3.0.bin
+https://xyzprod.blob.core.windows.net/firmware/429863ba-cc71-48e2-854b-44e26047154c_3F1JW_FW_V2.2.6.bin
+https://xyzprod.blob.core.windows.net/firmware/67f97cf0-e983-4a27-8e3c-a71da49c900f_3F1JW_FW_V2.3.5.bin
+https://xyzprod.blob.core.windows.net/firmware/6bbbb6de-c0e7-4ba6-81bc-27bf67b6315d_3F1JW_FW_V2.3.4.bin
+https://xyzprod.blob.core.windows.net/firmware/75abec6d-f094-4744-aea0-6d6435d9db25_3F1JW_FW_V2.2.0.bin
+https://xyzprod.blob.core.windows.net/firmware/796f412c-e85b-4731-9263-149d7c2cfd92_3F1JW_FW_V2.2.9.bin
+https://xyzprod.blob.core.windows.net/firmware/a6cf7d0a-9b73-4f18-95db-c77f71f91066_3F1JW_FW_V2.2.5.bin
+https://xyzprod.blob.core.windows.net/firmware/bdf309f9-77e6-4d02-9ac9-ef22bac45eb7_3F1JW_FW_V2.4.2.bin
+https://xyzprod.blob.core.windows.net/firmware/d5eb554d-4cb7-4fa7-8c38-a8064db28d7b_3F1JW_FW_V2.3.6.bin
+https://xyzprod.blob.core.windows.net/firmware/df7194be-3042-40bc-8c67-3f0095087b8d_3F1JW_FW_V2.3.3.bin
+https://xyzprod.blob.core.windows.net/firmware/e1da0454-6dd9-43fd-ab33-637fc6df3b49_3F1JW_FW_V1.0.4.bin
+https://xyzprod.blob.core.windows.net/firmware/e1da0454-6dd9-43fd-ab33-637fc6df3b49_3F1JW_FW_V2.2.0.bin
+https://xyzprod.blob.core.windows.net/firmware/ed3ce7f4-62c9-476f-91dd-8bc47ab0686b_3F1JW_FW_V2.2.8.bin
+
+da Vinci nano w
+https://xyzprod.blob.core.windows.net/firmware/499beea9-2590-443a-afef-5ce603947909_3FNAW_FW_V1.0.5.bin
+https://xyzprod.blob.core.windows.net/firmware/4f8d6601-bf01-476a-8ae4-8a05d37d161b_3FNAW_FW_V1.0.3.bin
+https://xyzprod.blob.core.windows.net/firmware/f747a64c-319d-4579-8b0e-4bc600b6193f_3FNAW_FW_V1.0.2.bin
+
+PartPro200 xTCS ????
+https://xyzprod.blob.core.windows.net/firmware/6df7bec4-852c-477a-b49a-002fe9814910_3FC1S_FW_V1.0.6.bin
+https://xyzprod.blob.core.windows.net/firmware/73d0e973-c520-431b-848f-735b723fa924_3FC1S_FW_V1.0.0.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/7d33dbcc-d9c5-447a-818f-d271a2a54664_SL10A-ENGINE-1.5.6.0.ram
+https://xyzprod.blob.core.windows.net/firmware/dc379fe7-cdca-4e78-bbf5-312a1e824d47_SL10A_FW_V1.5.1.1.ram
+
+????
+https://xyzprod.blob.core.windows.net/firmware/83389eb5-d6b1-42ce-8418-b8d3f6a03104-3FMLW_FW_V1.0.2.bin
+https://xyzprod.blob.core.windows.net/firmware/d56933fd-7e29-4011-8e63-35b7e8f0ee3a-3FMLW_FW_V1.0.0.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/8b67f793-1abd-4cc8-9d1d-b10ab9682b3f_3FJPW_FW_V1.0.0.bin
+
+Nobel SuperFine DLP ????
+https://xyzprod.blob.core.windows.net/firmware/97ab542c-1360-4359-a71c-bb2f3bf927d4_3L10A_ENGINE_1.5.2.1.ram
+
+da Vinci 1.0
+https://xyzprod.blob.core.windows.net/firmware/F10_20140417_FW_V1.1.I_RELEASE.bin
+https://xyzprod.blob.core.windows.net/firmware/F10_20140530_FW_V1.1.J_RELEASE.bin
+
+da Vinci 1.1 Plus
+https://xyzprod.blob.core.windows.net/firmware/F11_engine_FW_20150402_1.1.N_RELEASE.bin
+https://xyzprod.blob.core.windows.net/firmware/F11_engine_FW_20170928_1.1.O_RELEASE.bin
+https://xyzprod.blob.core.windows.net/firmware/F11_engine_FW_20180103_1.1.P_RELEASE.bin
+
+da Vinci 2.0 Duo
+https://xyzprod.blob.core.windows.net/firmware/F20_20140626_FW_V2.0.J_RELEASE.bin
+
+????
+https://xyzprod.blob.core.windows.net/firmware/a56bf473-89d2-406e-bf73-e70aec71f24c_mfp.brn
+https://xyzprod.blob.core.windows.net/firmware/ad17753a-f501-413b-8858-0da16ec76bcc_F310I_ENGINE_1.0.0.zip
+
+XYZprinting WiFi Box 
+https://xyzprod.blob.core.windows.net/firmware/c6d28a4f-a8d0-4bd1-b8b9-436b18c51674_3FWB1_FW_V1.0.2.bin
+
+https://xyzprod.blob.core.windows.net/firmware/FW-ReleaseNote_3F1SW_FW_V1.0.7.pdf
+https://xyzprod.blob.core.windows.net/firmware/Color_Firmware_Release_Notes_124.pdf
+https://xyzprod.blob.core.windows.net/firmware/Color_Firmware_Release_Notes_130.pdf
+https://xyzprod.blob.core.windows.net/firmware/Color_Firmware_Release_Notes_133.pdf
+https://xyzprod.blob.core.windows.net/firmware/Color_Firmware_Release_Notes_136.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr 1.0A Pro_Firmware Release Notes_1.1.5.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr 1.0A_Firmware Release Notes_1 1 6.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr WiFi Pro_Firmware Release Notes_1.0.0v2.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr.3in1_Firmware_Release_Notes_112.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr.basic_Firmware_Release_Notes_242.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr.wifi_Firmware_Release_Notes_242.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr_Pro_Firmware_Release_Notes_1.0.9.pdf
+https://xyzprod.blob.core.windows.net/firmware/Jr_Pro_Firmware_Release_Notes_1.1.2.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nano w_Firmware Release Notes_1.0.5.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nano_Firmware Release Notes_1 0 6.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nano_Firmware Release Notes_1.0.8.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nano_w_Firmware_Release Notes_1.0.2.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nano_w_Firmware_Release_Notes_1.0.3.pdf
+https://xyzprod.blob.core.windows.net/firmware/Nobel-ReleaseNote-1.5.6.3.pdf
+https://xyzprod.blob.core.windows.net/firmware/PartPro200xTCS_Firmware_Release_Notes_100.pdf
+https://xyzprod.blob.core.windows.net/firmware/PartPro200xTCS_Firmware_Release_Notes_106.pdf
+https://xyzprod.blob.core.windows.net/firmware/Super_Firmware_Release_Notes_1.0.8.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w(j)_Firmware Release Notes_1.2.6.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w+_Firmware Release Notes_1.0.7+wifi.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w+_Firmware Release Notes_1.0.9.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w+_Firmware Release Notes_1.1.0.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w_Firmware Release Notes_1.2.6.pdf
+https://xyzprod.blob.core.windows.net/firmware/mini w_Firmware Release Notes_1.2.7.pdf
+https://xyzprod.blob.core.windows.net/firmware/miniMaker_Firmware Release Notes_1.1.4.pdf
+https://xyzprod.blob.core.windows.net/firmware/miniMaker_Firmware Release Notes_1.1.5.pdf
