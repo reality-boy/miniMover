@@ -1,6 +1,6 @@
 ## miniMover
 
-This is a project that lets you send GCode to an XYZ da Vinci prniter.  It will also convert from a .3w file to .gcode and back, and can monitor and setup the printer as well.  This works with newer printers that implement the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers among others.
+This is a project that lets you send GCode to an XYZ da Vinci printer.  It will also convert from a .3w file to .gcode and back, and can monitor and setup the printer as well.  This works with newer printers that implement the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers among others.
 
 You can read up on the development progress in this forum.
 
@@ -8,32 +8,32 @@ http://www.soliforum.com/topic/17028/print-gcode-files-to-minimaker/
 
 This works with the following printers over a USB connection.  There is limited wireless support but it is not fully functional yet.
 
-   da Vinci nano  
-   da Vinci nano w
-   da Vinci miniMaker  
-   da Vinci mini w  
-   da Vinci mini wA  
-   da Vinci mini w+  
-   da Vinci Jr. 1.0  
-   da Vinci Jr. 1.0W  
-   da Vinci Jr. 1.0A  
-   da Vinci Jr. 1.0 3in1  
-   da Vinci Jr. 1.0 3in1 (Open filament)  
-   da Vinci Jr. 1.0 Pro  
-   da Vinci Jr. 1.0W Pro  
-   da Vinci Jr. 2.0 Mix  
-   da Vinci 1.0 Pro  
-   da Vinci 1.0 Pro 3in1  
-   da Vinci 1.0 Super  
+   * da Vinci nano  
+   * da Vinci nano w
+   * da Vinci miniMaker  
+   * da Vinci mini w  
+   * da Vinci mini wA  
+   * da Vinci mini w+  
+   * da Vinci Jr. 1.0  
+   * da Vinci Jr. 1.0W  
+   * da Vinci Jr. 1.0A  
+   * da Vinci Jr. 1.0 3in1  
+   * da Vinci Jr. 1.0 3in1 (Open filament)  
+   * da Vinci Jr. 1.0 Pro  
+   * da Vinci Jr. 1.0W Pro  
+   * da Vinci Jr. 2.0 Mix  
+   * da Vinci 1.0 Pro  
+   * da Vinci 1.0 Pro 3in1  
+   * da Vinci 1.0 Super  
 
 With these printers I can only convert from gcode to 3w files and back.  They use an older communication protocol that I have not implemented yet, so I can't send data to them directly. 
 
-   da Vinci 1.0  
-   da Vinci 1.0A  
-   da Vinci 1.0 AiO  
-   da Vinci 1.1 Plus *** May partially work over usb
-   da Vinci 2.0 Duo  
-   da Vinci 2.0A Duo  
+   * da Vinci 1.0  
+   * da Vinci 1.0A  
+   * da Vinci 1.0 AiO  
+   * da Vinci 1.1 Plus *** May partially work over usb
+   * da Vinci 2.0 Duo  
+   * da Vinci 2.0A Duo  
 
 This comes in two flavors, a win32 GUI and a command line utility.
 
@@ -78,7 +78,7 @@ It also uses a stripped down version of miniz by richgel999
 
 https://github.com/richgel999/miniz
 
-For downloading firmware from the website this also uses Internet.hpp from Elmü's code project
+For downloading firmware from the website this also uses Internet.hpp from ElmÃ¼'s code project
 
 https://www.codeproject.com/Articles/15397/Cabinet-File-CAB-Compression-and-Extraction
 
@@ -86,7 +86,7 @@ and the simpleJSON library by MJPA.
 
 https://github.com/MJPA/SimpleJSON
 
-This is inspired by the threedub programs listed below but it is based on a fresh reverse engineering of the serial protocol.
+This is inspired by the threedub programs listed below, but it is based on a fresh reverse engineering of the serial protocol.
 
 https://gitlab.com/anthem/py-threedub
 
