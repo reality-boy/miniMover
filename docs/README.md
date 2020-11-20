@@ -31,13 +31,13 @@ With these printers I can only convert from gcode to 3w files and back.  They us
    da Vinci 1.0  
    da Vinci 1.0A  
    da Vinci 1.0 AiO  
-   da Vinci 1.1 Plus *** May partially work over usb
+   da Vinci 1.1 Plus *** May partially work over usb ***  
    da Vinci 2.0 Duo  
    da Vinci 2.0A Duo  
 
 This comes in two flavors, a win32 GUI and a command line utility.
 
-![My image](http://soliforum.com/i/?lCv3Sh3.png)
+![My image](https://i.imgur.com/lCv3Sh3.png)
 
 Here is a summary of the commands that the command line can take.
 
@@ -78,7 +78,7 @@ It also uses a stripped down version of miniz by richgel999
 
 https://github.com/richgel999/miniz
 
-For downloading firmware from the website this also uses Internet.hpp from Elmü's code project
+For downloading firmware from the website this also uses Internet.hpp from ElmÃ¼'s code project
 
 https://www.codeproject.com/Articles/15397/Cabinet-File-CAB-Compression-and-Extraction
 
