@@ -1426,7 +1426,8 @@ void XYZV3::doProcess()
 {
 	debugPrint(DBG_LOG, "XYZV3::doProcess() %d", m_actState);
 
-	if(!m_stream 
+	if(m_actState != ACT_CF_START && m_actState != ACT_CF_COMPLETE
+		&& !m_stream
 //		|| !m_stream->isOpen()
 		)
 		setState(ACT_FAILURE);

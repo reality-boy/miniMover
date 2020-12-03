@@ -710,7 +710,6 @@ int main(int argc, char **argv)
 						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
 							printf("starting convert file\n");
-							checkCon(); 
 							xyz.convertFileStart(argv[i+1]);
 							while(xyz.isInProgress())
 								doProcessWithSleep(); //****FixMe, print progress
