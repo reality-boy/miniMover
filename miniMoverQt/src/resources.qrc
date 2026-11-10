@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="Main.qml">Main.qml</file>
+    <file alias="skill.md">skill.md</file>
+    <file alias="minimover-qt.svg">../pkgbuild/minimover-qt.svg</file>
+    <file alias="i18n/da.json">i18n/da.json</file>
+    <file alias="i18n/cs.json">i18n/cs.json</file>
+  </qresource>
+</RCC>

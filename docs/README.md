@@ -1,5 +1,9 @@
 ## miniMover
 
+A Linux Qt 6 UI is available in [`miniMoverQt`](../miniMoverQt/README.md).
+Build with `./miniMoverQt/bin/build`, run `./miniMoverQt/build/minimover-qt`,
+and run the regression suite with `./miniMoverQt/bin/test` from the repository root.
+
 This is a project that lets you send GCode to an XYZ da Vinci prniter.  It will also convert from a .3w file to .gcode and back, and can monitor and setup the printer as well.  This works with newer printers that implement the version 3 serial protocol. These include the Nano, Mini W, miniMaker and Jr. line of printers among others.
 
 You can read up on the development progress in this forum.

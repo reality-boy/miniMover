@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+mkdir -p "$ROOT/build"
+cd "$ROOT/build"
+qmake6 "$ROOT/minimover-qt.pro"
+make -j"${JOBS:-2}"
