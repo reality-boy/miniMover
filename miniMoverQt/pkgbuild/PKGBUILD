@@ -1,0 +1,23 @@
+pkgname=minimover-qt
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Qt Quick control and file conversion for XYZ da Vinci printers'
+arch=('x86_64' 'aarch64')
+license=('MIT')
+depends=('qt6-base' 'qt6-declarative' 'qt6-svg' 'qt6-wayland' 'xdg-desktop-portal')
+makedepends=('gcc' 'make')
+source=()
+sha256sums=()
+
+build() {
+  cd "$startdir/.."
+  sh bin/build
+}
+
+package() {
+  cd "$startdir/.."
+  install -Dm755 build/minimover-qt "$pkgdir/usr/bin/minimover-qt"
+  install -Dm644 ../docs/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$startdir/minimover-qt.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/minimover-qt.svg"
+  install -Dm644 "$startdir/minimover-qt.desktop" "$pkgdir/usr/share/applications/minimover-qt.desktop"
+}

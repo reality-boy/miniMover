@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=miniMover
+Name[cs]=miniMover
+Name[da]=miniMover
+Comment=Control XYZ da Vinci printers and convert print files
+Comment[cs]=Ovládání tiskáren XYZ da Vinci a převod tiskových souborů
+Comment[da]=Styr XYZ da Vinci-printere og konverter udskriftsfiler
+Exec=minimover-qt open
+Icon=minimover-qt
+Terminal=false
+Categories=Utility;Engineering;
+StartupWMClass=minimover-qt

@@ -33,18 +33,19 @@
 
 int SerialHelper::m_portCount = 0;
 int SerialHelper::m_defaultPortID = -1;
-SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {0};
+SerialHelper::PortInfo SerialHelper::portInfo[SerialHelper::m_maxPortCount] = {};
 
 int SerialHelper::queryForPorts(const char *hint)
 {
 	debugPrint(DBG_LOG, "SerialHelper::queryForPorts(%s)", hint);
 
-	isdigit('c');
 	m_portCount = 0;
 	m_defaultPortID = -1;
 
     struct dirent *ent;
     DIR *dir = opendir("/dev");
+	if(!dir)
+		return m_defaultPortID;
     while((ent = readdir(dir)) && m_portCount < m_maxPortCount) 
 	{
         if(0 == strncmp("tty", ent->d_name, 3)) 
@@ -52,7 +53,10 @@ int SerialHelper::queryForPorts(const char *hint)
 			// reject /dev/tty, those are terminals not serial ports
 			if(ent->d_name[3] != '\0' && !isdigit(ent->d_name[3]))
 			{
-	            sprintf(portInfo[m_portCount].deviceName, "/dev/%s", ent->d_name);
+			if(strlen(ent->d_name) + strlen("/dev/") >= sizeof(portInfo[m_portCount].deviceName))
+				continue;
+			strcpy(portInfo[m_portCount].deviceName, "/dev/");
+			strcat(portInfo[m_portCount].deviceName, ent->d_name);
 
 			    int handle = open(portInfo[m_portCount].deviceName, O_RDWR | O_NOCTTY | O_NDELAY /*| O_NONBLOCK*/);
 				if(handle >= 0)
@@ -67,6 +71,7 @@ int SerialHelper::queryForPorts(const char *hint)
 						m_defaultPortID = m_portCount;
 						m_portCount++;
 					}
+					close(handle);
 				}
 			}
         }
@@ -126,10 +131,12 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 	assert(deviceName);
 	assert(baudRate > 0);
 
-	if(deviceName)
+	if(deviceName && *deviceName && baudFlag(baudRate) != B0)
 	{
 		// prepend /dev/ if not provided
 		char name[SERIAL_MAX_DEV_NAME_LEN];
+		if(strlen(deviceName) + (deviceName[0] == '/' ? 0 : strlen("/dev/")) >= sizeof(name))
+			return false;
 		if(deviceName[0] == '/')
 			strncpy(name, deviceName, SERIAL_MAX_DEV_NAME_LEN);
 		else
@@ -154,7 +161,12 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 		{
 			// General configuration
 		    struct termios options;
-		    tcgetattr(m_handle, &options);
+		    if(tcgetattr(m_handle, &options) < 0)
+			{
+				closeStream();
+				return false;
+			}
+			cfmakeraw(&options);
 
 			// don't take control of the port from the os
 			options.c_cflag |= CLOCAL;
@@ -207,6 +219,8 @@ bool Serial::openStream(const char *deviceName, int baudRate)
 			// Validate configuration
 		    if(tcsetattr(m_handle, TCSANOW, &options) >= 0) 
 			{
+				strcpy(m_deviceName, name);
+				m_baudRate = baudRate;
 				return true;
 			}
 			else
@@ -277,9 +291,8 @@ void Serial::clear()
 	if(isOpen())
 	{
 		// check if data waiting, without stalling
-		int bytes;
-		ioctl(m_handle, FIONREAD, &bytes);
-		if(bytes > 0)
+		int bytes = 0;
+		if(ioctl(m_handle, FIONREAD, &bytes) == 0 && bytes > 0)
 		{
 			// log any leftover data
 			const int len = 4096;
@@ -306,7 +319,9 @@ int Serial::read(char *buf, int len, bool zeroTerminate)
 
 		if(isOpen())
 		{
-			int tLen = ::read(m_handle, buf, (zeroTerminate) ? len-1 : len);
+			int tLen;
+			do { tLen = ::read(m_handle, buf, (zeroTerminate) ? len-1 : len); }
+			while(tLen < 0 && errno == EINTR);
 			if(tLen > 0)
 			{
 				// success
@@ -336,7 +351,7 @@ int Serial::read(char *buf, int len, bool zeroTerminate)
 
 int Serial::write(const char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "Serial::write(%s, %d)", buf, len);
+	debugPrint(DBG_VERBOSE, "Serial::write(%p, %d)", (const void*)buf, len);
 
 	assert(buf);
 	assert(len > 0);
@@ -345,18 +360,20 @@ int Serial::write(const char *buf, int len)
 	{
 		if(isOpen())
 		{
-			int tLen = ::write(m_handle, buf, len);
-			if(tLen > 0)
+			int total = 0;
+			while(total < len)
 			{
-				// success
-				debugPrint(DBG_LOG, "Serial::write sent: %d of %d bytes", tLen, len);
-				return tLen;
+				int tLen = ::write(m_handle, buf + total, len - total);
+				if(tLen > 0) total += tLen;
+				else if(tLen < 0 && errno == EINTR) continue;
+				else
+				{
+					debugPrint(DBG_WARN, "Serial::write failed with error %d", errno);
+					closeStream();
+					break;
+				}
 			}
-			else
-			{
-				debugPrint(DBG_WARN, "Serial::write failed with error %d", errno);
-				closeStream();
-			}
+			return total;
 		}
 		else
 			debugPrint(DBG_WARN, "Serial::write failed invalid connection");

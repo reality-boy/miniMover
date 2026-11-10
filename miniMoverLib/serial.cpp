@@ -430,7 +430,7 @@ int Serial::read(char *buf, int len, bool zeroTerminate)
 
 int Serial::write(const char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "Serial::write(%s, %d)", buf, len);
+	debugPrint(DBG_VERBOSE, "Serial::write(%p, %d)", (const void*)buf, len);
 
 	assert(buf);
 	assert(len > 0);
@@ -460,4 +460,3 @@ int Serial::write(const char *buf, int len)
 
 	return 0;
 }
-

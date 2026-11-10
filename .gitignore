@@ -59,3 +59,7 @@ debug.txt
 *.swp
 miniMoverConsole/minimover
 *.jfif
+miniMoverQt/build/
+miniMoverQt/pkgbuild/pkg/
+miniMoverQt/pkgbuild/src/
+miniMoverQt/pkgbuild/*.pkg.tar.*

@@ -78,18 +78,16 @@ int StreamT::readLineFromBuffer(char *buf, int bufLen, bool readPartial)
 				strncpy(buf, m_lineBuf, len);
 				buf[len] = '\0';
 
-				m_lineBufCount -= len+1;
-				if(m_lineBufCount > 0)
-				{
-					for(int i=0; i<m_lineBufCount; i++)
-						m_lineBuf[i] = m_lineBuf[i+len+1];
-				}
-				else
-					m_lineBufCount = 0;
-				m_lineBuf[m_lineBufCount] = '\0';
-
-				return len;
 			}
+
+			// Only consume the newline when the entire line was copied.
+			int consumed = len;
+			if(len == i && i < m_lineBufCount && m_lineBuf[i] == '\n')
+				consumed++;
+			m_lineBufCount -= consumed;
+			memmove(m_lineBuf, m_lineBuf + consumed, m_lineBufCount);
+			m_lineBuf[m_lineBufCount] = '\0';
+			return len;
 		}
 	}
 	else
@@ -125,11 +123,14 @@ int StreamT::readLine(char *buf, int bufLen, bool readPartial)
 			if(isOpen())
 			{
 				len = m_lineBufLen - m_lineBufCount - 1;
-				len = read(m_lineBuf + m_lineBufCount, len);
+				if(len <= 0)
+					return readLineFromBuffer(buf, bufLen, true);
+				len = read(m_lineBuf + m_lineBufCount, len, false);
 				if(len > 0)
 				{
 					m_msgTimer.stopTimer();
 					m_lineBufCount += len;
+					m_lineBuf[m_lineBufCount] = '\0';
 
 					len = readLineFromBuffer(buf, bufLen, readPartial);
 					if(len > 0)

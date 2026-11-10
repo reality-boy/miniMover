@@ -110,7 +110,7 @@ static void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key, bool isAES256)
 	uint8_t tempa[4]; // Used for the column/row operations
 
 	// The first round key is the key itself.
-	memcpy(RoundKey, Key, (isAES256) ? AES_256_keyExpSize : AES_128_keyExpSize);
+	memcpy(RoundKey, Key, (isAES256) ? AES_256_KEYLEN : AES_128_KEYLEN);
 
 	// All other round keys are found from the previous round keys.
 	for (i = Nk; i < Nb * (Nr + 1); ++i)

@@ -31,15 +31,22 @@
  
 void setTerminal(bool state) 
 {
+	static struct termios saved;
+	static bool changed = false;
 	struct termios newt;
-	tcgetattr(0, &newt);
+	if(!isatty(0) || tcgetattr(0, &newt) != 0)
+		return;
 
 	if (!state) {
+		if(changed) return;
+		saved = newt;
+		changed = true;
 		newt.c_lflag &= ~ICANON;
 		newt.c_lflag &= ~ECHO;
 	} else {
-		newt.c_lflag |= ICANON;
-		newt.c_lflag |= ECHO;
+		if(!changed) return;
+		newt = saved;
+		changed = false;
 	}
 
 	tcsetattr(0, TCSANOW, &newt);
@@ -60,6 +67,7 @@ int getch()
 // Check if a key has been pressed at terminal
 int kbhit() 
 {
+	if(!isatty(0)) return 0;
 	setTerminal(false);
 
 	struct timeval tv;
@@ -68,8 +76,7 @@ int kbhit()
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(0, &fds);
-	select(1, &fds, 0, 0, &tv);
-	int ret = FD_ISSET(0, &fds);
+	int ret = select(1, &fds, 0, 0, &tv) > 0 && FD_ISSET(0, &fds);
 
 	setTerminal(true);
 
@@ -198,7 +205,7 @@ bool checkCon()
 
 bool isKey(const char *str)
 {
-	return (str && str[0] == '-' && !isdigit(str[1]));
+	return (str && str[0] == '-' && !isdigit((unsigned char)str[1]));
 }
 
 bool printStatus()
@@ -727,6 +734,11 @@ int main(int argc, char **argv)
 				case 'd':
 					if(i+1 < argc && !isKey(argv[i+1])) 
 					{
+						if(strlen(argv[i+1]) >= sizeof(deviceName))
+						{
+							fprintf(stderr, "device name is too long\n");
+							return 1;
+						}
 						// close old connection
 						xyz.setStream(NULL);
 						strcpy(deviceName, argv[i+1]);
@@ -825,6 +837,11 @@ int main(int argc, char **argv)
 						if(i+1 < argc && !isKey(argv[i+1])) 
 						{
 							// close old connection
+							if(strlen(argv[i+1]) >= sizeof(deviceName))
+							{
+								fprintf(stderr, "device name is too long\n");
+								return 1;
+							}
 							xyz.setStream(NULL);
 							strcpy(deviceName, argv[i+1]);
 							// if -1 then zero out device name to indicate auto detect
@@ -965,7 +982,7 @@ int main(int argc, char **argv)
 
 	debugFinalize();
 
-#if defined(_DEBUG) |  defined(DUMP_STATUS)
+#if defined(_WIN32) && (defined(_DEBUG) || defined(DUMP_STATUS))
 	printf("run took %0.4f seconds\n", tm.stopTimer());
 	printf("\nhit any key to continue.\n");
 	getch();
