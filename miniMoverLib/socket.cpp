@@ -523,7 +523,7 @@ int Socket::read(char *buf, int len, bool zeroTerminate)
 
 int Socket::write(const char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "Socket::write(%s, %d)", buf, len);
+	debugPrint(DBG_VERBOSE, "Socket::write(%p, %d)", (const void*)buf, len);
 
 	assert(buf);
 	assert(len > 0);
@@ -539,7 +539,7 @@ int Socket::write(const char *buf, int len)
 				int ret = waitOnSocket(100, true);
 				if(ret > 0)
 				{
-					int tLen = send(m_soc, buf, len, 0);
+					int tLen = send(m_soc, buf + retLen, len, 0);
 					if(tLen != SOCKET_ERROR && tLen > 0)
 					{
 						// success

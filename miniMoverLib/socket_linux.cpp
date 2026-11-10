@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define IS_VALID(s) ((s) > 0)
+#define IS_VALID(s) ((s) >= 0)
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
 
@@ -150,8 +150,12 @@ unsigned long lookupAddress(const char* pcHost)
 		{
 			// if that fails try dns
 			hostent* pHE = gethostbyname(pcHost);
-			if (pHE != 0) 
-				addr = *((unsigned long*)pHE->h_addr_list[0]);
+			if(pHE && pHE->h_addrtype == AF_INET && pHE->h_length == sizeof(in_addr))
+			{
+				in_addr resolved;
+				memcpy(&resolved, pHE->h_addr_list[0], sizeof(resolved));
+				addr = resolved.s_addr;
+			}
 		}
 	}
 
@@ -166,6 +170,12 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 	int ret = -1;
 	if(isOpen())
 	{
+		if(m_soc >= FD_SETSIZE)
+		{
+			debugPrint(DBG_WARN, "Socket descriptor exceeds select capacity");
+			closeStream();
+			return -1;
+		}
 		fd_set fdread;
 	    FD_ZERO(&fdread);
 	    FD_SET(m_soc, &fdread);
@@ -217,6 +227,8 @@ int Socket::waitOnSocket(int timeout_ms, bool checkWrite)
 			if(timeout_ms > 0) // if timeout is 0 were just testing for data so don't report error
 				debugPrint(DBG_LOG, "Socket::waitOnSocket hit timeout, %d ms, error %s", timeout_ms, getLastErrorMessage());
 		}
+		else if(errno == EINTR)
+			return 0;
 		else
 		{
 			debugPrint(DBG_WARN, "Socket::waitOnSocket failed with timeout, %d:%s", ret, getLastErrorMessage());
@@ -253,7 +265,7 @@ bool Socket::openStream(const char *ip, int port)
 	assert(ip);
 	assert(port >= 0);
 
-	if(m_isInit)
+	if(m_isInit && ip && *ip && strlen(ip) < sizeof(m_ipAddr) && port > 0 && port <= 65535)
 	{
 		// close out any previous connection
 		if(isOpen()) 
@@ -264,9 +276,13 @@ bool Socket::openStream(const char *ip, int port)
 		if(IS_VALID(m_soc)) 
 		{
 			// turn on non blocking mode
-			unsigned long arg = 1;
-			ioctl(m_soc, FIONBIO, &arg);
-			sockaddr_in addr;
+			int arg = 1;
+			if(ioctl(m_soc, FIONBIO, &arg) < 0)
+			{
+				closeStream();
+				return false;
+			}
+			sockaddr_in addr = {};
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = lookupAddress(ip);
 			addr.sin_port = htons(port);
@@ -279,7 +295,7 @@ bool Socket::openStream(const char *ip, int port)
 				if(waitOnSocket(1000, true) > 0)
 				{
 					// stash info on current connection
-					strcpy(m_ipAddr, ip);
+					memmove(m_ipAddr, ip, strlen(ip) + 1);
 					m_port = port;
 
 					debugPrint(DBG_LOG, "Socket::openStream succeeded");
@@ -391,6 +407,8 @@ int Socket::read(char *buf, int len, bool zeroTerminate)
 	{
 		//if(zeroTerminate) // no harm in terminating here
 		buf[0] = '\0';
+		if(zeroTerminate && len == 1)
+			return 0;
 
 		if(isOpen())
 		{
@@ -415,6 +433,8 @@ int Socket::read(char *buf, int len, bool zeroTerminate)
 						closeStream();
 					}
 				}
+				else if(errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+					return 0;
 				else
 				{
 					debugPrint(DBG_WARN, "Socket::read read failed with error: %s", getLastErrorMessage());
@@ -438,7 +458,7 @@ int Socket::read(char *buf, int len, bool zeroTerminate)
 
 int Socket::write(const char *buf, int len)
 {
-	debugPrint(DBG_VERBOSE, "Socket::write(%s, %d)", buf, len);
+	debugPrint(DBG_VERBOSE, "Socket::write(%p, %d)", (const void*)buf, len);
 
 	assert(buf);
 	assert(len > 0);
@@ -454,7 +474,7 @@ int Socket::write(const char *buf, int len)
 				int ret = waitOnSocket(100, true);
 				if(ret > 0)
 				{
-					int tLen = send(m_soc, buf, len, 0);
+					int tLen = send(m_soc, buf + retLen, len, MSG_NOSIGNAL);
 					if(tLen != SOCKET_ERROR && tLen > 0)
 					{
 						// success
@@ -462,6 +482,8 @@ int Socket::write(const char *buf, int len)
 						len -= tLen;
 						retLen += tLen;
 					}
+					else if(tLen == SOCKET_ERROR && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
+						continue;
 					else
 					{
 						debugPrint(DBG_WARN, "Socket::write failed with error: %s", getLastErrorMessage());

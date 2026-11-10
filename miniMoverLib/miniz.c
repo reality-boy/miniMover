@@ -3248,6 +3248,8 @@ static MZ_FORCEINLINE mz_bool mz_zip_array_ensure_room(mz_zip_archive *pZip, mz_
 
 static MZ_FORCEINLINE mz_bool mz_zip_array_push_back(mz_zip_archive *pZip, mz_zip_array *pArray, const void *pElements, size_t n)
 {
+    if (!n)
+        return MZ_TRUE;
     size_t orig_size = pArray->m_size;
     if (!mz_zip_array_resize(pZip, pArray, orig_size + n, MZ_TRUE))
         return MZ_FALSE;

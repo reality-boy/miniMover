@@ -14,6 +14,7 @@ and the log level is one of log or higher.
 
 enum debugLevel
 {
+	DBG_NONE = -1,
 	DBG_WARN,
 	DBG_REPORT,		// by default here and above logged to console
 	DBG_LOG,		// by default here and above logged to disk
@@ -22,6 +23,7 @@ enum debugLevel
 
 void debugInit();
 void debugFinalize();
+void debugSetConsoleLevel(debugLevel level);
 
 // set to true to drop debug log level when logging to the debug.txt file
 // usefull when trying to supress a noisy message

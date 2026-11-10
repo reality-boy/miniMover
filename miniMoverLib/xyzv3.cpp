@@ -5,9 +5,6 @@
 # pragma warning(disable:4996) // live on the edge!
 #else
 #include <unistd.h>
-//****FixMe, deal with these more properly!
-# define GetTempPath(MAX_PATH, tpath)(tpath[0] = '\0')
-# define GetTempFileName(tpath, a, b, tfile)(strcpy(tfile, "temp.tmp"))
 #endif
 
 #include <time.h>
@@ -16,6 +13,10 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <string>
+#include <sys/stat.h>
 
 #include "debug.h"
 
@@ -40,7 +41,35 @@
 
 const char *g_ver = "v0.9.6 Beta";
 
-const XYZPrinterInfo XYZV3::m_infoArray[m_infoArrayLen] = { //  File parameters        Machine capabilities
+static bool sameFile(const char *input, const char *output)
+{
+	if(!input || !output) return false;
+	if(strcmp(input, output) == 0) return true;
+#ifdef _WIN32
+	HANDLE a = CreateFileA(input, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE b = CreateFileA(output, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	BY_HANDLE_FILE_INFORMATION ai, bi;
+	bool same = a != INVALID_HANDLE_VALUE && b != INVALID_HANDLE_VALUE &&
+		GetFileInformationByHandle(a, &ai) && GetFileInformationByHandle(b, &bi) &&
+		ai.dwVolumeSerialNumber == bi.dwVolumeSerialNumber &&
+		ai.nFileIndexHigh == bi.nFileIndexHigh && ai.nFileIndexLow == bi.nFileIndexLow;
+	if(a != INVALID_HANDLE_VALUE) CloseHandle(a);
+	if(b != INVALID_HANDLE_VALUE) CloseHandle(b);
+	return same;
+#else
+	struct stat a, b;
+	return stat(input, &a) == 0 && stat(output, &b) == 0 && a.st_dev == b.st_dev && a.st_ino == b.st_ino;
+#endif
+}
+
+template<size_t N> static void copyString(char (&destination)[N], const char *source)
+{
+	snprintf(destination, N, "%s", source ? source : "");
+}
+
+const XYZPrinterInfo XYZV3::m_infoArray[] = { //  File parameters        Machine capabilities
 	//   modelNum,       fileNum, serialNum,          webNum,    IsV5, IsZip, comV3,   tmenu, hbed,  dExtr, wifi,  scan, laser,    len, wid, hgt,   screenName
 	{"dvF100B000",   "daVinciF10", "3DP01P", "davincif10_V2",   false,  true, false,    true,  true, false, false, false, false,   200, 200, 200,   "da Vinci 1.0"},			// F10
 	{"dvF100A000",   "daVinciF10", "3F10AP", "dvF100A000_V2",   false,  true, false,    true,  true, false, false, false, false,   200, 200, 200,   "da Vinci 1.0A"},			// F10A
@@ -242,6 +271,10 @@ XYZV3::XYZV3()
 XYZV3::~XYZV3() 
 {
 	debugPrint(DBG_LOG, "XYZV3::~XYZV3()");
+	delete [] pDat.data;
+	delete [] pDat.blockBuf;
+	if(m_fileIsTemp)
+		remove(m_filePath);
 } 
 
 void XYZV3::init()
@@ -306,13 +339,17 @@ void XYZV3::endMessage()
 
 void XYZV3::setStream(StreamT *s)
 {
-	debugPrint(DBG_LOG, "XYZV3::setStream(%d)", s);
+	debugPrint(DBG_LOG, "XYZV3::setStream(%p)", (void*)s);
 
 	// close out old stream
 	if(m_stream)
 		m_stream->closeStream();
 
 	//reinitialize everything
+	delete [] pDat.data;
+	delete [] pDat.blockBuf;
+	if(m_fileIsTemp)
+		remove(m_filePath);
 	init();
 
 	// and put new in its place
@@ -352,10 +389,10 @@ bool XYZV3::serialSendMessage(const char *format, ...)
 		msgBuf[sizeof(msgBuf)-1] = '\0';
 		va_end(arglist);
 
-		m_stream->writeStr(msgBuf);
+		int written = m_stream->writeStr(msgBuf);
 		m_sDelay.setTimeout_s(3);
 
-		success = true;
+		success = written == (int)strlen(msgBuf);
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::serialSendMessage invalid input");
@@ -501,7 +538,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 
 			case 'i': // machine serial number, i:sn - serial number
 				//****Note, convert ? characters to - characters when parsing sn
-				sscanf(str, "i:%s", m_status.iMachineSerialNum);
+				sscanf(str, "i:%63s", m_status.iMachineSerialNum);
 				break;
 
 			case 'j': // printer status, j:st,sb
@@ -534,7 +571,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				break;
 
 			case 'l': // language, l:ln - one of en, fr, it, de, es, jp, tw, cn, kr
-				sscanf(str, "l:%s", m_status.lLang);
+				sscanf(str, "l:%31s", m_status.lLang);
 				break;
 
 			case 'm': // ????? m:x,y,z
@@ -544,7 +581,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 
 			case 'n': // printer name, n:nm - name as a string
 				//sscanf(str, "n:%s", m_status.nMachineName); // stops scanning at first space!
-				strcpy(m_status.nMachineName, str+2);
+				copyString(m_status.nMachineName, str+2);
 				break;
 
 			case 'o': // print options, o:ps,tt,cc,al
@@ -558,19 +595,19 @@ void XYZV3::parseStatusSubstring(const char *str)
 					//   cc ??? //****FixMe, work out what this is
 					//   al is auto leveling on if a+
 					//o:p8,t1,c1,a+
-					sscanf(str, "o:p%d,t%d,c%d,%s", 
+					sscanf(str, "o:p%d,t%d,c%d,%255s",
 						&m_status.oPacketSize, 
 						&m_status.oT, 
 						&m_status.oC, 
 						s1);
-					m_status.oPacketSize = (m_status.oPacketSize > 0) ? m_status.oPacketSize*1024 : 8192;
+					m_status.oPacketSize = (m_status.oPacketSize > 0 && m_status.oPacketSize <= 1024) ? m_status.oPacketSize*1024 : 8192;
 					m_status.oAutoLevelEnabled = (0 == strcmp(s1, "a+")) ? true : false;
 				}
 				break;
 
 			case 'p': // printer model number, p:mn - model_num
 				//p:dv1MX0A000
-				sscanf(str, "p:%s", m_status.pMachineModelNumber);
+				sscanf(str, "p:%63s", m_status.pMachineModelNumber);
 				m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
 				break;
 
@@ -648,9 +685,9 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//   ap is app version string
 				//v:1.1.1
 				if(strchr(str, ','))
-					sscanf(str, "v:%[^,],%[^,],%s", m_status.vOsFirmwareVersion, m_status.vAppFirmwareVersion, m_status.vFirmwareVersion);
+					sscanf(str, "v:%63[^,],%63[^,],%63s", m_status.vOsFirmwareVersion, m_status.vAppFirmwareVersion, m_status.vFirmwareVersion);
 				else
-					sscanf(str, "v:%s", m_status.vFirmwareVersion);
+					sscanf(str, "v:%63s", m_status.vFirmwareVersion);
 				break;
 
 			case 'w': // filament serian number, w:id,sn,xx
@@ -675,7 +712,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//   	TTT - Mdate
 				//   	SSSS - serial number
 				//w:1,PMP6PTH6840596
-				sscanf(str, "w:%d,%[^,],%s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+				sscanf(str, "w:%d,%63[^,],%63s", &m_status.wFilamentCount, m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
 
 				if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
 				{
@@ -746,7 +783,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 			case 'V': // some sort of version
 				//V:5.1.5
 				//****FixMe, work out what this is
-				sscanf(str, "V:%s", m_status.VString);
+				sscanf(str, "V:%63s", m_status.VString);
 				break;
 
 			case 'W': // wifi information
@@ -785,7 +822,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//     where xx is the nozzle serial number
 				//     and yy is the total nozzle print time (in minutes)
 				//   sn2 is optional second serial number for second nozzle
-				sscanf(str, "X:%d,%[^,],%s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
+				sscanf(str, "X:%d,%63[^,],%63s", &m_status.XNozzleID, m_status.XNozzle1SerialNumber, m_status.XNozzle2SerialNumber);
 				m_status.XNozzleDiameter_mm = XYZV3::nozzleIDToDiameter(m_status.XNozzleID);
 				m_status.XNozzleIsLaser = XYZV3::nozzleIDIsLaser(m_status.XNozzleID);
 				break;
@@ -796,7 +833,7 @@ void XYZV3::parseStatusSubstring(const char *str)
 				//4:0.0.0.0 or 
 				//4:{"wlan":{"ip":"0.0.0.0","ssid":"","channel":"0","MAC":"20::5e:c4:4f:bd"}}
 				if(strlen(str) >= 3 && (isdigit(str[1]) || isdigit(str[2])))
-					sscanf(str, "4:%s", m_status.N4NetIP);
+					sscanf(str, "4:%63s", m_status.N4NetIP);
 				else
 				{
 					char tstr[512];
@@ -1374,6 +1411,16 @@ void XYZV3::setState(int /*ActState*/ state, float timeout_s, bool needsMachineS
 	// force progress bar to 100% on exit
 	if(state == ACT_FAILURE || state == ACT_SUCCESS)
 		m_progress = 100;
+	if(state == ACT_FAILURE)
+	{
+		delete [] pDat.data;
+		delete [] pDat.blockBuf;
+		pDat.data = NULL;
+		pDat.blockBuf = NULL;
+		pDat.isPrintActive = false;
+		if(m_fileIsTemp) remove(m_filePath);
+		m_fileIsTemp = false;
+	}
 
 	// get default if not specified
 	if(timeout_s < 0)
@@ -1547,6 +1594,7 @@ void XYZV3::calibrateBedRun()
 		}
 		else if(m_timeout.isTimeout())
 			setSubState(ACT_FAILURE);
+		break;
 	case ACT_CB_CALIB_START: // wait for calibration to start
 		if(isWIFI())
 			setState(ACT_CB_CALIB_RUN, 240, isWIFI());
@@ -1690,6 +1738,7 @@ void XYZV3::cleanNozzleRun()
 			setState(ACT_FAILURE);
 		else // loop
 			m_progress = (int)(5.0f + 5.0f * m_timeout.getElapsedTime_pct());
+		break;
 	case ACT_CL_WARMUP_COMPLETE:
 		if(!isWIFI() && checkForJsonState(val, len))
 		{
@@ -2391,15 +2440,18 @@ void XYZV3::printFileStart(const char *path)
 	debugPrint(DBG_LOG, "XYZV3::printFileStart(%s)", path);
 	m_progress = 0;
 
-	if(path)
+	if(path && strlen(path) < MAX_PATH)
 	{
-		strncpy(m_filePath, path, MAX_PATH);
+		copyString(m_filePath, path);
 		m_filePath[MAX_PATH-1] = '\0';
 		m_fileIsTemp = false;
 		setState(ACT_PF_START);
 	}
 	else
+	{
 		debugPrint(DBG_WARN, "XYZV3::printFileStart invalid input");
+		setState(ACT_FAILURE);
+	}
 }
 
 void XYZV3::printFileRun()
@@ -2417,16 +2469,34 @@ void XYZV3::printFileRun()
 		// if gcode convert to 3w file
 		if(isGcodeFile(m_filePath))
 		{
-			char tpath[MAX_PATH] = "";
 			char tfile[MAX_PATH] = "";
-			if( GetTempPath(MAX_PATH, tpath) &&
-				GetTempFileName(tpath, NULL, 0, tfile))
+#ifdef _WIN32
+			char tpath[MAX_PATH] = "";
+			bool haveTemp = GetTempPath(MAX_PATH, tpath) && GetTempFileName(tpath, "mm", 0, tfile);
+#else
+			strcpy(tfile, "/tmp/minimover-XXXXXX");
+			int fd = mkstemp(tfile);
+			bool haveTemp = fd >= 0;
+			if(haveTemp) close(fd);
+#endif
+			if(haveTemp)
 			{
 				if(encryptFile(m_filePath, tfile, -1))
 				{
 					strcpy(m_filePath, tfile);
 					m_fileIsTemp = true;
 				}
+				else
+				{
+					remove(tfile);
+					setState(ACT_FAILURE);
+					break;
+				}
+			}
+			else
+			{
+				setState(ACT_FAILURE);
+				break;
 			}
 		}
 		// else if  3w just use file directly
@@ -2434,6 +2504,11 @@ void XYZV3::printFileRun()
 		{
 			//****FixMe, check if file format matches printer
 			// if not then decode to temp file and re-encode
+		}
+		else
+		{
+			setState(ACT_FAILURE);
+			break;
 		}
 
 		if(m_filePath[0])
@@ -2448,7 +2523,7 @@ void XYZV3::printFileRun()
 		break;
 	case ACT_PF_SEND_PROCESS:
 		if(!sendFileProcess())
-			setState(ACT_PF_COMPLETE);
+			setState(pDat.curBlock == pDat.blockCount ? ACT_PF_COMPLETE : ACT_FAILURE);
 		m_progress = (int)(10.0 + 90.0f * getFileUploadPct());
 		break;
 	case ACT_PF_COMPLETE:
@@ -2457,6 +2532,7 @@ void XYZV3::printFileRun()
 			// cleanup temp file, if used
 			if(m_fileIsTemp)
 				remove(m_filePath);
+			m_fileIsTemp = false;
 
 			setState(ACT_SUCCESS);
 		}
@@ -2537,14 +2613,17 @@ void XYZV3::uploadFirmwareStart(const char *path)
 	debugPrint(DBG_LOG, "XYZV3::uploadFirmwareStart(%s)", path);
 	m_progress = 0;
 
-	if(path)
+	if(path && strlen(path) < MAX_PATH)
 	{
-		strncpy(m_filePath, path, MAX_PATH);
+		copyString(m_filePath, path);
 		m_filePath[MAX_PATH-1] = '\0';
 		setState(ACT_FW_START);
 	}
 	else
+	{
 		debugPrint(DBG_WARN, "XYZV3::uploadFirmwareStart invalid input");
+		setState(ACT_FAILURE);
+	}
 }
 
 void XYZV3::uploadFirmwareRun()
@@ -2566,7 +2645,7 @@ void XYZV3::uploadFirmwareRun()
 		break;
 	case ACT_FW_SEND_PROCESS:
 		if(!sendFileProcess())
-			setState(ACT_PF_COMPLETE);
+			setState(pDat.curBlock == pDat.blockCount ? ACT_FW_COMPLETE : ACT_FAILURE);
 		m_progress = (int)(10.0 + 90.0f * getFileUploadPct());
 		break;
 	case ACT_FW_COMPLETE:
@@ -2641,6 +2720,8 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 
 	assert(!pDat.isPrintActive);
 
+	delete [] pDat.data;
+	delete [] pDat.blockBuf;
 	memset(&pDat, 0, sizeof(pDat));
 
 	// internal options, expose these at some point
@@ -2658,8 +2739,18 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 		if(f)
 		{
 			// get file length
-			fseek(f, 0, SEEK_END);
-			int len = ftell(f);
+			if(fseek(f, 0, SEEK_END) != 0)
+			{
+				fclose(f);
+				return false;
+			}
+			long fileLen = ftell(f);
+			if(fileLen <= (isPrint ? 0 : 16) || fileLen > INT_MAX - 16)
+			{
+				fclose(f);
+				return false;
+			}
+			int len = (int)fileLen;
 			if(!isPrint)
 				len -= 16; // skip header on firmware
 			fseek(f, 0, SEEK_SET);
@@ -2674,6 +2765,7 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						len == (int)fread(buf, 1, len, f)) // read whole file into bufer
 					{
 						// zero terminate header string
+						pDat.data = buf;
 						//****Note, only valid if !isPrint
 						header[16] = '\0';
 
@@ -2705,9 +2797,10 @@ bool XYZV3::sendFileInit(const char *path, bool isPrint)
 						else // V3 protocol
 						{
 							// now we have a buffer, go ahead and start to print it
-							pDat.blockSize = (m_status.isValid) ? m_status.oPacketSize : 8192;
-							pDat.blockCount = (len + pDat.blockSize - 1) / pDat.blockSize; // round up
+							pDat.blockSize = (m_status.isValid && m_status.oPacketSize > 0 && m_status.oPacketSize <= 1048576) ? m_status.oPacketSize : 8192;
+							pDat.blockCount = 1 + (len - 1) / pDat.blockSize;
 							pDat.lastBlockSize = len % pDat.blockSize;
+							if(pDat.lastBlockSize == 0) pDat.lastBlockSize = pDat.blockSize;
 							pDat.curBlock = 0;
 							pDat.data = buf;
 							pDat.blockBuf = new char[pDat.blockSize + 12];
@@ -2823,8 +2916,8 @@ bool XYZV3::sendFileProcess()
 			tBuf += 4;
 
 			// write out in one shot
-			m_stream->write(pDat.blockBuf, blockLen + 12);
-			success = waitForConfigOK();
+			int written = m_stream->write(pDat.blockBuf, blockLen + 12);
+			success = written == blockLen + 12 && waitForConfigOK();
 			if(!success) // bail on error
 			{
 				debugPrint(DBG_WARN, "XYZV3::sendFileProcess failed on write");
@@ -2878,15 +2971,15 @@ void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoId
 	debugPrint(DBG_LOG, "XYZV3::convertFileStart(%s, %s, %d)", inPath, outPath, infoIdx);
 	m_progress = 0;
 
-	if(inPath)
+	if(inPath && strlen(inPath) < MAX_PATH && (!outPath || strlen(outPath) < MAX_PATH))
 	{
-		strncpy(m_filePath, inPath, MAX_PATH);
+		copyString(m_filePath, inPath);
 		m_filePath[MAX_PATH-1] = '\0';
 
 		m_fileOutPath[0] = '\0';
 		if(outPath)
 		{
-			strncpy(m_fileOutPath, outPath, MAX_PATH);
+			copyString(m_fileOutPath, outPath);
 			m_fileOutPath[MAX_PATH-1] = '\0';
 		}
 
@@ -2896,7 +2989,10 @@ void XYZV3::convertFileStart(const char *inPath, const char *outPath, int infoId
 		setState(ACT_CF_START);
 	}
 	else
+	{
 		debugPrint(DBG_WARN, "XYZV3::convertFileStart invalid input");
+		setState(ACT_FAILURE);
+	}
 }
 
 void XYZV3::convertFileRun()
@@ -2998,19 +3094,24 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 		FILE *fi = fopen(inPath, "rb");
 		if(fi)
 		{
-			char tPath[MAX_PATH] = "";
+			std::string tPath(inPath);
+			size_t dot = tPath.find_last_of('.');
+			size_t slash = tPath.find_last_of("/\\");
+			if(dot == std::string::npos || (slash != std::string::npos && dot < slash))
+				dot = tPath.size();
+			tPath.replace(dot, std::string::npos, ".3w");
+			if(sameFile(inPath, outPath && *outPath ? outPath : tPath.c_str()))
+			{
+				fclose(fi);
+				return false;
+			}
 			// and write to disk
 			FILE *fo = NULL;
 			if(outPath && *outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
-				strcpy(tPath, inPath);
-				char *ptr = strrchr(tPath, '.');
-				if(!ptr)
-					ptr = tPath + strlen(tPath);
-				sprintf(ptr, ".3w");
-				fo = fopen(tPath, "wb");
+				fo = fopen(tPath.c_str(), "wb");
 			}
 
 			// and our destination file
@@ -3020,15 +3121,33 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 				// process the source gcode file
 
 				// get file length
-				fseek(fi, 0, SEEK_END);
-				int gcodeLen = ftell(fi);
+				if(fseek(fi, 0, SEEK_END) != 0)
+				{
+					fclose(fo);
+					fclose(fi);
+					return false;
+				}
+				long fileLen = ftell(fi);
+				if(fileLen < 2 || fileLen > INT_MAX - 1024)
+				{
+					fclose(fo);
+					fclose(fi);
+					return false;
+				}
+				int gcodeLen = (int)fileLen;
 				fseek(fi, 0, SEEK_SET);
 
 				// grab gcode file data
 				char *gcode = new char[gcodeLen+1];
 				if(gcode)
 				{
-					fread(gcode, 1, gcodeLen, fi);
+					if(fread(gcode, 1, gcodeLen, fi) != (size_t)gcodeLen)
+					{
+						delete [] gcode;
+						fclose(fo);
+						fclose(fi);
+						return false;
+					}
 					gcode[gcodeLen] = '\0';
 
 					// convert G0 commands to G1
@@ -3088,11 +3207,11 @@ bool XYZV3::encryptFile(const char *inPath, const char *outPath, int infoIdx)
 					debugPrint(DBG_WARN, "XYZV3::encryptFile failed to allocate buffer");
 
 				// clean up file data
-				fclose(fo);
+				if(fclose(fo) != 0) success = false;
 				fo = NULL;
 			}
 			else
-				debugPrint(DBG_WARN, "XYZV3::encryptFile failed to open out file %s", (outPath) ? outPath : tPath);
+				debugPrint(DBG_WARN, "XYZV3::encryptFile failed to open out file %s", (outPath) ? outPath : tPath.c_str());
 
 			fclose(fi);
 			fi = NULL;
@@ -3119,19 +3238,51 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 		FILE *f = fopen(inPath, "rb");
 		if(f)
 		{
-			char tPath[MAX_PATH];
+			// Validate lengths and format markers before allocating or truncating output.
+			char signature[20];
+			bool valid = fseek(f, 0, SEEK_END) == 0;
+			long fileLen = ftell(f);
+			valid = valid && fileLen > m_bodyOffset && fileLen < INT_MAX &&
+				fseek(f, 0, SEEK_SET) == 0 && fread(signature, 1, 20, f) == 20;
+			if(valid) valid = fseek(f, 16, SEEK_SET) == 0;
+			int zipOffset = valid ? readWord(f) : -1;
+			valid = valid && memcmp(signature, "3DPFNKG13WTW", 12) == 0 &&
+				(signature[13] == 2 || signature[13] == 5) &&
+				zipOffset >= 0 && zipOffset <= m_bodyOffset - 48;
+			char marker[8];
+			valid = valid && fseek(f, 20 + zipOffset, SEEK_SET) == 0 && fread(marker, 1, 8, f) == 8 &&
+				(memcmp(marker, "TagEa128", 8) == 0 || memcmp(marker, "TagEJ256", 8) == 0);
+			if(!valid)
+			{
+				debugPrint(DBG_WARN, "XYZV3::decryptFile invalid or truncated 3w file");
+				fclose(f);
+				return false;
+			}
+			fseek(f, m_bodyOffset, SEEK_SET);
+			int first = fgetc(f);
+			if((memcmp(marker, "TagEa128", 8) == 0 || first != ';') && (fileLen - m_bodyOffset) % 16 != 0)
+			{
+				fclose(f);
+				return false;
+			}
+			rewind(f);
+			std::string tPath(inPath);
+			size_t dot = tPath.find_last_of('.');
+			size_t slash = tPath.find_last_of("/\\");
+			if(dot == std::string::npos || (slash != std::string::npos && dot < slash)) dot = tPath.size();
+			tPath.replace(dot, std::string::npos, ".gcode");
+			if(sameFile(inPath, outPath && *outPath ? outPath : tPath.c_str()))
+			{
+				fclose(f);
+				return false;
+			}
 			// and write to disk
 			FILE *fo = NULL;
 			if(outPath && *outPath)
 				fo = fopen(outPath, "wb");
 			else
 			{
-				strcpy(tPath, inPath);
-				char *ptr = strrchr(tPath, '.');
-				if(!ptr)
-					ptr = tPath + strlen(tPath);
-				sprintf(ptr, ".gcode");
-				fo = fopen(tPath, "wb");
+				fo = fopen(tPath.c_str(), "wb");
 			}
 
 			if(fo)
@@ -3144,13 +3295,17 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 				fseek(f, 0, SEEK_SET);
 
 				// check if this is even a 3w file
-				fread(buf, 1, 12, f);
-				if(0 == strncmp("3DPFNKG13WTW", buf, strlen("3DPFNKG13WTW")))
+				if(fread(buf, 1, 12, f) == 12 && 0 == strncmp("3DPFNKG13WTW", buf, strlen("3DPFNKG13WTW")))
 				{
 					// file format id's
 					// id should be 1, what does this mean?
 					// file format version is 2 or 5
-					fread(buf, 1, 4, f);
+					if(fread(buf, 1, 4, f) != 4)
+					{
+						fclose(fo);
+						fclose(f);
+						return false;
+					}
 					int id = buf[0];
 					(void)id; // currently not used
 
@@ -3163,7 +3318,12 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					fseek(f, zipOffset, SEEK_CUR);
 
 					// zip format marker
-					fread(buf, 1, 8, f);
+					if(fread(buf, 1, 8, f) != 8)
+					{
+						fclose(fo);
+						fclose(f);
+						return false;
+					}
 					bool fileIsZip = false;
 					if(0 == strncmp("TagEa128", buf, strlen("TagEa128")))
 						fileIsZip = true;
@@ -3186,8 +3346,14 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 
 					int crc32 = readWord(f);
 
-					int offset = headerOffset - (ftell(f) - offset1);
-					fseek(f, offset, SEEK_CUR);
+					long offset = (long)headerOffset - (ftell(f) - offset1);
+					if(offset < 0 || offset > m_bodyOffset - ftell(f) ||
+						fseek(f, offset, SEEK_CUR) != 0)
+					{
+						fclose(fo);
+						fclose(f);
+						return false;
+					}
 
 					// header potentially goes from here to 8192
 					// v5 format stores header len, but v2 files you just have
@@ -3229,7 +3395,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						headerLen = pkcs7unpad(hbuf, headerLen);
 
 						//****FixMe, do something with it
-						debugPrint(DBG_VERBOSE, hbuf);
+						debugPrint(DBG_VERBOSE, "%s", hbuf);
 
 						delete [] hbuf;
 						hbuf = NULL;
@@ -3246,7 +3412,13 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 					if(bBuf)
 					{
 						memset(bBuf, 0, bufLen);
-						fread(bBuf, 1, bodyLen, f);
+						if(fread(bBuf, 1, bodyLen, f) != (size_t)bodyLen)
+						{
+							delete [] bBuf;
+							fclose(fo);
+							fclose(f);
+							return false;
+						}
 						bBuf[bodyLen] = '\0';
 
 						if(crc32 != (int)calcXYZcrc32(bBuf, bodyLen))
@@ -3307,8 +3479,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 										char *tbuf = (char*)mz_zip_reader_extract_to_heap(&zip, 0, &size, 0);
 										if(tbuf)
 										{
-											fwrite(tbuf, 1, size, fo);
-											success = true;
+											success = fwrite(tbuf, 1, size, fo) == size;
 
 											mz_free(tbuf);
 											tbuf = NULL;
@@ -3322,7 +3493,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 									mz_zip_reader_end(&zip);
 								}
 								else
-									debugPrint(DBG_WARN, "XYZV3::decryptFile error %s", zip.m_last_error);
+									debugPrint(DBG_WARN, "XYZV3::decryptFile error %d", zip.m_last_error);
 
 								delete [] zbuf;
 								zbuf = NULL;
@@ -3358,8 +3529,7 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 							// remove any padding from body
 							bodyLen = pkcs7unpad(bBuf, bodyLen);
 
-							fwrite(bBuf, 1, bodyLen, fo);
-							success = true;
+							success = fwrite(bBuf, 1, bodyLen, fo) == (size_t)bodyLen;
 						}
 
 						delete [] bBuf;
@@ -3369,11 +3539,11 @@ bool XYZV3::decryptFile(const char *inPath, const char *outPath)
 						debugPrint(DBG_WARN, "XYZV3::decryptFile failed to allocate buffer");
 				}
 
-				fclose(fo);
+				if(fclose(fo) != 0) success = false;
 				fo = NULL;
 			}
 			else
-				debugPrint(DBG_WARN, "XYZV3::decryptFile failed to open out file %s", (outPath) ? outPath : tPath);
+				debugPrint(DBG_WARN, "XYZV3::decryptFile failed to open out file %s", (outPath) ? outPath : tPath.c_str());
 
 			fclose(f);
 		}
@@ -3560,7 +3730,7 @@ const char* getNextKey(const char *str, char *key, int maxLen)
 				}
 				else if(*tstr == '"')
 					isQuote = true;
-				else if(!isalnum(*tstr))
+				else if(!isalnum((unsigned char)*tstr))
 					break;
 
 				// if room left
@@ -3685,7 +3855,6 @@ const char* getNextVal(const char *str, char *val, int maxLen)
 				tstr++;
 			}
 
-			assert(maxLen > 1);
 			if(maxLen <= 1)
 				debugPrint(DBG_WARN, "XYZV3::getNextVal maxLen too short!");
 
@@ -3708,7 +3877,8 @@ const char* getNextVal(const char *str, char *val, int maxLen)
 
 bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 {
-	debugPrint(DBG_VERBOSE, "XYZV3::findJsonVal(%s, %s, %s, %d)", str, key, val, maxLen);
+	if(!str || !key || !val || maxLen < 1) return false;
+	debugPrint(DBG_VERBOSE, "XYZV3::findJsonVal(%s, %s, %p, %d)", str, key, (void*)val, maxLen);
 
 	if(val && maxLen > 0)
 	{
@@ -3733,11 +3903,10 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 				if(*s == '"')
 					s++;
 
-				assert(strlen(s) < (size_t)maxLen);
 				strncpy(val, s, maxLen);
 				val[maxLen - 1] = '\0';
 
-				if(val[strlen(val)-1] == '"')
+				if(*val && val[strlen(val)-1] == '"')
 					val[strlen(val)-1] = '\0';
 
 				debugPrint(DBG_LOG, "XYZV3::findJsonVal found %s:%s", key, val);
@@ -3769,11 +3938,10 @@ bool XYZV3::findJsonVal(const char *str, const char *key, char *val, int maxLen)
 						if(*s == '"')
 							s++;
 
-						assert(strlen(s) < (size_t)maxLen);
 						strncpy(val, s, maxLen);
 						val[maxLen-1] = '\0';
 
-						if(val[strlen(val)-1] == '"')
+						if(*val && val[strlen(val)-1] == '"')
 							val[strlen(val)-1] = '\0';
 
 						debugPrint(DBG_LOG, "XYZV3::findJsonVal found %s:%s", key, val);
@@ -3845,7 +4013,7 @@ int XYZV3::readWord(FILE *f)
 	int i = 0;
 	if(f)
 	{
-		fread(&i, 4, 1, f);
+		if(fread(&i, 4, 1, f) != 1) return 0;
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::readWord invalid input");
@@ -3875,7 +4043,7 @@ int XYZV3::readByte(FILE *f)
 	if(f)
 	{
 		//****FixMe, test?
-		fread(&i, 1, 1, f);
+		if(fread(&i, 1, 1, f) != 1) return 0;
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::readByte invalid input");
@@ -3922,11 +4090,14 @@ int XYZV3::pkcs7unpad(char *buf, int len)
 
 	if(buf && len > 0)
 	{
-		int count = buf[len-1];
-		if(count > 0 && count <= 16)
-			buf[len-count] = '\0';
-
-		return len - count;
+		int count = (unsigned char)buf[len-1];
+		if(count < 1 || count > 16 || count > len)
+			return len;
+		for(int i = len-count; i < len; i++)
+			if((unsigned char)buf[i] != count)
+				return len;
+		buf[len-count] = '\0';
+		return len-count;
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::pkcs7unpad invalid input");
@@ -4034,7 +4205,7 @@ const char* XYZV3::readLineFromBuf(const char *buf, char *lineBuf, int lineLen)
 	if(lineBuf)
 		*lineBuf = '\0';
 
-	if(buf && lineBuf && lineLen > 0)
+	if(buf && lineBuf && lineLen >= 2)
 	{
 		if(*buf)
 		{
@@ -4099,7 +4270,7 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 	debugPrint(DBG_VERBOSE, "XYZV3::processGCode()");
 
 	// validate parameters
-	if(gcode && gcodeLen > 1 && processedBuf && headerLen && headerLen && totalLen)
+	if(gcode && gcodeLen > 1 && gcodeLen <= INT_MAX - 1024 && fileNum && processedBuf && headerLen && totalLen)
 	{
 		*processedBuf = NULL;
 		*headerLen = 0;
@@ -4107,6 +4278,12 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 
 		const int lineLen = 1024;
 		char lineBuf[lineLen];
+		int currentLineLen = 0;
+		for(int i = 0; i < gcodeLen; i++)
+		{
+			if(gcode[i] == '\n' || gcode[i] == '\r') currentLineLen = 0;
+			else if(++currentLineLen > lineLen - 2) return false;
+		}
 
 		// parse header once to get info on print time
 		int printTime = 1;
@@ -4190,13 +4367,15 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 		{
 			// make a fake header to keep printer happy
 			// must come first or printer will fail
-			bbufOffset += sprintf(bBuf + bbufOffset, "; filename = temp.3w\n");
-			bbufOffset += sprintf(bBuf + bbufOffset, "; print_time = %d\n", printTime);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; machine = %s\n", fileNum);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; facets = %d\n", totalFacets);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; total_layers = %d\n", totalLayers);
-			bbufOffset += sprintf(bBuf + bbufOffset, "; version = 18020109\n");
-			bbufOffset += sprintf(bBuf + bbufOffset, "; total_filament = %0.2f\n", totalFilament);
+			bbufOffset = snprintf(bBuf, bBufMaxLen,
+				"; filename = temp.3w\n; print_time = %d\n; machine = %s\n"
+				"; facets = %d\n; total_layers = %d\n; version = 18020109\n"
+				"; total_filament = %0.2f\n", printTime, fileNum, totalFacets, totalLayers, totalFilament);
+			if(bbufOffset < 0 || bbufOffset >= bBufMaxLen)
+			{
+				delete [] bBuf;
+				return false;
+			}
 
 			// potential data to add to header
 			/*
@@ -4238,6 +4417,11 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 			tcode = readLineFromBuf(tcode, lineBuf, lineLen);
 			while(*lineBuf)
 			{
+				if(bbufOffset + strlen(lineBuf) + 1 >= (size_t)bBufMaxLen)
+				{
+					delete [] bBuf;
+					return false;
+				}
 				wasHeader = isHeader;
 				if(isHeader)
 					isHeader = checkLineIsHeader(lineBuf);
@@ -4268,10 +4452,10 @@ bool XYZV3::processGCode(const char *gcode, const int gcodeLen, const char *file
 						headerEnd = bbufOffset;
 
 					// convert G0 to G1
-					char *s = strstr(lineBuf, "G0");
-					if(!s)
-						s = strstr(lineBuf, "g0");
-					if(s)
+					char *s = lineBuf;
+					while(isspace((unsigned char)*s)) s++;
+					if((s[0] == 'G' || s[0] == 'g') && s[1] == '0' &&
+						!isdigit((unsigned char)s[2]) && s[2] != '.')
 						s[1] = '1';
 
 					// copy to file
@@ -4303,7 +4487,7 @@ bool XYZV3::encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char *
 	bool success = false;
 
 	// validate parameters
-	if(gcode && headerBuf && headerLen)
+	if(gcode && gcodeLen > 0 && gcodeLen < INT_MAX - 16 && headerBuf && headerLen)
 	{
 		//==============
 		// fix up header
@@ -4313,7 +4497,7 @@ bool XYZV3::encryptHeader(const char *gcode, int gcodeLen, bool fileIsV5, char *
 
 		// padded out to 16 byte boundary
 		// and copy so we can encrypt it seperately
-		int hLen = roundUpTo16(gcodeLen); 
+		int hLen = roundUpTo16(gcodeLen + 1);
 		char *hBuf = new char[hLen+1];
 		if(hBuf)
 		{
@@ -4355,7 +4539,7 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 	bool success = false;
 
 	// validate parameters
-	if(gcode && bodyBuf && bodyLen)
+	if(gcode && gcodeLen > 0 && gcodeLen < INT_MAX - 16 && bodyBuf && bodyLen)
 	{
 		//============
 		// fix up body
@@ -4424,6 +4608,7 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 						}
 						else
 							debugPrint(DBG_WARN, "XYZV3::encryptBody failed to allocate z buffer");
+						mz_free(zBuf);
 					}
 					else
 						debugPrint(DBG_WARN, "XYZV3::encryptBody failed to finalize zip");
@@ -4439,7 +4624,7 @@ bool XYZV3::encryptBody(const char *gcode, int gcodeLen, bool fileIsZip, char **
 		}
 		else
 		{
-			int bLen = roundUpTo16(gcodeLen); 
+			int bLen = roundUpTo16(gcodeLen + 1);
 			char *bBuf = new char[bLen+1];
 			if(bBuf)
 			{
@@ -4551,12 +4736,13 @@ bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *heade
 		// mark current file location
 		int pad2 = m_bodyOffset - ftell(fo);
 		// pad with zeros to start of body
+		if(pad2 < 0) return false;
 		writeRepeatByte(fo, 0, pad2);
 
 		// write encrypted and padded body out
 		fwrite(bodyBuf, 1, bodyLen, fo);
 
-		return true;
+		return ferror(fo) == 0;
 	}
 	else
 		debugPrint(DBG_WARN, "XYZV3::writeFile invalid input");
@@ -4568,14 +4754,14 @@ bool XYZV3::writeFile(FILE *fo, bool fileIsV5, bool fileIsZip, const char *heade
 
 int XYZV3::getInfoCount()
 {
-	return m_infoArrayLen;
+	return sizeof(m_infoArray) / sizeof(m_infoArray[0]);
 }
 
 const XYZPrinterInfo* XYZV3::indexToInfo(int index)
 {
 	//debugPrint(DBG_VERBOSE, "XYZV3::indexToInfo(%d)", index);
 
-	if(index >= 0 && index < m_infoArrayLen)
+	if(index >= 0 && index < getInfoCount())
 	{
 		return &m_infoArray[index];
 	}
@@ -4596,7 +4782,7 @@ const XYZPrinterInfo* XYZV3::modelToInfo(const char *modelNum)
 		//if(0 == strcmp(modelNum, "dv1MW0B000"))
 		//	modelNum = "dv1MW0A000"; 
 
-		for(int i=0; i<m_infoArrayLen; i++)
+		for(int i=0; i<getInfoCount(); i++)
 		{
 			if(0 == strcmp(modelNum, m_infoArray[i].modelNum))
 			{
@@ -4621,7 +4807,7 @@ const XYZPrinterInfo* XYZV3::serialToInfo(const char *serialNum)
 		//****Note, mini w has two model numbers
 		// see above
 
-		for(int i=0; i<m_infoArrayLen; i++)
+		for(int i=0; i<getInfoCount(); i++)
 		{
 			// first 6 digits of serial number is a machine id
 			if(0 == strncmp(serialNum, m_infoArray[i].serialNum, 6))
@@ -4977,7 +5163,7 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		// f-h
 
 		s = findValue(str, "MCH_ID:"); // i, machine serial number convert ? to -
-		if(s) strcpy(m_status.iMachineSerialNum, s);
+		if(s) copyString(m_status.iMachineSerialNum, s);
 
 		s = findValue(str, "PRN_STATE:"); // j, printer status
 		if(s) 
@@ -5001,14 +5187,14 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		// m
 
 		s = findValue(str, "PRT_NAME:"); // n, printer name
-		if(s) strcpy(m_status.nMachineName, s);
+		if(s) copyString(m_status.nMachineName, s);
 
 		// o
 
 		s = findValue(str, "MDU:"); // p, printer model number
 		if(s)
 		{
-			strcpy(m_status.pMachineModelNumber, s);
+			copyString(m_status.pMachineModelNumber, s);
 			m_info = XYZV3::modelToInfo(m_status.pMachineModelNumber);
 		}
 
@@ -5034,19 +5220,19 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		// u
 
 		s = findValue(str, "OS_V:"); // v, os firmware versions
-		if(s) strcpy(m_status.vOsFirmwareVersion, s);
+		if(s) copyString(m_status.vOsFirmwareVersion, s);
 
 		s = findValue(str, "APP_V:"); // v, app fw version
-		if(s) strcpy(m_status.vAppFirmwareVersion, s);
+		if(s) copyString(m_status.vAppFirmwareVersion, s);
 
 		s = findValue(str, "FW_V:"); // v, firmware version
-		if(s) strcpy(m_status.vFirmwareVersion, s);
+		if(s) copyString(m_status.vFirmwareVersion, s);
 
 		// are W1 and EE1 the same thing?
 		s = findValue(str, "W1:"); // w & f, fillament info for first spool
 		if(s)
 		{
-			strcpy(m_status.wFilament1SerialNumber, s);
+			copyString(m_status.wFilament1SerialNumber, s);
 
 			if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
 			{
@@ -5067,7 +5253,7 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		s = findValue(str, "W2:"); // w & f, fillament info for second spool
 		if(s) 
 		{
-			strcpy(m_status.wFilament2SerialNumber, s);
+			copyString(m_status.wFilament2SerialNumber, s);
 
 			if(*m_status.wFilament2SerialNumber != '-' && strlen(m_status.wFilament2SerialNumber) > 4)
 			{
@@ -5100,7 +5286,7 @@ void XYZV3::V2S_parseStatusSubstring(const char *str, bool doPrint)
 		// 0-3
 
 		s = findValue(str, "PRT_IP:"); // 4, printer ip
-		if(s) strcpy(m_status.N4NetIP, s);
+		if(s) copyString(m_status.N4NetIP, s);
 
 		// 5-9
 
@@ -5396,7 +5582,7 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				if(findJsonVal(datStr, "t", s1, sizeof(s1))) // "t":["--","--"], // extruder temperature(s)
 				{
 					m_status.tExtruderCount =
-						sscanf(s1, "[\"%[^\"]\",\"%[^\"]\"]", a, b);
+						sscanf(s1, "[\"%31[^\"]\",\"%31[^\"]\"]", a, b);
 					m_status.tExtruderTargetTemp_C = 0; // not available with v2 protocol?
 					m_status.tExtruder1ActualTemp_C = atoi(a);
 					m_status.tExtruder2ActualTemp_C = atoi(b);
@@ -5414,7 +5600,7 @@ void XYZV3::V2W_queryStatusStart(bool doPrint, const char *s)
 				if(findJsonVal(datStr, "w", s1, sizeof(s1))) // "w":["W1:--------------","W2:--------------"], // eeprom
 				{
 					m_status.wFilamentCount = 
-						sscanf(s1, "[\"W1:%[^\"]\",\"W2:%[^\"]\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
+						sscanf(s1, "[\"W1:%63[^\"]\",\"W2:%63[^\"]\"]", m_status.wFilament1SerialNumber, m_status.wFilament2SerialNumber);
 
 					if(*m_status.wFilament1SerialNumber != '-' && strlen(m_status.wFilament1SerialNumber) > 4)
 					{

@@ -1,6 +1,7 @@
 PROG = minimover
 CC = g++
 CPPFLAGS = -g -Wall -I../miniMoverLib/ -D _DEBUG
+CPPFLAGS += -MMD -MP
 LDFLAGS = 
 OBJS = minimover.o xyzv3.o XYZPrinterList.o serial_linux.o stream.o miniz.o debug.o aes.o timer.o socket_linux.o 
 
@@ -38,4 +39,8 @@ timer.o: ../miniMoverLib/timer.cpp ../miniMoverLib/timer.h
 	$(CC) $(CPPFLAGS) -c ../miniMoverLib/timer.cpp
 
 clean:
-	rm -f core $(PROG) $(OBJS)
+	rm -f $(PROG) $(OBJS) $(OBJS:.o=.d)
+
+-include $(OBJS:.o=.d)
+
+.PHONY: clean

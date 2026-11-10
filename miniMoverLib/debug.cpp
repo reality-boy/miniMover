@@ -66,6 +66,11 @@ void debugReduceNoise(bool doReduce)
 	g_doReduceNoise = doReduce;
 }
 
+void debugSetConsoleLevel(debugLevel level)
+{
+	g_debugLevel = level;
+}
+
 void debugPrint(debugLevel l, const char *format, ...)
 {
 	//g_callCount++;
