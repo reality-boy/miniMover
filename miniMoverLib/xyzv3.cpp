@@ -6,8 +6,8 @@
 #else
 #include <unistd.h>
 //****FixMe, deal with these more properly!
-# define GetTempPath(MAX_PATH, tpath)(tpath[0] = '\0')
-# define GetTempFileName(tpath, a, b, tfile)(strcpy(tfile, "temp.tmp"))
+# define GetTempPath(MAX_PATH, tpath)(strcpy(tpath, "/tmp/") != NULL)
+# define GetTempFileName(tpath, a, b, tfile)(strcpy(tfile, "/tmp/minimover_temp.3w") != NULL)
 #endif
 
 #include <time.h>
